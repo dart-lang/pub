@@ -247,4 +247,20 @@ void main() {
       );
     },
   );
+
+  test('dependency target cannot contain multiple colons', () async {
+    await servePackages();
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+    await pubUpgrade(
+      args: ['foo:bar:latest'],
+      error: allOf(
+        contains('Could not parse upgrade target `foo:bar:latest`.'),
+        contains('Use `<package>`'),
+        contains('`<package>:latest`'),
+        contains('`<package>:resolvable`.'),
+      ),
+      exitCode: exit_codes.USAGE,
+    );
+  });
 }

@@ -26,7 +26,14 @@ class UpgradeCommand extends PubCommand {
   String get name => 'upgrade';
   @override
   String get description =>
-      "Upgrade the current package's dependencies to latest versions.";
+      "Upgrade the current package's dependencies to latest versions.\n"
+      '\n'
+      'Append `:latest` to a dependency to require the latest available '
+      'version.\n'
+      '\n'
+      'Append `:resolvable` to require the newest version resolvable with the '
+      'rest of\n'
+      'the dependency graph.';
   @override
   String get argumentsDescription => '[dependencies[:latest|:resolvable]...]';
   @override
@@ -309,7 +316,10 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   _UpgradeTarget _parseUpgradeTarget(String argument) {
     final parts = argument.split(':');
     if (parts.length > 2) {
-      usageException('Could not parse `$argument`.');
+      usageException(
+        'Could not parse upgrade target `$argument`. Use `<package>`, '
+        '`<package>:latest`, or `<package>:resolvable`.',
+      );
     }
 
     final package = parts.first;
