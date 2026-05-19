@@ -557,6 +557,10 @@ See $workspacesDocUrl for more information.''',
   /// The iterable [unlock] specifies the list of packages whose versions can be
   /// changed even if they are locked in the pubspec.lock file.
   ///
+  /// The iterable [additionalConstraints] specifies extra constraints the
+  /// version solver must satisfy. When omitted, no extra constraints are
+  /// applied.
+  ///
   /// Shows a report of the changes made relative to the previous lockfile. If
   /// this is an upgrade or downgrade, all transitive dependencies are shown in
   /// the report. Otherwise, only dependencies that were changed are shown. If
