@@ -575,7 +575,11 @@ class DependencyServicesApplyCommand extends PubCommand {
           overriddenDependencies: entrypoint.lockFile.overriddenDependencies,
         );
 
-        newLockFile.writeToFile(entrypoint.lockFilePath, cache);
+        newLockFile.writeToFile(
+          entrypoint.lockFilePath,
+          cache,
+          dependencies: const [],
+        );
       }
     });
     // Dummy message.

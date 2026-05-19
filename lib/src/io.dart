@@ -280,16 +280,21 @@ void writeTextFileIfDifferent(
   if (originalText != newContent) {
     writeTextFile(path, newContent);
   } else {
-    log.fine('`$path` is unchanged. Not rewriting.');
     final modified = tryStatFile(path)?.modified;
-    if (modified == null) return;
-    for (final dependency in dependencies) {
-      final dependencyModified = tryStatFile(dependency)?.modified;
-      if (dependencyModified != null && dependencyModified.isAfter(modified)) {
-        touch(path);
-        break;
+    if (modified != null) {
+      for (final dependency in dependencies) {
+        final dependencyModified = tryStatFile(dependency)?.modified;
+        if (dependencyModified != null &&
+            dependencyModified.isAfter(modified)) {
+          log.fine(
+            '`$path` is unchanged. Touching because `$dependency` is newer.',
+          );
+          touch(path);
+          return;
+        }
       }
     }
+    log.fine('`$path` is unchanged. Not rewriting.');
   }
 }
 

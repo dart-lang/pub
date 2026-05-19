@@ -233,10 +233,11 @@ Follow progress in https://github.com/dart-lang/sdk/issues/60889.
     final tempDir = cache.createTempDir();
     // TODO(rnystrom): Look in "bin" and display list of binaries that
     // user can run.
-    LockFile(
-      [id],
-      mainDependencies: {id.name},
-    ).writeToFile(p.join(tempDir, 'pubspec.lock'), cache);
+    LockFile([id], mainDependencies: {id.name}).writeToFile(
+      p.join(tempDir, 'pubspec.lock'),
+      cache,
+      dependencies: const [],
+    );
 
     tryDeleteEntry(_packageDir(name));
     tryRenameDir(tempDir, _packageDir(name));
@@ -333,7 +334,11 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
         ).show(summary: false);
       }
 
-      lockFile.writeToFile(p.join(tempDir, 'pubspec.lock'), cache);
+      lockFile.writeToFile(
+        p.join(tempDir, 'pubspec.lock'),
+        cache,
+        dependencies: const [],
+      );
 
       final packageDir = _packageDir(name);
       tryDeleteEntry(packageDir);

@@ -389,10 +389,13 @@ ${yamlToString(data)}
   /// uses that.
   ///
   /// Relative paths will be resolved relative to [lockFilePath]
+  ///
+  /// If the serialized lockfile is unchanged, but any [dependencies] are newer
+  /// than [lockFilePath], the lockfile is touched.
   void writeToFile(
     String lockFilePath,
     SystemCache cache, {
-    Iterable<String> dependencies = const [],
+    required Iterable<String> dependencies,
   }) {
     final windowsLineEndings =
         fileExists(lockFilePath) &&
