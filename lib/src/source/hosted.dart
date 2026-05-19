@@ -2181,7 +2181,7 @@ final class HostedSourceCache {
   scheduler;
 
   /// An in-memory cache to store the cached version listing loaded from
-  /// [_versionListingCachePath].
+  /// [HostedSource._versionListingCachePath].
   ///
   /// Invariant: Entries in this cache are the parsed version of the exact same
   /// information cached on disk. I.e. if the entry is present in this cache,

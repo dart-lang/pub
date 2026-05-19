@@ -525,7 +525,7 @@ Future<void> main() async {
       (request) => Response.internalServerError(),
     );
 
-    // Second fetch: the resolution is up to date, and therefore reused. 
+    // Second fetch: the resolution is up to date, and therefore reused.
     // It should read advisories from disk cache and print
     // the advisory warning, making zero network requests.
     await pubGet(output: contains('affected by advisory'));
