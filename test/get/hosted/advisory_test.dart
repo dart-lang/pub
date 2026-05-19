@@ -5,7 +5,6 @@
 @TestOn('vm')
 library;
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:pub/src/path.dart';
@@ -514,18 +513,21 @@ Future<void> main() async {
     // First fetch: populates the cache
     await pubGet(output: contains('affected by advisory'));
 
-    // Configure only the advisories endpoint to return an error
+    // Mock both endpoints to return 500 Internal Server Error.
+    // If the client tries to hit the network for status or advisories,
+    // it will fail and not report the advisory.
     server.handle(
       '/api/packages/foo/advisories',
       (request) => Response.internalServerError(),
     );
+    server.handle(
+      '/api/packages/foo',
+      (request) => Response.internalServerError(),
+    );
 
-    // Delete the lockfile to force a fresh resolution / version solving
-    File(p.join(d.sandbox, appPath, 'pubspec.lock')).deleteSync();
-
-    // Second fetch: a new resolution is triggered, version listing is fetched
-    // from the server (once), but SolveReport must read both status and
-    // advisories from the disk cache.
+    // Second fetch: the resolution is up to date, and therefore reused. 
+    // It should read advisories from disk cache and print
+    // the advisory warning, making zero network requests.
     await pubGet(output: contains('affected by advisory'));
   });
 }
