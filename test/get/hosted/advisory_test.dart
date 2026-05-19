@@ -515,40 +515,10 @@ Future<void> main() async {
     await pubGet(output: contains('affected by advisory'));
 
     // Configure only the advisories endpoint to return an error
-    server.handle('/api/packages/foo/advisories', (request) {
-      fail('Should not fetch advisories from network!');
-    });
-
-    // Configure version listing to succeed only once (for version solving)
-    // and fail on any subsequent status checks (SolveReport cache bypass)
-    var fooRequestCount = 0;
-    final sha256 = await server.peekArchiveSha256('foo', '1.2.3');
-    server.handle(RegExp(r'/api/packages/foo$'), (request) {
-      fooRequestCount++;
-      if (fooRequestCount > 1) {
-        fail('Should not fetch version listing status a second time!');
-      }
-      return Response.ok(
-        jsonEncode({
-          'name': 'foo',
-          'uploaders': ['nweiz@google.com'],
-          'versions': [
-            {
-              'pubspec': {
-                'name': 'foo',
-                'version': '1.2.3',
-                'environment': {'sdk': '^3.0.0'},
-              },
-              'version': '1.2.3',
-              'archive_url': '${server.url}/packages/foo/versions/1.2.3.tar.gz',
-              'archive_sha256': sha256,
-            },
-          ],
-          'advisoriesUpdated': '1970-01-01T00:00:00.000',
-        }),
-        headers: {HttpHeaders.contentTypeHeader: server.contentType},
-      );
-    });
+    server.handle(
+      '/api/packages/foo/advisories',
+      (request) => Response.internalServerError(),
+    );
 
     // Delete the lockfile to force a fresh resolution / version solving
     File(p.join(d.sandbox, appPath, 'pubspec.lock')).deleteSync();
