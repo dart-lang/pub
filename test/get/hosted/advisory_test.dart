@@ -512,13 +512,12 @@ Future<void> main() async {
     );
 
     // First fetch: populates the cache
-    await pubGet();
+    await pubGet(output: contains('affected by advisory'));
 
     // Configure only the advisories endpoint to return an error
-    server.handle(
-      '/api/packages/foo/advisories',
-      (request) => Response.internalServerError(),
-    );
+    server.handle('/api/packages/foo/advisories', (request) {
+      fail('Should not fetch advisories from network!');
+    });
 
     // Configure version listing to succeed only once (for version solving)
     // and fail on any subsequent status checks (SolveReport cache bypass)
@@ -527,7 +526,7 @@ Future<void> main() async {
     server.handle(RegExp(r'/api/packages/foo$'), (request) {
       fooRequestCount++;
       if (fooRequestCount > 1) {
-        return Response.internalServerError();
+        fail('Should not fetch version listing status a second time!');
       }
       return Response.ok(
         jsonEncode({
@@ -557,6 +556,6 @@ Future<void> main() async {
     // Second fetch: a new resolution is triggered, version listing is fetched
     // from the server (once), but SolveReport must read both status and
     // advisories from the disk cache.
-    await pubGet();
+    await pubGet(output: contains('affected by advisory'));
   });
 }
