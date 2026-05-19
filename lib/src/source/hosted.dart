@@ -817,18 +817,6 @@ class HostedSource extends CachedSource {
         await _fetchAdvisories(id.toRef(), cache);
   }
 
-  /// An in-memory cache to store the cached version listing loaded from
-  /// [_versionListingCachePath].
-  ///
-  /// Invariant: Entries in this cache are the parsed version of the exact same
-  /// information cached on disk. I.e. if the entry is present in this cache,
-  /// there will not be a newer version on disk.
-  final Map<PackageRef, (DateTime, List<HostedVersionInfo>)> _responseCache =
-      {};
-
-  /// An in-memory cache to store the futures of fetched security advisories.
-  final Map<PackageId, Future<List<Advisory>?>> _advisoriesCache = {};
-
   /// If a cached version listing response for [ref] exists on disk and is less
   /// than [maxAge] old it is parsed and returned.
   ///
@@ -841,7 +829,7 @@ class HostedSource extends CachedSource {
     SystemCache cache, {
     Duration? maxAge,
   }) async {
-    final cachedInfo = _responseCache[ref];
+    final cachedInfo = cache.hostedCache._responseCache[ref];
     if (cachedInfo != null) {
       final (cacheTimestamp, versionInfo) = cachedInfo;
       final cacheAge = DateTime.now().difference(cacheTimestamp);
@@ -880,7 +868,7 @@ class HostedSource extends CachedSource {
               Uri.file(cachePath),
               cache,
             );
-            _responseCache[ref] = (parsedTimestamp, res);
+            cache.hostedCache._responseCache[ref] = (parsedTimestamp, res);
             return res;
           }
         } on io.IOException {
@@ -932,7 +920,7 @@ class HostedSource extends CachedSource {
       );
       // Delete the entry in the in-memory cache to maintain the invariant that
       // cached information in memory is the same as that on the disk.
-      _responseCache.remove(ref);
+      cache.hostedCache._responseCache.remove(ref);
     } on io.IOException catch (e) {
       // Not being able to write this cache is not fatal. Just move on...
       log.fine('Failed writing cache file. $e');
@@ -1098,7 +1086,7 @@ class HostedSource extends CachedSource {
     SystemCache cache,
     Duration? maxAge,
   ) {
-    return _advisoriesCache.putIfAbsent(
+    return cache.hostedCache._advisoriesCache.putIfAbsent(
       id,
       () => _getAdvisories(id, cache, maxAge),
     );
@@ -2191,6 +2179,18 @@ final class HostedSourceCache {
   /// dependencies.
   final RateLimitedScheduler<HostedRefAndCache, List<HostedVersionInfo>>
   scheduler;
+
+  /// An in-memory cache to store the cached version listing loaded from
+  /// [_versionListingCachePath].
+  ///
+  /// Invariant: Entries in this cache are the parsed version of the exact same
+  /// information cached on disk. I.e. if the entry is present in this cache,
+  /// there will not be a newer version on disk.
+  final Map<PackageRef, (DateTime, List<HostedVersionInfo>)> _responseCache =
+      {};
+
+  /// An in-memory cache to store the futures of fetched security advisories.
+  final Map<PackageId, Future<List<Advisory>?>> _advisoriesCache = {};
 
   HostedSourceCache(HostedSource hosted)
     : scheduler = RateLimitedScheduler(
