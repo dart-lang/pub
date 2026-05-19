@@ -5,6 +5,7 @@
 @TestOn('vm')
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:pub/src/path.dart';
@@ -490,8 +491,8 @@ Future<void> main() async {
     await pubGet(args: ['--offline']);
   });
 
-  test('subsequent pub get reads advisories and status from cache '
-      'without network calls', () async {
+  test('subsequent pub get reads advisories and status from cache on a new '
+      'resolution without network calls for advisories', () async {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
 
@@ -513,12 +514,49 @@ Future<void> main() async {
     // First fetch: populates the cache
     await pubGet();
 
-    // Configure server to fail on any subsequent HTTP requests
-    server.serveErrors();
+    // Configure only the advisories endpoint to return an error
+    server.handle(
+      '/api/packages/foo/advisories',
+      (request) => Response.internalServerError(),
+    );
 
-    // Second fetch: should read everything from cache and make 0 network
-    // requests (even with a stable lockfile, pub get still validates
-    // security advisories).
+    // Configure version listing to succeed only once (for version solving)
+    // and fail on any subsequent status checks (SolveReport cache bypass)
+    var fooRequestCount = 0;
+    final sha256 = await server.peekArchiveSha256('foo', '1.2.3');
+    server.handle(RegExp(r'/api/packages/foo$'), (request) {
+      fooRequestCount++;
+      if (fooRequestCount > 1) {
+        return Response.internalServerError();
+      }
+      return Response.ok(
+        jsonEncode({
+          'name': 'foo',
+          'uploaders': ['nweiz@google.com'],
+          'versions': [
+            {
+              'pubspec': {
+                'name': 'foo',
+                'version': '1.2.3',
+                'environment': {'sdk': '^3.0.0'},
+              },
+              'version': '1.2.3',
+              'archive_url': '${server.url}/packages/foo/versions/1.2.3.tar.gz',
+              'archive_sha256': sha256,
+            },
+          ],
+          'advisoriesUpdated': '1970-01-01T00:00:00.000',
+        }),
+        headers: {HttpHeaders.contentTypeHeader: server.contentType},
+      );
+    });
+
+    // Delete the lockfile to force a fresh resolution / version solving
+    File(p.join(d.sandbox, appPath, 'pubspec.lock')).deleteSync();
+
+    // Second fetch: a new resolution is triggered, version listing is fetched
+    // from the server (once), but SolveReport must read both status and
+    // advisories from the disk cache.
     await pubGet();
   });
 }
