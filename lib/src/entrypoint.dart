@@ -435,6 +435,7 @@ See $workspacesDocUrl for more information.''',
                 .sdkConstraints[sdk.identifier]
                 ?.effectiveConstraint,
       ),
+      dependencies: [lockFilePath],
     );
     writeTextFileIfDifferent(packageGraphPath, await _packageGraphFile(cache));
 
@@ -458,33 +459,11 @@ See $workspacesDocUrl for more information.''',
     }
   }
 
-  /// touches unchanged generated resolution files if their inputs are newer.
-  Future<void> _updateResolutionFileTimestamps() async {
-    final lockFileStat = tryStatFile(lockFilePath);
-    if (lockFileStat == null) return;
-    var lockFileModified = lockFileStat.modified;
-
-    final graph = await packageGraph;
+  Iterable<String> _resolutionFileDependencies(PackageGraph graph) sync* {
     for (final package in graph.packages.values) {
       if (!graph.isPackageMutable(package.name)) continue;
-
-      final pubspecModified = tryStatFile(package.pubspecPath)?.modified;
-      final pubspecOverridesModified =
-          tryStatFile(package.pubspecOverridesPath)?.modified;
-      if ((pubspecModified != null &&
-              pubspecModified.isAfter(lockFileModified)) ||
-          (pubspecOverridesModified != null &&
-              pubspecOverridesModified.isAfter(lockFileModified))) {
-        touch(lockFilePath);
-        lockFileModified = tryStatFile(lockFilePath)!.modified;
-        break;
-      }
-    }
-
-    final packageConfigModified = tryStatFile(packageConfigPath)?.modified;
-    if (packageConfigModified != null &&
-        lockFileModified.isAfter(packageConfigModified)) {
-      touch(packageConfigPath);
+      yield package.pubspecPath;
+      yield package.pubspecOverridesPath;
     }
   }
 
@@ -679,24 +658,25 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 `--enforce-lockfile`.''');
     }
 
-    if (!(dryRun || enforceLockfile)) {
-      newLockFile.writeToFile(lockFilePath, cache);
-    }
-
     _lockFile = newLockFile;
+    late final packageGraph = PackageGraph.fromSolveResult(this, result);
+
+    if (!(dryRun || enforceLockfile)) {
+      newLockFile.writeToFile(
+        lockFilePath,
+        cache,
+        dependencies: _resolutionFileDependencies(packageGraph),
+      );
+    }
 
     if (!dryRun) {
       _removeStrayLockAndConfigFiles();
 
       /// Build a package graph from the version solver results so we don't
       /// have to reload and reparse all the pubspecs.
-      _packageGraph = Future.value(PackageGraph.fromSolveResult(this, result));
+      _packageGraph = Future.value(packageGraph);
 
       await writePackageConfigFiles();
-
-      if (!enforceLockfile) {
-        await _updateResolutionFileTimestamps();
-      }
 
       try {
         if (precompile) {

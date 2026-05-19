@@ -265,17 +265,31 @@ void writeTextFile(
 }
 
 /// Reads the file at [path] and writes [newContent] to it, if it is different
-/// from [newContent].
+/// from the existing content.
 ///
 /// If the file doesn't exist it is always written.
-void writeTextFileIfDifferent(String path, String newContent) {
-  // Compare to the present package_config.json
-  // For purposes of equality we don't care about the `generated` timestamp.
+///
+/// If the content is unchanged but any [dependencies] are newer than [path],
+/// [path] is touched.
+void writeTextFileIfDifferent(
+  String path,
+  String newContent, {
+  Iterable<String> dependencies = const [],
+}) {
   final originalText = tryReadTextFile(path);
   if (originalText != newContent) {
     writeTextFile(path, newContent);
   } else {
     log.fine('`$path` is unchanged. Not rewriting.');
+    final modified = tryStatFile(path)?.modified;
+    if (modified == null) return;
+    for (final dependency in dependencies) {
+      final dependencyModified = tryStatFile(dependency)?.modified;
+      if (dependencyModified != null && dependencyModified.isAfter(modified)) {
+        touch(path);
+        break;
+      }
+    }
   }
 }
 

@@ -389,7 +389,11 @@ ${yamlToString(data)}
   /// uses that.
   ///
   /// Relative paths will be resolved relative to [lockFilePath]
-  void writeToFile(String lockFilePath, SystemCache cache) {
+  void writeToFile(
+    String lockFilePath,
+    SystemCache cache, {
+    Iterable<String> dependencies = const [],
+  }) {
     final windowsLineEndings =
         fileExists(lockFilePath) &&
         detectWindowsLineEndings(readTextFile(lockFilePath));
@@ -398,6 +402,7 @@ ${yamlToString(data)}
     writeTextFileIfDifferent(
       lockFilePath,
       windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized,
+      dependencies: dependencies,
     );
   }
 
