@@ -459,9 +459,8 @@ See $workspacesDocUrl for more information.''',
     }
   }
 
-  Iterable<String> _resolutionFileDependencies(PackageGraph graph) sync* {
-    for (final package in graph.packages.values) {
-      if (!graph.isPackageMutable(package.name)) continue;
+  Iterable<String> _resolutionFileDependencies() sync* {
+    for (final package in workspaceRoot.transitiveWorkspace) {
       yield package.pubspecPath;
       yield package.pubspecOverridesPath;
     }
@@ -665,7 +664,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       newLockFile.writeToFile(
         lockFilePath,
         cache,
-        dependencies: _resolutionFileDependencies(packageGraph),
+        dependencies: _resolutionFileDependencies(),
       );
     }
 
