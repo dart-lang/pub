@@ -454,24 +454,32 @@ $contentHashesDocumentationUrl
         }
       }
 
-      final latestVersion = newerStable
-          ? maxAll(versions, Version.prioritize)
-          : maxAll(versions);
+      final latestVersion =
+          newerStable ? maxAll(versions, Version.prioritize) : maxAll(versions);
       final policy = _rootPubspec.policy?.cooldown;
       var isLatestBlocked = false;
       final desc = newId.description;
       if (policy != null && desc is ResolvedHostedDescription) {
-        final latestStatus = await newId.toRef().source.status(newId.toRef(), latestVersion, _cache);
-        isLatestBlocked = policy.isBlocked(newId.name, latestVersion, latestStatus.published, []);
+        final latestStatus = await newId.toRef().source.status(
+          newId.toRef(),
+          latestVersion,
+          _cache,
+        );
+        isLatestBlocked = policy.isBlocked(
+          newId.name,
+          latestVersion,
+          latestStatus.published,
+          [],
+        );
       }
+
+      final cooldownSuffix = isLatestBlocked ? ' (blocked by cooldown)' : '';
 
       if (status.isRetracted) {
         if (newerStable) {
-          notes.add(
-            'retracted, $latestVersion available${isLatestBlocked ? ' (blocked by cooldown)' : ''}',
-          );
+          notes.add('retracted, $latestVersion available$cooldownSuffix');
         } else if (newId.version.isPreRelease && newerUnstable) {
-          notes.add('retracted, $latestVersion available${isLatestBlocked ? ' (blocked by cooldown)' : ''}');
+          notes.add('retracted, $latestVersion available$cooldownSuffix');
         } else {
           notes.add('retracted');
         }
@@ -489,12 +497,12 @@ $contentHashesDocumentationUrl
         }
       } else if (newerStable) {
         // If there are newer stable versions, only show those.
-        notes.add('$latestVersion available${isLatestBlocked ? ' (blocked by cooldown)' : ''}');
+        notes.add('$latestVersion available$cooldownSuffix');
       } else if (
       // Only show newer prereleases for versions where a prerelease is
       // already chosen.
       newId.version.isPreRelease && newerUnstable) {
-        notes.add('$latestVersion available${isLatestBlocked ? ' (blocked by cooldown)' : ''}');
+        notes.add('$latestVersion available$cooldownSuffix');
       }
 
       message = notes.isEmpty ? null : '(${notes.join(', ')})';

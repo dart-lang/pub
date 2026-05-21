@@ -68,7 +68,8 @@ Future<String?> suggestResolutionAlternatives(
             cause.reason!.contains('cooldown policy')) {
           suggestions.add(
             _ResolutionSuggestion(
-              '* Consider excluding "$name" from the cooldown policy in your pubspec.yaml.',
+              '* Consider excluding "$name" from the cooldown policy in '
+              'your pubspec.yaml.',
               priority: 1,
             ),
           );

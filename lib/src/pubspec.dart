@@ -194,7 +194,11 @@ environment:
         _error('"min-age" is required in cooldown policy', cooldownNode.span);
       }
 
-      cooldown = CooldownPolicy(minAge: minAge, exclude: exclude, stability: stability);
+      cooldown = CooldownPolicy(
+        minAge: minAge,
+        exclude: exclude,
+        stability: stability,
+      );
     }
 
     return Policy(cooldown: cooldown, span: policyNode.span);
@@ -969,7 +973,11 @@ class CooldownPolicy {
   final Duration minAge;
   final List<String> exclude;
   final bool stability;
-  CooldownPolicy({required this.minAge, required this.exclude, this.stability = false});
+  CooldownPolicy({
+    required this.minAge,
+    required this.exclude,
+    this.stability = false,
+  });
 
   /// Returns `true` if the package version is blocked by this policy.
   bool isBlocked(
@@ -988,12 +996,12 @@ class CooldownPolicy {
         if (v > version) {
           if (pubDate != null) {
             final diff = pubDate.difference(published);
-            if (diff < minAge) {
+            if (diff >= Duration.zero && diff < minAge) {
               return true; // Blocked by stability!
             }
           } else {
-            // If a newer version has no published date, it is considered "too new"
-            // and thus breaks stability of older versions.
+            // If a newer version has no published date, it is considered
+            // "too new" and thus breaks stability of older versions.
             return true;
           }
         }

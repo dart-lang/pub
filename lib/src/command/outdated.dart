@@ -789,7 +789,8 @@ Future<void> _outputHuman(
       }
       if (package.isLatestBlockedByCooldown) {
         log.message(
-          '    Version ${package.latest!._id.version} is too new for cooldown policy.',
+          '    Version ${package.latest!._id.version} is too new for '
+          'cooldown policy.',
         );
       }
       final displayedAdvisories = advisoriesToDisplay[package.name]!;

@@ -148,48 +148,46 @@ void main() {
     );
   });
 
-  test(
-    'nice error message when one version is too new and other is blocked by constraint',
-    () async {
-      final server = await servePackages();
-      server.serve(
-        'foo',
-        '1.0.0',
-        published: DateTime.now().subtract(const Duration(days: 10)),
-      );
-      server.serve(
-        'foo',
-        '1.0.1',
-        published: DateTime.now().subtract(const Duration(days: 2)),
-      );
-      server.serve(
-        'bar',
-        '1.0.0',
-        published: DateTime.now().subtract(const Duration(days: 10)),
-        pubspec: {
-          'dependencies': {'foo': '>1.0.0'},
+  test('nice error message when one version is too new and '
+      'other is blocked by constraint', () async {
+    final server = await servePackages();
+    server.serve(
+      'foo',
+      '1.0.0',
+      published: DateTime.now().subtract(const Duration(days: 10)),
+    );
+    server.serve(
+      'foo',
+      '1.0.1',
+      published: DateTime.now().subtract(const Duration(days: 2)),
+    );
+    server.serve(
+      'bar',
+      '1.0.0',
+      published: DateTime.now().subtract(const Duration(days: 10)),
+      pubspec: {
+        'dependencies': {'foo': '>1.0.0'},
+      },
+    );
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'foo': 'any', 'bar': 'any'},
+        'policy': {
+          'cooldown': {'min-age': '7d'},
         },
-      );
+      }),
+    ]).create();
 
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-          'dependencies': {'foo': 'any', 'bar': 'any'},
-          'policy': {
-            'cooldown': {'min-age': '7d'},
-          },
-        }),
-      ]).create();
-
-      await expectResolves(
-        error: allOf(
-          contains('version solving failed'),
-          contains('version 1.0.1 of foo is too new'),
-          contains('depends on foo >1.0.0'),
-        ),
-      );
-    },
-  );
+    await expectResolves(
+      error: allOf(
+        contains('version solving failed'),
+        contains('version 1.0.1 of foo is too new'),
+        contains('depends on foo >1.0.0'),
+      ),
+    );
+  });
 
   test('pub outdated shows cooldown blocked versions', () async {
     final server = await servePackages();
@@ -261,7 +259,43 @@ void main() {
       ]),
     );
   });
-  test('stability: true blocks version if newer release within window', () async {
+  test(
+    'stability: true blocks version if newer release within window',
+    () async {
+      final server = await servePackages();
+      server.serve(
+        'foo',
+        '1.0.0',
+        published: DateTime.now().subtract(const Duration(days: 10)),
+      );
+      server.serve(
+        'foo',
+        '1.0.1',
+        published: DateTime.now().subtract(
+          const Duration(days: 8),
+        ), // Released 2 days after 1.0.0!
+      );
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '1.0.0'},
+          'policy': {
+            'cooldown': {'min-age': '7d', 'stability': true},
+          },
+        }),
+      ]).create();
+
+      await expectResolves(
+        error: contains(
+          'version 1.0.0 of foo is unstable (newer release within 7 days)',
+        ),
+      );
+    },
+  );
+
+  test('stability: true allows version if old enough and no '
+      'newer release within window', () async {
     final server = await servePackages();
     server.serve(
       'foo',
@@ -271,7 +305,9 @@ void main() {
     server.serve(
       'foo',
       '1.0.1',
-      published: DateTime.now().subtract(const Duration(days: 8)), // Released 2 days after 1.0.0!
+      published: DateTime.now().subtract(
+        const Duration(days: 2),
+      ), // Released 8 days after 1.0.0!
     );
 
     await d.dir(appPath, [
@@ -279,48 +315,70 @@ void main() {
         'name': 'myapp',
         'dependencies': {'foo': '1.0.0'},
         'policy': {
-          'cooldown': {
-            'min-age': '7d',
-            'stability': true,
-          },
+          'cooldown': {'min-age': '7d', 'stability': true},
         },
       }),
     ]).create();
 
-    await expectResolves(
-      error: contains('version 1.0.0 of foo is unstable (newer release within 7 days)'),
-    );
+    await expectResolves(result: {'foo': '1.0.0'});
   });
 
-  test('stability: true allows version if old enough and no newer release within window', () async {
+  test('stability: true does not block version if newer release '
+      'was published before this version', () async {
     final server = await servePackages();
     server.serve(
       'foo',
       '1.0.0',
-      published: DateTime.now().subtract(const Duration(days: 10)),
+      published: DateTime.now().subtract(const Duration(days: 20)),
     );
+    // A newer version 2.0.0 is published.
+    server.serve(
+      'foo',
+      '2.0.0',
+      published: DateTime.now().subtract(const Duration(days: 15)),
+    );
+    // A patch/backport version 1.0.1 is published *after* 2.0.0
+    // (e.g. 10 days ago).
+    // 1.0.1 is older than 7 days (min-age), and 2.0.0 was published
+    // *before* 1.0.1, so stability shouldn't block 1.0.1.
     server.serve(
       'foo',
       '1.0.1',
-      published: DateTime.now().subtract(const Duration(days: 2)), // Released 8 days after 1.0.0!
+      published: DateTime.now().subtract(const Duration(days: 10)),
     );
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dependencies': {'foo': '1.0.0'},
+        'dependencies': {'foo': '1.0.1'},
         'policy': {
-          'cooldown': {
-            'min-age': '7d',
-            'stability': true,
-          },
+          'cooldown': {'min-age': '7d', 'stability': true},
         },
       }),
     ]).create();
 
-    await expectResolves(
-      result: {'foo': '1.0.0'},
-    );
+    await expectResolves(result: {'foo': '1.0.1'});
+  });
+
+  test('cooldown policy does not apply to non-hosted packages '
+      '(e.g. path dependencies)', () async {
+    await d.dir('foo', [
+      d.pubspec({'name': 'foo', 'version': '1.0.0'}),
+    ]).create();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {
+          'foo': {'path': '../foo'},
+        },
+        'policy': {
+          'cooldown': {'min-age': '7d'},
+        },
+      }),
+    ]).create();
+
+    await expectResolves();
   });
 }
 

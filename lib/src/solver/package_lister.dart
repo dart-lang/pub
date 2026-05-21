@@ -14,9 +14,9 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../sdk.dart';
+import '../source.dart';
 import '../source/hosted.dart';
 import '../source/root.dart';
-import '../source.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 import 'incompatibility.dart';
@@ -216,15 +216,21 @@ class PackageLister {
 
     final policyWrapper = _policy;
     final policy = policyWrapper?.cooldown;
-    
+
     final allVersions = <(Version, DateTime?)>[];
     final statusMap = <Version, PackageStatus>{};
-    if (policy != null && !id.isRoot) {
+    if (policy != null &&
+        !id.isRoot &&
+        id.description is ResolvedHostedDescription) {
       final versions = await _versions;
       for (final v in versions) {
         final desc = v.description;
         if (desc is ResolvedHostedDescription) {
-          final status = await v.toRef().source.status(v.toRef(), v.version, _systemCache);
+          final status = await v.toRef().source.status(
+            v.toRef(),
+            v.version,
+            _systemCache,
+          );
           allVersions.add((v.version, status.published));
           statusMap[v.version] = status;
         }
@@ -235,7 +241,12 @@ class PackageLister {
         final desc = v.description;
         if (desc is ResolvedHostedDescription) {
           final status = statusMap[v.version]!;
-          if (!policy.isBlocked(id.name, v.version, status.published, allVersions)) {
+          if (!policy.isBlocked(
+            id.name,
+            v.version,
+            status.published,
+            allVersions,
+          )) {
             allForbidden = false;
             break;
           }
@@ -248,7 +259,9 @@ class PackageLister {
             PackageVersionForbiddenCause(
               reason:
                   'all versions of ${id.name} are too new for cooldown policy\n'
-                  'Cooldown policy defined at ${policyWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml'}:${policyWrapper.span.start.line + 1}',
+                  'Cooldown policy defined at '
+                  '${policyWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml'}:'
+                  '${policyWrapper.span.start.line + 1}',
             ),
           ),
         ];
@@ -286,7 +299,11 @@ class PackageLister {
     if (description is ResolvedHostedDescription) {
       final policy = _policy?.cooldown;
       if (policy != null) {
-        final status = await id.toRef().source.status(id.toRef(), id.version, _systemCache);
+        final status = await id.toRef().source.status(
+          id.toRef(),
+          id.version,
+          _systemCache,
+        );
         final published = status.published;
         if (policy.isBlocked(id.name, id.version, published, allVersions)) {
           _knownInvalidVersions = _knownInvalidVersions.union(id.version);
@@ -294,19 +311,28 @@ class PackageLister {
           if (published != null) {
             final age = DateTime.now().difference(published);
             final blockedByAge = age < policy.minAge;
-            reasonPrefix = blockedByAge
-                ? 'version ${id.version} of ${id.name} is too new (released less than ${policy.minAge.inDays} days ago)\n'
-                : 'version ${id.version} of ${id.name} is unstable (newer release within ${policy.minAge.inDays} days)\n';
+            reasonPrefix =
+                blockedByAge
+                    ? 'version ${id.version} of ${id.name} is too new '
+                        '(released less than '
+                        '${policy.minAge.inDays} days ago)\n'
+                    : 'version ${id.version} of ${id.name} is unstable '
+                        '(newer release within '
+                        '${policy.minAge.inDays} days)\n';
           } else {
-            reasonPrefix = 'version ${id.version} of ${id.name} lacks publication date required by policy\n';
+            reasonPrefix =
+                'version ${id.version} of ${id.name} lacks publication date '
+                'required by policy\n';
           }
-          final reason = '$reasonPrefix'
-              'Cooldown policy defined at ${policyWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml'}:${policyWrapper.span.start.line + 1}';
+          final reason =
+              '$reasonPrefix'
+              'Cooldown policy defined at '
+              '${policyWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml'}:'
+              '${policyWrapper.span.start.line + 1}';
           return [
-            Incompatibility(
-              [Term(id.toRange(), true)],
-              PackageVersionForbiddenCause(reason: reason),
-            ),
+            Incompatibility([
+              Term(id.toRange(), true),
+            ], PackageVersionForbiddenCause(reason: reason)),
           ];
         }
       }
