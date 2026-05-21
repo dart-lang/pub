@@ -420,7 +420,7 @@ environment:
 
   Pubspec(
     String name, {
-    Version? version,
+    super.version,
     Iterable<PackageRange>? dependencies,
     Iterable<PackageRange>? devDependencies,
     Iterable<PackageRange>? dependencyOverrides,
@@ -455,11 +455,7 @@ environment:
        // This is a dummy value. Dependencies should already be resolved, so we
        // never need to do relative resolutions.
        _containingDescription = ResolvedRootDescription.fromDir('.'),
-       super(
-         fields == null ? YamlMap() : YamlMap.wrap(fields),
-         name: name,
-         version: version,
-       );
+       super(fields == null ? YamlMap() : YamlMap.wrap(fields), name: name);
 
   /// Returns a Pubspec object for an already-parsed map representing its
   /// contents.

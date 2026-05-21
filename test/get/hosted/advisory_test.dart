@@ -434,6 +434,32 @@ Future<void> main() async {
     await ctx.run(['get']);
   });
 
+  testWithGolden('malformed advisories response', (ctx) async {
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {'foo': '^1.0.0'},
+      }),
+    ]).create();
+
+    server.addAdvisory(
+      advisoryId: '123',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
+    );
+
+    server.handle(
+      '/api/packages/foo/advisories',
+      (request) => Response.ok('{"advisories": "not a list"}'),
+    );
+
+    await ctx.run(['get']);
+  });
+
   test('do not fetch advisories when.`--offline`', () async {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
