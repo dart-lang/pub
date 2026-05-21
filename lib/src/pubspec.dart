@@ -140,6 +140,15 @@ environment:
     final policyNode = fields.nodes['policy'];
     if (policyNode == null || policyNode.value == null) return null;
 
+    if (!languageVersion.supportsCooldown) {
+      _error(
+        'The "policy" field requires at least language version '
+        '${LanguageVersion.firstVersionWithCooldown}, '
+        'current is $languageVersion.',
+        policyNode.span,
+      );
+    }
+
     if (policyNode is! YamlMap) {
       _error('"policy" must be a map', policyNode.span);
     }

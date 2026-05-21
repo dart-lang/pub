@@ -17,6 +17,27 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 void main() {
+  test('policy field requires language version 3.14', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp_gating',
+        'environment': {'sdk': '^3.13.0'},
+        'policy': {
+          'cooldown': {'min-age': '7d'},
+        },
+      }),
+    ]).create();
+
+    await runPub(
+      args: ['get'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+      error: contains(
+        'The "policy" field requires at least language version 3.14',
+      ),
+      exitCode: 65,
+    );
+  });
+
   test('cooldown policy prevents resolving new versions', () async {
     final server = await servePackages();
     server.serve(
@@ -33,6 +54,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
         'policy': {
           'cooldown': {'min-age': '7d'},
@@ -59,6 +81,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
         'policy': {
           'cooldown': {
@@ -84,6 +107,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
         'policy': {
           'cooldown': {'min-age': '7d'},
@@ -106,6 +130,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
         'policy': {
           'cooldown': {
@@ -130,6 +155,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
         'policy': {
           'cooldown': {'min-age': '7d'},
@@ -173,6 +199,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any', 'bar': 'any'},
         'policy': {
           'cooldown': {'min-age': '7d'},
@@ -205,6 +232,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
         'policy': {
           'cooldown': {'min-age': '7d'},
@@ -217,6 +245,7 @@ void main() {
 
     await runPub(
       args: ['outdated'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
       output: allOf([
         contains('foo'),
         contains('1.0.0'), // Current
@@ -244,6 +273,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': '^1.0.0'},
         'policy': {
           'cooldown': {'min-age': '7d'},
@@ -253,6 +283,7 @@ void main() {
 
     await runPub(
       args: ['get'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
       output: allOf([
         contains('foo 1.0.0'),
         contains('(1.0.1 available (blocked by cooldown))'),
@@ -279,6 +310,7 @@ void main() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
+          'environment': {'sdk': '^3.14.0'},
           'dependencies': {'foo': '1.0.0'},
           'policy': {
             'cooldown': {'min-age': '7d', 'stability': true},
@@ -313,6 +345,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': '1.0.0'},
         'policy': {
           'cooldown': {'min-age': '7d', 'stability': true},
@@ -350,6 +383,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': '1.0.1'},
         'policy': {
           'cooldown': {'min-age': '7d', 'stability': true},
@@ -369,6 +403,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
         'dependencies': {
           'foo': {'path': '../foo'},
         },
@@ -411,7 +446,7 @@ Future expectResolves({
 }) async {
   await runPub(
     args: [downgrade ? 'downgrade' : 'get'],
-    environment: environment,
+    environment: {'_PUB_TEST_SDK_VERSION': '3.14.0', ...?environment},
     output:
         output ??
         (error == null
