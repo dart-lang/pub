@@ -992,6 +992,19 @@ class CooldownPolicy {
         if (v > version) {
           if (pubDate != null) {
             final diff = pubDate.difference(published);
+            // We only care if the newer version was published *after* this
+            // version (i.e., diff >= Duration.zero).
+            //
+            // If the newer version was published *before* this version, diff is
+            // negative (which is always less than minAge). This can happen if
+            // we publish a backported patch version for an older release line
+            // long after a newer major version was already released.
+            //
+            // For example, if 2.0.0 was published 30 days ago, and we publish
+            // a backport 1.0.1 today (0 days ago), then:
+            //   pubDate(2.0.0) - published(1.0.1) = -30 days.
+            // Since -30 days < 7 days (minAge), 1.0.1 would be incorrectly
+            // blocked by stability without the diff >= 0 check.
             if (diff >= Duration.zero && diff < minAge) {
               return true; // Blocked by stability!
             }
