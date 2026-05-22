@@ -435,6 +435,7 @@ See $workspacesDocUrl for more information.''',
                 .sdkConstraints[sdk.identifier]
                 ?.effectiveConstraint,
       ),
+      dependencies: [lockFilePath],
     );
     writeTextFileIfDifferent(packageGraphPath, await _packageGraphFile(cache));
 
@@ -455,6 +456,13 @@ See $workspacesDocUrl for more information.''',
     }
     if (lockFile.packages.values.any((id) => id.source is CachedSource)) {
       cache.markRootActive(packageConfigPath);
+    }
+  }
+
+  Iterable<String> _resolutionFileDependencies() sync* {
+    for (final package in workspaceRoot.transitiveWorkspace) {
+      yield package.pubspecPath;
+      yield package.pubspecOverridesPath;
     }
   }
 
@@ -649,18 +657,23 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 `--enforce-lockfile`.''');
     }
 
-    if (!(dryRun || enforceLockfile)) {
-      newLockFile.writeToFile(lockFilePath, cache);
-    }
-
     _lockFile = newLockFile;
+    late final packageGraph = PackageGraph.fromSolveResult(this, result);
+
+    if (!(dryRun || enforceLockfile)) {
+      newLockFile.writeToFile(
+        lockFilePath,
+        cache,
+        dependencies: _resolutionFileDependencies(),
+      );
+    }
 
     if (!dryRun) {
       _removeStrayLockAndConfigFiles();
 
       /// Build a package graph from the version solver results so we don't
       /// have to reload and reparse all the pubspecs.
-      _packageGraph = Future.value(PackageGraph.fromSolveResult(this, result));
+      _packageGraph = Future.value(packageGraph);
 
       await writePackageConfigFiles();
 

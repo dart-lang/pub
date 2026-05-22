@@ -379,4 +379,69 @@ void main() {
     expect(lockFile.lastModifiedSync(), lockfileTimestamp);
     expect(workspaceRefFile.lastModifiedSync(), workspaceRefTimestamp);
   });
+
+  test(
+    'pub get touches unchanged resolution files after pubspec edits',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+
+      await d.dir(appPath, [
+        d.appPubspec(
+          dependencies: {'foo': 'any'},
+          extras: {
+            'workspace': ['foo'],
+            'environment': {'sdk': '^3.5.0'},
+          },
+        ),
+        d.dir('foo', [d.libPubspec('foo', '1.0.0', resolutionWorkspace: true)]),
+      ]).create();
+
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+      final rootPubspec = File(p.join(sandbox, appPath, 'pubspec.yaml'));
+      final workspacePubspec = File(
+        p.join(sandbox, appPath, 'foo', 'pubspec.yaml'),
+      );
+      final lockFile = File(p.join(sandbox, appPath, 'pubspec.lock'));
+      final packageConfigFile = File(
+        p.join(sandbox, appPath, '.dart_tool', 'package_config.json'),
+      );
+      final lockfileContents = lockFile.readAsStringSync();
+      final packageConfig = jsonDecode(packageConfigFile.readAsStringSync());
+
+      // timestamp resolution is rather poor especially on windows.
+      await Future<void>.delayed(const Duration(seconds: 1));
+      rootPubspec.writeAsStringSync(
+        '${rootPubspec.readAsStringSync()}\n# hi\n',
+      );
+      workspacePubspec.writeAsStringSync(
+        '${workspacePubspec.readAsStringSync()}\n# hi\n',
+      );
+
+      expect(
+        rootPubspec.lastModifiedSync().isAfter(lockFile.lastModifiedSync()),
+        isTrue,
+      );
+      expect(
+        workspacePubspec.lastModifiedSync().isAfter(
+          lockFile.lastModifiedSync(),
+        ),
+        isTrue,
+      );
+
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+
+      expect(lockFile.readAsStringSync(), lockfileContents);
+      expect(jsonDecode(packageConfigFile.readAsStringSync()), packageConfig);
+
+      final lockFileModified = lockFile.lastModifiedSync();
+      final packageConfigModified = packageConfigFile.lastModifiedSync();
+      expect(rootPubspec.lastModifiedSync().isAfter(lockFileModified), isFalse);
+      expect(
+        workspacePubspec.lastModifiedSync().isAfter(lockFileModified),
+        isFalse,
+      );
+      expect(lockFileModified.isAfter(packageConfigModified), isFalse);
+    },
+  );
 }
