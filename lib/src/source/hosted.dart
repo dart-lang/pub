@@ -582,23 +582,21 @@ class HostedSource extends CachedSource {
     final Map<String, dynamic> body;
     final List<Advisory>? result;
     try {
-      bodyText = await cache.hostedCache.advisoriesDownloadPool.withResource(
-        () async {
-          return await withAuthenticatedClient(cache, Uri.parse(hostedUrl), (
-            client,
-          ) async {
-            return await retryForHttp(
-              'fetching advisories for "$packageName" from "$url"',
-              () async {
-                final request = http.Request('GET', url);
-                request.attachPubApiHeaders();
-                final response = await client.fetch(request);
-                return response.body;
-              },
-            );
-          });
-        },
-      );
+      bodyText = await cache.hostedCache.pool.withResource(() async {
+        return await withAuthenticatedClient(cache, Uri.parse(hostedUrl), (
+          client,
+        ) async {
+          return await retryForHttp(
+            'fetching advisories for "$packageName" from "$url"',
+            () async {
+              final request = http.Request('GET', url);
+              request.attachPubApiHeaders();
+              final response = await client.fetch(request);
+              return response.body;
+            },
+          );
+        });
+      });
       final decoded = jsonDecode(bodyText);
       if (decoded is! Map<String, dynamic>) {
         throw const FormatException('security advisories must be a mapping');
@@ -2177,6 +2175,9 @@ int? _parseCrc32c(Map<String, String> headers, String fileName) {
 
 /// State that is cached for the HostedSource.
 final class HostedSourceCache {
+  /// A pool to rate-limit concurrent network requests to pub.dev.
+  final Pool pool;
+
   /// The scheduler used to fetch version information for packages.
   ///
   /// This allows rate-limiting requests and speculative pre-fetching of
@@ -2196,12 +2197,11 @@ final class HostedSourceCache {
   /// An in-memory cache to store the futures of fetched security advisories.
   final Map<PackageId, Future<List<Advisory>?>> _advisoriesCache = {};
 
-  /// A pool to rate-limit concurrent security advisory network downloads.
-  final Pool advisoriesDownloadPool = Pool(8);
+  HostedSourceCache(HostedSource hosted) : this._(hosted, Pool(10));
 
-  HostedSourceCache(HostedSource hosted)
+  HostedSourceCache._(HostedSource hosted, this.pool)
     : scheduler = RateLimitedScheduler(
         (HostedRefAndCache refAndCache) => hosted.fetchVersions(refAndCache),
-        maxConcurrentOperations: 10,
+        pool: pool,
       );
 }
