@@ -489,4 +489,45 @@ Future<void> main() async {
     File(p.join(d.sandbox, appPath, 'pubspec.lock')).deleteSync();
     await pubGet(args: ['--offline']);
   });
+
+  test('subsequent pub get reads advisories and status from cache on a new '
+      'resolution without network calls for advisories', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {'foo': '^1.0.0'},
+      }),
+    ]).create();
+
+    server.addAdvisory(
+      advisoryId: '123',
+      displayUrl: 'https://github.com/advisories/123',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
+    );
+
+    // First fetch: populates the cache
+    await pubGet(output: contains('affected by advisory'));
+
+    // Mock both endpoints to return 500 Internal Server Error.
+    // If the client tries to hit the network for status or advisories,
+    // it will fail and not report the advisory.
+    server.handle(
+      '/api/packages/foo/advisories',
+      (request) => Response.internalServerError(),
+    );
+    server.handle(
+      '/api/packages/foo',
+      (request) => Response.internalServerError(),
+    );
+
+    // Second fetch: the resolution is up to date, and therefore reused.
+    // It should read advisories from disk cache and print
+    // the advisory warning, making zero network requests.
+    await pubGet(output: contains('affected by advisory'));
+  });
 }
