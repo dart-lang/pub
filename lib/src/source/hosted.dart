@@ -582,19 +582,23 @@ class HostedSource extends CachedSource {
     final Map<String, dynamic> body;
     final List<Advisory>? result;
     try {
-      bodyText = await withAuthenticatedClient(cache, Uri.parse(hostedUrl), (
-        client,
-      ) async {
-        return await retryForHttp(
-          'fetching advisories for "$packageName" from "$url"',
-          () async {
-            final request = http.Request('GET', url);
-            request.attachPubApiHeaders();
-            final response = await client.fetch(request);
-            return response.body;
-          },
-        );
-      });
+      bodyText = await cache.hostedCache.advisoriesDownloadPool.withResource(
+        () async {
+          return await withAuthenticatedClient(cache, Uri.parse(hostedUrl), (
+            client,
+          ) async {
+            return await retryForHttp(
+              'fetching advisories for "$packageName" from "$url"',
+              () async {
+                final request = http.Request('GET', url);
+                request.attachPubApiHeaders();
+                final response = await client.fetch(request);
+                return response.body;
+              },
+            );
+          });
+        },
+      );
       final decoded = jsonDecode(bodyText);
       if (decoded is! Map<String, dynamic>) {
         throw const FormatException('security advisories must be a mapping');
@@ -2191,6 +2195,9 @@ final class HostedSourceCache {
 
   /// An in-memory cache to store the futures of fetched security advisories.
   final Map<PackageId, Future<List<Advisory>?>> _advisoriesCache = {};
+
+  /// A pool to rate-limit concurrent security advisory network downloads.
+  final Pool advisoriesDownloadPool = Pool(8);
 
   HostedSourceCache(HostedSource hosted)
     : scheduler = RateLimitedScheduler(
