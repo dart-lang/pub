@@ -105,7 +105,7 @@ Future<String> run(
       command!,
       args,
       workingDir: workingDir,
-      environment: {...?environment, 'LANG': 'en_GB'},
+      environment: {...?environment, ..._gitEnvironment},
       stdoutEncoding: stdoutEncoding,
       stderrEncoding: stderrEncoding,
     );
@@ -137,7 +137,7 @@ String runSync(
     command!,
     args,
     workingDir: workingDir,
-    environment: environment,
+    environment: {...?environment, ..._gitEnvironment},
     stdoutEncoding: stdoutEncoding,
     stderrEncoding: stderrEncoding,
   );
@@ -166,7 +166,7 @@ Uint8List runSyncBytes(
     command!,
     args,
     workingDir: workingDir,
-    environment: environment,
+    environment: {...?environment, ..._gitEnvironment},
     stderrEncoding: stderrEncoding,
   );
   if (!result.success) {
@@ -204,7 +204,9 @@ final _minSupportedGitVersion = Version(2, 14, 0);
 bool _tryGitCommand(String command) {
   // If "git --version" prints something familiar, git is working.
   try {
-    final result = runProcessSync(command, ['--version']);
+    final result = runProcessSync(command, [
+      '--version',
+    ], environment: _gitEnvironment);
     final output = result.stdout;
 
     // Some users may have configured commands such as autorun, which may
@@ -236,3 +238,12 @@ for $topLevelProgram it is recommended to use git version 2.14 or newer.
     return false;
   }
 }
+
+/// The environment variables to force Git to use a UTF-8 locale and English
+/// messages, to prevent parsing failures.
+Map<String, String> get _gitEnvironment => {
+  'LANG': Platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
+  'LC_ALL': Platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
+  'LC_MESSAGES': Platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
+  'LANGUAGE': Platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
+};

@@ -92,4 +92,42 @@ void main() {
       output: contains('2.0.0'),
     );
   });
+
+  for (final (name, env) in [
+    ('LC_ALL', {'LC_ALL': 'ru_RU.cp1251'}),
+    ('LC_MESSAGES', {'LC_MESSAGES': 'ru_RU.cp1251'}),
+    ('LANG', {'LANG': 'ru_RU.cp1251'}),
+    ('LANGUAGE', {'LANGUAGE': 'ru'}),
+  ]) {
+    test(
+      'handles non-UTF-8 locale ($name) and still gives a nice error message when git ref is bad',
+      () async {
+        ensureGit();
+
+        await d.git('foo.git', [
+          d.libDir('foo'),
+          d.libPubspec('foo', '1.0.0'),
+        ]).create();
+
+        await d
+            .appDir(
+              dependencies: {
+                'foo': {
+                  'git': {'url': '../foo.git', 'ref': '^BAD_REF'},
+                },
+              },
+            )
+            .create();
+
+        await pubGet(
+          environment: env,
+          error: contains(
+            "Because myapp depends on foo from git which doesn't exist "
+            "(Could not find git ref '^BAD_REF' (fatal: ",
+          ),
+          exitCode: UNAVAILABLE,
+        );
+      },
+    );
+  }
 }
