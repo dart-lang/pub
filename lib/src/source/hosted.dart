@@ -592,18 +592,20 @@ class HostedSource extends CachedSource {
     final Map<String, dynamic> body;
     final List<Advisory>? result;
     try {
-      bodyText = await withAuthenticatedClient(cache, Uri.parse(hostedUrl), (
-        client,
-      ) async {
-        return await retryForHttp(
-          'fetching advisories for "$packageName" from "$url"',
-          () async {
-            final request = http.Request('GET', url);
-            request.attachPubApiHeaders();
-            final response = await client.fetch(request);
-            return response.body;
-          },
-        );
+      bodyText = await cache.hostedCache.pool.withResource(() async {
+        return await withAuthenticatedClient(cache, Uri.parse(hostedUrl), (
+          client,
+        ) async {
+          return await retryForHttp(
+            'fetching advisories for "$packageName" from "$url"',
+            () async {
+              final request = http.Request('GET', url);
+              request.attachPubApiHeaders();
+              final response = await client.fetch(request);
+              return response.body;
+            },
+          );
+        });
       });
       final decoded = jsonDecode(bodyText);
       if (decoded is! Map<String, dynamic>) {
@@ -784,7 +786,12 @@ class HostedSource extends CachedSource {
       final stat = io.File(advisoriesCachePath).statSync();
 
       if (stat.type == io.FileSystemEntityType.file) {
-        if (advisoriesUpdated.isAfter(stat.modified)) {
+        // To tolerate timezone differences and clock skew between the local
+        // machine and the pub.dev server, we add a 24-hour buffer to
+        // stat.modified.
+        if (advisoriesUpdated.isAfter(
+          stat.modified.add(const Duration(hours: 24)),
+        )) {
           tryDeleteEntry(advisoriesCachePath);
           return null;
         }
@@ -802,14 +809,7 @@ class HostedSource extends CachedSource {
           final parsedCacheAdvisoriesUpdated = DateTime.parse(
             cachedAdvisoriesUpdated,
           );
-          final advisoriesUpdated =
-              (await status(id.toRef(), id.version, cache)).advisoriesUpdated;
-
-          if (
-          // We could not obtain the timestamp of latest advisory update.
-          advisoriesUpdated == null ||
-              // The cached entry is too old.
-              advisoriesUpdated.isAfter(parsedCacheAdvisoriesUpdated)) {
+          if (advisoriesUpdated.isAfter(parsedCacheAdvisoriesUpdated)) {
             tryDeleteEntry(advisoriesCachePath);
           } else {
             return _extractAdvisoryDetailsForPackage(doc, id.toRef().name);
@@ -829,15 +829,6 @@ class HostedSource extends CachedSource {
         await _fetchAdvisories(id.toRef(), cache);
   }
 
-  /// An in-memory cache to store the cached version listing loaded from
-  /// [_versionListingCachePath].
-  ///
-  /// Invariant: Entries in this cache are the parsed version of the exact same
-  /// information cached on disk. I.e. if the entry is present in this cache,
-  /// there will not be a newer version on disk.
-  final Map<PackageRef, (DateTime, List<HostedVersionInfo>)> _responseCache =
-      {};
-
   /// If a cached version listing response for [ref] exists on disk and is less
   /// than [maxAge] old it is parsed and returned.
   ///
@@ -850,7 +841,7 @@ class HostedSource extends CachedSource {
     SystemCache cache, {
     Duration? maxAge,
   }) async {
-    final cachedInfo = _responseCache[ref];
+    final cachedInfo = cache.hostedCache._responseCache[ref];
     if (cachedInfo != null) {
       final (cacheTimestamp, versionInfo) = cachedInfo;
       final cacheAge = DateTime.now().difference(cacheTimestamp);
@@ -889,7 +880,7 @@ class HostedSource extends CachedSource {
               Uri.file(cachePath),
               cache,
             );
-            _responseCache[ref] = (parsedTimestamp, res);
+            cache.hostedCache._responseCache[ref] = (parsedTimestamp, res);
             return res;
           }
         } on io.IOException {
@@ -941,7 +932,7 @@ class HostedSource extends CachedSource {
       );
       // Delete the entry in the in-memory cache to maintain the invariant that
       // cached information in memory is the same as that on the disk.
-      _responseCache.remove(ref);
+      cache.hostedCache._responseCache.remove(ref);
     } on io.IOException catch (e) {
       // Not being able to write this cache is not fatal. Just move on...
       log.fine('Failed writing cache file. $e');
@@ -1107,7 +1098,10 @@ class HostedSource extends CachedSource {
     SystemCache cache,
     Duration? maxAge,
   ) {
-    return _getAdvisories(id, cache, maxAge);
+    return cache.hostedCache._advisoriesCache.putIfAbsent(
+      id,
+      () => _getAdvisories(id, cache, maxAge),
+    );
   }
 
   @override
@@ -2193,6 +2187,9 @@ int? _parseCrc32c(Map<String, String> headers, String fileName) {
 
 /// State that is cached for the HostedSource.
 final class HostedSourceCache {
+  /// A pool to rate-limit concurrent network requests to pub.dev.
+  final Pool pool;
+
   /// The scheduler used to fetch version information for packages.
   ///
   /// This allows rate-limiting requests and speculative pre-fetching of
@@ -2200,9 +2197,23 @@ final class HostedSourceCache {
   final RateLimitedScheduler<HostedRefAndCache, List<HostedVersionInfo>>
   scheduler;
 
-  HostedSourceCache(HostedSource hosted)
+  /// An in-memory cache to store the cached version listing loaded from
+  /// [HostedSource._versionListingCachePath].
+  ///
+  /// Invariant: Entries in this cache are the parsed version of the exact same
+  /// information cached on disk. I.e. if the entry is present in this cache,
+  /// there will not be a newer version on disk.
+  final Map<PackageRef, (DateTime, List<HostedVersionInfo>)> _responseCache =
+      {};
+
+  /// An in-memory cache to store the futures of fetched security advisories.
+  final Map<PackageId, Future<List<Advisory>?>> _advisoriesCache = {};
+
+  HostedSourceCache(HostedSource hosted) : this._(hosted, Pool(10));
+
+  HostedSourceCache._(HostedSource hosted, this.pool)
     : scheduler = RateLimitedScheduler(
         (HostedRefAndCache refAndCache) => hosted.fetchVersions(refAndCache),
-        maxConcurrentOperations: 10,
+        pool: pool,
       );
 }

@@ -372,14 +372,22 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       ),
     };
     // Add all dependencies from the lockfile.
+    final idsToAnalyze = <PackageRef>[];
     for (final id in [
       ...currentPackages,
       ...upgradablePackages,
       ...resolvablePackages,
     ]) {
       if (!visited.add(id.name)) continue;
-      rows.add(await analyzeDependency(id.toRef()));
+      idsToAnalyze.add(id.toRef());
     }
+    await cache.prefetchAdvisoriesAndStatus([
+      ...currentPackages,
+      ...upgradablePackages,
+      ...resolvablePackages,
+    ]);
+
+    rows.addAll(await Future.wait(idsToAnalyze.map(analyzeDependency)));
 
     if (!includeDevDependencies) {
       rows.removeWhere((r) => r.kind == _DependencyKind.dev);

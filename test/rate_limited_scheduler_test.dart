@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:pool/pool.dart';
 import 'package:pub/src/rate_limited_scheduler.dart';
 import 'package:test/test.dart';
 
@@ -24,7 +25,7 @@ void main() {
       return i.toUpperCase();
     }
 
-    final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 2);
+    final scheduler = RateLimitedScheduler(f, pool: Pool(2));
     await scheduler.withPrescheduling((preschedule) async {
       preschedule('a');
       preschedule('b');
@@ -53,7 +54,7 @@ void main() {
         return i.toUpperCase();
       }
 
-      final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 1);
+      final scheduler = RateLimitedScheduler(f, pool: Pool(1));
 
       await scheduler.withPrescheduling((preschedule1) async {
         await scheduler.withPrescheduling((preschedule2) async {
@@ -88,7 +89,7 @@ void main() {
         return i.toUpperCase();
       }
 
-      final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 1);
+      final scheduler = RateLimitedScheduler(f, pool: Pool(1));
 
       Future? b;
       await scheduler.withPrescheduling((preschedule) async {
@@ -118,7 +119,7 @@ void main() {
       return i.toUpperCase();
     }
 
-    final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 2);
+    final scheduler = RateLimitedScheduler(f, pool: Pool(2));
 
     completers['a']!.complete();
     expect(await scheduler.schedule('a'), 'A');
@@ -136,7 +137,7 @@ void main() {
       return i.toUpperCase();
     }
 
-    final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 1);
+    final scheduler = RateLimitedScheduler(f, pool: Pool(1));
     await scheduler.withPrescheduling((preschedule) async {
       preschedule('a');
       preschedule('b');
@@ -161,7 +162,7 @@ void main() {
       return i.toUpperCase();
     }
 
-    final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 2);
+    final scheduler = RateLimitedScheduler(f, pool: Pool(2));
 
     await scheduler.withPrescheduling((preschedule) async {
       preschedule('a');
@@ -192,7 +193,7 @@ void main() {
       return Zone.current['zoneValue'] as String?;
     }
 
-    final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 2);
+    final scheduler = RateLimitedScheduler(f, pool: Pool(2));
     await scheduler.withPrescheduling((preschedule) async {
       runZoned(() {
         preschedule('a');

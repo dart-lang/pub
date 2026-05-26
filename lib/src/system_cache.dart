@@ -170,6 +170,30 @@ Consider setting the `PUB_CACHE` variable manually.
     return pubspec;
   }
 
+  /// Prefetches the status and advisories for [packages] in parallel.
+  Future<void> prefetchAdvisoriesAndStatus(Iterable<PackageId> packages) async {
+    final futures = <Future<Object?>>[];
+    for (final id in packages) {
+      futures.add(
+        id.source.status(
+          id.toRef(),
+          id.version,
+          this,
+          maxAge: const Duration(days: 3),
+        ),
+      );
+      final advisoriesFuture = id.source.getAdvisoriesForPackageVersion(
+        id,
+        this,
+        const Duration(days: 3),
+      );
+      if (advisoriesFuture != null) {
+        futures.add(advisoriesFuture);
+      }
+    }
+    await Future.wait(futures);
+  }
+
   /// Get the IDs of all versions that match [ref].
   ///
   /// Note that this does *not* require the packages to be downloaded locally,

@@ -216,6 +216,12 @@ $contentHashesDocumentationUrl
     final names = _newLockFile.packages.keys.toList();
     names.remove(_rootPubspec.name);
     names.sort();
+    if (_type != SolveType.downgrade) {
+      await _cache.prefetchAdvisoriesAndStatus(
+        names.map((name) => _newLockFile.packages[name]).nonNulls,
+      );
+    }
+
     var changes = 0;
     for (final name in names) {
       changes += await _reportPackage(name, output) ? 1 : 0;
