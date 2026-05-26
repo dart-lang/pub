@@ -100,7 +100,8 @@ void main() {
     ('LANGUAGE', {'LANGUAGE': 'ru'}),
   ]) {
     test(
-      'handles non-UTF-8 locale ($name) and still gives a nice error message when git ref is bad',
+      'handles non-UTF-8 locale ($name) and still gives a nice error message '
+      'when git ref is bad',
       () async {
         ensureGit();
 
