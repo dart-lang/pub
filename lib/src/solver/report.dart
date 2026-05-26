@@ -460,23 +460,28 @@ $contentHashesDocumentationUrl
         }
       }
 
-      final latestVersion =
-          newerStable ? maxAll(versions, Version.prioritize) : maxAll(versions);
-      final policy = _rootPubspec.policy?.cooldown;
+      Version? latestVersion;
       var isLatestBlocked = false;
-      final desc = newId.description;
-      if (policy != null && desc is ResolvedHostedDescription) {
-        final latestStatus = await newId.toRef().source.status(
-          newId.toRef(),
-          latestVersion,
-          _cache,
-        );
-        isLatestBlocked = policy.isBlocked(
-          newId.name,
-          latestVersion,
-          latestStatus.published,
-          [],
-        );
+      if (versions.isNotEmpty) {
+        latestVersion =
+            newerStable
+                ? maxAll(versions, Version.prioritize)
+                : maxAll(versions);
+        final policy = _rootPubspec.policy?.cooldown;
+        final desc = newId.description;
+        if (policy != null && desc is ResolvedHostedDescription) {
+          final latestStatus = await newId.toRef().source.status(
+            newId.toRef(),
+            latestVersion,
+            _cache,
+          );
+          isLatestBlocked = policy.isBlocked(
+            newId.name,
+            latestVersion,
+            latestStatus.published,
+            [],
+          );
+        }
       }
 
       final cooldownSuffix = isLatestBlocked ? ' (blocked by cooldown)' : '';
