@@ -18,6 +18,7 @@ import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
 import 'path.dart';
+import 'platform_info.dart';
 import 'utils.dart';
 
 /// An exception thrown because a git command failed.
@@ -242,8 +243,8 @@ for $topLevelProgram it is recommended to use git version 2.14 or newer.
 /// The environment variables to force Git to use a UTF-8 locale and English
 /// messages, to prevent parsing failures.
 Map<String, String> get _gitEnvironment => {
-  'LANG': Platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
-  'LC_ALL': Platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
-  'LC_MESSAGES': Platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
-  'LANGUAGE': Platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
+  'LANG': platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
+  'LC_ALL': platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
+  'LC_MESSAGES': platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
+  'LANGUAGE': platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
 };
