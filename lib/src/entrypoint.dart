@@ -851,8 +851,16 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     String relativeIfNeeded(String path) =>
         wasRelative ? p.relative(path) : path;
 
+    late final rootPackageDir = () {
+      for (final parent in parentDirs(dir)) {
+        if (tryStatFile(p.join(parent, 'pubspec.yaml')) != null) {
+          return parent;
+        }
+      }
+      return dir;
+    }();
     late final root = Package.load(
-      dir,
+      rootPackageDir,
       loadPubspec: Pubspec.loadRootWithSources(cache.sources),
     );
     late final Package workspaceRoot;
@@ -1191,7 +1199,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       return null;
     }
     workspaceRoot =
-        rootDir == dir
+        rootDir == rootPackageDir
             ? root
             : Package.load(
               rootDir,
