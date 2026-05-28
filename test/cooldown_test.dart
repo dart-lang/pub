@@ -38,6 +38,25 @@ void main() {
     );
   });
 
+  test('policy field does not allow unknown fields', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp_gating',
+        'environment': {'sdk': '^3.14.0'},
+        'policy': {'unknown_field': 'value'},
+      }),
+    ]).create();
+
+    await runPub(
+      args: ['get'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+      error: contains(
+        'Invalid policy field "unknown_field". Only "cooldown" is supported.',
+      ),
+      exitCode: 65,
+    );
+  });
+
   test('cooldown policy prevents resolving new versions', () async {
     final server = await servePackages();
     server.serve(

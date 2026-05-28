@@ -153,6 +153,19 @@ environment:
       _error('"policy" must be a map', policyNode.span);
     }
 
+    const knownPolicies = {'cooldown'};
+    for (final keyNode in policyNode.nodes.keys) {
+      if (keyNode is! YamlNode) continue;
+      final value = keyNode.value;
+      if (value is! String || !knownPolicies.contains(value)) {
+        _error(
+          'Invalid policy field "$value". '
+          'Only ${knownPolicies.map((e) => '"$e"').join(', ')} is supported.',
+          keyNode.span,
+        );
+      }
+    }
+
     final cooldownNode = policyNode.nodes['cooldown'];
     CooldownPolicy? cooldown;
     if (cooldownNode != null && cooldownNode.value != null) {
