@@ -851,6 +851,12 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     String relativeIfNeeded(String path) =>
         wasRelative ? p.relative(path) : path;
 
+    late final root = Package.load(
+      dir,
+      loadPubspec: Pubspec.loadRootWithSources(cache.sources),
+    );
+    late final Package workspaceRoot;
+
     /// Whether the lockfile is out of date with respect to the dependencies'
     /// pubspecs.
     ///
@@ -961,7 +967,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         // they are not supposed to work.
         final hasExtraMappings =
             !packagePathsMapping.keys.every((packageName) {
-              return packageName == root.name ||
+              return workspaceRoot.transitiveWorkspace.any(
+                    (p) => p.name == packageName,
+                  ) ||
                   lockFile.packages.containsKey(packageName);
             });
         if (hasExtraMappings) {
@@ -983,8 +991,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           }
 
           final source = lockFileId.source;
-          final lockFilePackagePath = root.path(
-            cache.getDirectory(lockFileId, relativeFrom: root.dir),
+          final lockFilePackagePath = workspaceRoot.path(
+            cache.getDirectory(lockFileId, relativeFrom: workspaceRoot.dir),
           );
 
           // Make sure that the packagePath agrees with the lock file about the
@@ -1017,7 +1025,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           );
           return false;
         }
-        packagePathsMapping[pkg.name] = root.path(
+        packagePathsMapping[pkg.name] = workspaceRoot.path(
           '.dart_tool',
           p.fromUri(pkg.rootUri),
         );
@@ -1168,6 +1176,13 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       );
       return null;
     }
+    workspaceRoot =
+        rootDir == dir
+            ? root
+            : Package.load(
+              rootDir,
+              loadPubspec: Pubspec.loadRootWithSources(cache.sources),
+            );
     final lockFilePath = p.normalize(p.join(rootDir, 'pubspec.lock'));
     final packageConfig = _loadPackageConfig(packageConfigPath);
     if (p.isWithin(cache.rootDir, packageConfigPath)) {
@@ -1288,10 +1303,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     }
     var touchedLockFile = false;
     late final lockFile = _loadLockFile(lockFilePath, cache);
-    late final root = Package.load(
-      dir,
-      loadPubspec: Pubspec.loadRootWithSources(cache.sources),
-    );
 
     if (!lockfileNewerThanPubspecs) {
       if (isLockFileUpToDate(lockFile, root, lockFilePath: lockFilePath)) {
