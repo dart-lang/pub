@@ -38,9 +38,6 @@ void main() {
       exitCode: 0,
     );
 
-    // Timestamp resolution is rather poor especially on windows.
-    await Future<Null>.delayed(const Duration(seconds: 1));
-
     await d.appDir(dependencies: {'foo': '2.0.0'}).create();
 
     await runPub(
@@ -88,9 +85,6 @@ void main() {
       output: contains('Resolution is up-to-date'),
       exitCode: 0,
     );
-
-    // Timestamp resolution is rather poor especially on windows.
-    await Future<Null>.delayed(const Duration(seconds: 1));
 
     await d.dir(appPath, [
       d.libPubspec(

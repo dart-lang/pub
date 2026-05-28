@@ -1229,6 +1229,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
     final lockFileModified = lockFileStat.modified;
     var lockfileNewerThanPubspecs = true;
+    var pubspecStrictlyNewer = false;
 
     // Check that all packages in packageConfig exist and their pubspecs have
     // not been updated since the lockfile was written.
@@ -1254,10 +1255,13 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         return null;
       }
 
-      if (pubspecStat.modified.isAfter(lockFileModified)) {
+      if (!lockFileModified.isAfter(pubspecStat.modified)) {
         log.fine('`$pubspecPath` is newer than `$lockFilePath`');
         lockfileNewerThanPubspecs = false;
-        break;
+        if (pubspecStat.modified.isAfter(lockFileModified)) {
+          pubspecStrictlyNewer = true;
+          break;
+        }
       }
       final pubspecOverridesPath = p.join(
         package.rootUri.path,
@@ -1268,9 +1272,13 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         // This will wrongly require you to reresolve if a
         // `pubspec_overrides.yaml` in a path-dependency is updated. That
         // seems acceptable.
-        if (pubspecOverridesStat.modified.isAfter(lockFileModified)) {
+        if (!lockFileModified.isAfter(pubspecOverridesStat.modified)) {
           log.fine('`$pubspecOverridesPath` is newer than `$lockFilePath`');
           lockfileNewerThanPubspecs = false;
+          if (pubspecOverridesStat.modified.isAfter(lockFileModified)) {
+            pubspecStrictlyNewer = true;
+            break;
+          }
         }
       }
     }
@@ -1283,15 +1291,18 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
     if (!lockfileNewerThanPubspecs) {
       if (isLockFileUpToDate(lockFile, root, lockFilePath: lockFilePath)) {
-        touch(lockFilePath);
-        touchedLockFile = true;
+        if (pubspecStrictlyNewer) {
+          touch(lockFilePath);
+          touchedLockFile = true;
+        }
       } else {
         return null;
       }
     }
 
     if (touchedLockFile ||
-        lockFileModified.isAfter(packageConfigStat.modified)) {
+        !lockfileNewerThanPubspecs ||
+        !packageConfigStat.modified.isAfter(lockFileModified)) {
       log.fine('`$lockFilePath` is newer than `$packageConfigPath`');
       if (isPackageConfigUpToDate(
         packageConfig,
@@ -1300,7 +1311,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         packageConfigPath: packageConfigPath,
         lockFilePath: lockFilePath,
       )) {
-        touch(packageConfigPath);
+        if (touchedLockFile ||
+            lockFileModified.isAfter(packageConfigStat.modified)) {
+          touch(packageConfigPath);
+        }
       } else {
         return null;
       }
