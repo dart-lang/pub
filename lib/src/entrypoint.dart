@@ -1047,6 +1047,20 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       // correct. This is important for path dependencies as these can mutate.
       for (final pkg in packageConfig.packages) {
         if (pkg.name == root.name) continue;
+        final workspacePkg = workspaceRoot.transitiveWorkspace.firstWhereOrNull(
+          (p) => p.name == pkg.name,
+        );
+        if (workspacePkg != null) {
+          if (pkg.languageVersion != workspacePkg.pubspec.languageVersion) {
+            log.fine(
+              '${workspacePkg.pubspecPath} has '
+              'changed since the $lockFilePath file was generated.',
+            );
+            return false;
+          }
+          continue;
+        }
+
         final id = lockFile.packages[pkg.name];
         if (id == null) {
           assert(
