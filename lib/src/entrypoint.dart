@@ -1229,6 +1229,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
     final lockFileModified = lockFileStat.modified;
     var lockfileNewerThanPubspecs = true;
+    // Whether any pubspec is strictly newer than the lockfile.
+    // We only touch the lockfile to make it newer if this is true, avoiding
+    // touching it on equal timestamps to prevent cascading invalidation of
+    // .dart_tool/package_config.json and downstream developer tools.
     var pubspecStrictlyNewer = false;
 
     // Check that all packages in packageConfig exist and their pubspecs have
@@ -1255,10 +1259,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         return null;
       }
 
-      if (!lockFileModified.isAfter(pubspecStat.modified)) {
+      if (!lockFileModified.isAfterSecond(pubspecStat.modified)) {
         log.fine('`$pubspecPath` is newer than `$lockFilePath`');
         lockfileNewerThanPubspecs = false;
-        if (pubspecStat.modified.isAfter(lockFileModified)) {
+        if (pubspecStat.modified.isAfterSecond(lockFileModified)) {
           pubspecStrictlyNewer = true;
           break;
         }
@@ -1272,10 +1276,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         // This will wrongly require you to reresolve if a
         // `pubspec_overrides.yaml` in a path-dependency is updated. That
         // seems acceptable.
-        if (!lockFileModified.isAfter(pubspecOverridesStat.modified)) {
+        if (!lockFileModified.isAfterSecond(pubspecOverridesStat.modified)) {
           log.fine('`$pubspecOverridesPath` is newer than `$lockFilePath`');
           lockfileNewerThanPubspecs = false;
-          if (pubspecOverridesStat.modified.isAfter(lockFileModified)) {
+          if (pubspecOverridesStat.modified.isAfterSecond(lockFileModified)) {
             pubspecStrictlyNewer = true;
             break;
           }
@@ -1302,7 +1306,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
     if (touchedLockFile ||
         !lockfileNewerThanPubspecs ||
-        !packageConfigStat.modified.isAfter(lockFileModified)) {
+        !packageConfigStat.modified.isAfterSecond(lockFileModified)) {
       log.fine('`$lockFilePath` is newer than `$packageConfigPath`');
       if (isPackageConfigUpToDate(
         packageConfig,
@@ -1312,7 +1316,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         lockFilePath: lockFilePath,
       )) {
         if (touchedLockFile ||
-            lockFileModified.isAfter(packageConfigStat.modified)) {
+            lockFileModified.isAfterSecond(packageConfigStat.modified)) {
           touch(packageConfigPath);
         }
       } else {
@@ -1642,3 +1646,17 @@ See https://dart.dev/go/sdk-constraint
 
 /// For each package in a workspace, a set of changes to dependencies.
 typedef ChangeSet = Map<Package, Map<PackageRange, PackageRange>>;
+
+extension on DateTime {
+  /// Whether this [DateTime] is strictly after [other] ignoring
+  /// sub-second precision.
+  ///
+  /// This is necessary because some filesystems or runtime APIs (like
+  /// manual `setLastModified` writes vs automatic OS writes) truncate
+  /// milliseconds to `.000`, which would otherwise incorrectly make
+  /// equal/newer files look older.
+  bool isAfterSecond(DateTime other) {
+    return millisecondsSinceEpoch ~/ 1000 >
+        other.millisecondsSinceEpoch ~/ 1000;
+  }
+}
