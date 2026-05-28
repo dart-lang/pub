@@ -432,6 +432,12 @@ class HostedSource extends CachedSource {
         if (publishedData is! String) {
           throw const FormatException('published must be a String');
         }
+        if (!RegExp(r'(?:Z|[+-]\d{2}(?::?\d{2})?)$').hasMatch(publishedData)) {
+          throw const FormatException(
+            'published must contain timezone information '
+            '(e.g. "2026-05-28T09:09:29Z")',
+          );
+        }
         publishedDate = DateTime.parse(publishedData);
       }
       DateTime? advisoriesDate;

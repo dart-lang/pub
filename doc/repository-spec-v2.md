@@ -233,7 +233,7 @@ server, this could work in many different ways.
   "latest": {
     "version": "<version>",
     "retracted": true || false, /* optional field, false if omitted */
-    "published": "<date-time>", /* optional field, ISO 8601 format, timestamp of when this version was published */
+    "published": "<date-time>", /* optional field, ISO 8601 format (must include timezone), timestamp of when this version was published */
     "archive_url": "https://.../archive.tar.gz",
     "archive_sha256": "95cbaad58e2cf32d1aa852f20af1fcda1820ead92a4b1447ea7ba1ba18195d27"
     "pubspec": {
@@ -244,7 +244,7 @@ server, this could work in many different ways.
     {
       "version": "<version>",
       "retracted": true || false, /* optional field, false if omitted */
-      "published": "<date-time>", /* optional field, ISO 8601 format, timestamp of when this version was published */
+      "published": "<date-time>", /* optional field, ISO 8601 format (must include timezone), timestamp of when this version was published */
       "archive_url": "https://.../archive.tar.gz",
       "archive_sha256": "95cbaad58e2cf32d1aa852f20af1fcda1820ead92a4b1447ea7ba1ba18195d27"
       "pubspec": {

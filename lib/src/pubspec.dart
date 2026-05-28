@@ -173,17 +173,17 @@ environment:
         _error('"cooldown" must be a map', cooldownNode.span);
       }
 
-      final minAgeNode = cooldownNode.nodes['min-age'];
+      final minAgeNode = cooldownNode.nodes['min_age'];
       Duration? minAge;
       if (minAgeNode != null) {
         final value = minAgeNode.value;
         if (value is! String) {
-          _error('"min-age" must be a string', minAgeNode.span);
+          _error('"min_age" must be a string', minAgeNode.span);
         }
         try {
           minAge = _parseDuration(value);
         } on FormatException catch (e) {
-          _error('Invalid "min-age": ${e.message}', minAgeNode.span);
+          _error('Invalid "min_age": ${e.message}', minAgeNode.span);
         }
       }
 
@@ -213,7 +213,7 @@ environment:
       }
 
       if (minAge == null) {
-        _error('"min-age" is required in cooldown policy', cooldownNode.span);
+        _error('"min_age" is required in cooldown policy', cooldownNode.span);
       }
 
       cooldown = CooldownPolicy(

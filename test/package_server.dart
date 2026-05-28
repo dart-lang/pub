@@ -109,7 +109,7 @@ class PackageServer {
                     '${server.url}/packages/$name/versions/${version.version}.tar.gz',
                 if (version.isRetracted) 'retracted': true,
                 if (version.published != null)
-                  'published': version.published!.toIso8601String(),
+                  'published': version.published!.toUtc().toIso8601String(),
                 if (version.sha256 != null || server.serveContentHashes)
                   'archive_sha256':
                       version.sha256 ??
