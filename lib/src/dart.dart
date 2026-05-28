@@ -114,6 +114,7 @@ Future<void> precompile({
   required String packageConfigPath,
   List<String> additionalSources = const [],
   String? nativeAssets,
+  bool enableAsserts = false
 }) async {
   const platformDill = 'lib/_internal/vm_platform_strong.dill';
   final sdkRoot = p.relative(p.dirname(p.dirname(platform.resolvedExecutable)));

@@ -187,6 +187,40 @@ environment:
         }
       }
 
+      final beforeNode = cooldownNode.nodes['before'];
+      DateTime? before;
+      if (beforeNode != null) {
+        final value = beforeNode.value;
+        if (value is! String) {
+          _error('"before" must be a string', beforeNode.span);
+        }
+        if (!RegExp(r'(?:Z|[+-]\d{2}(?::?\d{2})?)$').hasMatch(value)) {
+          _error(
+            '"before" must contain timezone information '
+            '(e.g. "2026-05-28T09:09:29Z")',
+            beforeNode.span,
+          );
+        }
+        try {
+          before = DateTime.parse(value);
+        } on FormatException catch (e) {
+          _error('Invalid "before": ${e.message}', beforeNode.span);
+        }
+      }
+
+      if (minAgeNode != null && beforeNode != null) {
+        _error(
+          'Only one of "min_age" and "before" can be specified.',
+          cooldownNode.span,
+        );
+      }
+      if (minAgeNode == null && beforeNode == null) {
+        _error(
+          'One of "min_age" or "before" must be specified.',
+          cooldownNode.span,
+        );
+      }
+
       final excludeNode = cooldownNode.nodes['exclude'];
       final exclude = <String>[];
       if (excludeNode != null) {
@@ -212,12 +246,16 @@ environment:
         stability = value;
       }
 
-      if (minAge == null) {
-        _error('"min_age" is required in cooldown policy', cooldownNode.span);
+      if (stabilityNode != null && beforeNode != null) {
+        _error(
+          '"stability" is only supported when "min_age" is specified.',
+          stabilityNode.span,
+        );
       }
 
       cooldown = CooldownPolicy(
         minAge: minAge,
+        before: before,
         exclude: exclude,
         stability: stability,
       );
@@ -988,14 +1026,20 @@ class Policy {
 }
 
 class CooldownPolicy {
-  final Duration minAge;
+  final Duration? minAge;
+  final DateTime? before;
   final List<String> exclude;
   final bool stability;
   CooldownPolicy({
-    required this.minAge,
+    this.minAge,
+    this.before,
     required this.exclude,
     this.stability = false,
-  });
+  }) : assert(
+         (minAge == null) != (before == null),
+         'Exactly one of minAge or before must be specified',
+       ),
+       assert(before == null || !stability, 'stability requires minAge');
 
   /// Returns `true` if the package version is blocked by this policy.
   bool isBlocked(
@@ -1006,34 +1050,47 @@ class CooldownPolicy {
   ) {
     if (exclude.contains(packageName)) return false;
     if (published == null) return true;
-    final age = DateTime.now().difference(published);
-    if (age < minAge) return true;
+
+    final minAge = this.minAge;
+    if (minAge != null) {
+      final age = DateTime.now().difference(published);
+      if (age < minAge) return true;
+    }
+
+    final before = this.before;
+    if (before != null) {
+      if (published.isAfter(before)) return true;
+    }
 
     if (stability) {
-      for (final (v, pubDate) in allVersions) {
-        if (v > version) {
-          if (pubDate != null) {
-            final diff = pubDate.difference(published);
-            // We only care if the newer version was published *after* this
-            // version (i.e., diff >= Duration.zero).
-            //
-            // If the newer version was published *before* this version, diff is
-            // negative (which is always less than minAge). This can happen if
-            // we publish a backported patch version for an older release line
-            // long after a newer major version was already released.
-            //
-            // For example, if 2.0.0 was published 30 days ago, and we publish
-            // a backport 1.0.1 today (0 days ago), then:
-            //   pubDate(2.0.0) - published(1.0.1) = -30 days.
-            // Since -30 days < 7 days (minAge), 1.0.1 would be incorrectly
-            // blocked by stability without the diff >= 0 check.
-            if (diff >= Duration.zero && diff < minAge) {
-              return true; // Blocked by stability!
+      final minAge = this.minAge;
+      if (minAge != null) {
+        for (final (v, pubDate) in allVersions) {
+          if (v > version) {
+            if (pubDate != null) {
+              final diff = pubDate.difference(published);
+              // We only care if the newer version was published *after* this
+              // version (i.e., diff >= Duration.zero).
+              //
+              // If the newer version was published *before* this version,
+              // diff is negative (which is always less than minAge). This can
+              // happen if we publish a backported patch version for an older
+              // release line long after a newer major version was already
+              // released.
+              //
+              // For example, if 2.0.0 was published 30 days ago, and we publish
+              // a backport 1.0.1 today (0 days ago), then:
+              //   pubDate(2.0.0) - published(1.0.1) = -30 days.
+              // Since -30 days < 7 days (minAge), 1.0.1 would be incorrectly
+              // blocked by stability without the diff >= 0 check.
+              if (diff >= Duration.zero && diff < minAge) {
+                return true; // Blocked by stability!
+              }
+            } else {
+              // If a newer version has no published date, it is considered
+              // "too new" and thus breaks stability of older versions.
+              return true;
             }
-          } else {
-            // If a newer version has no published date, it is considered
-            // "too new" and thus breaks stability of older versions.
-            return true;
           }
         }
       }

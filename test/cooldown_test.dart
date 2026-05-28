@@ -484,6 +484,137 @@ void main() {
 
     await expectResolves();
   });
+
+  test(
+    'before policy restricts newer versions but allows older ones',
+    () async {
+      final server = await servePackages();
+      server.serve(
+        'foo',
+        '1.0.0',
+        published: DateTime.parse('2026-05-27T12:00:00Z'),
+      );
+      server.serve(
+        'foo',
+        '1.0.1',
+        published: DateTime.parse('2026-05-28T13:00:00Z'),
+      );
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'environment': {'sdk': '^3.14.0'},
+          'dependencies': {'foo': 'any'},
+          'policy': {
+            'cooldown': {'before': '2026-05-28T12:00:00Z'},
+          },
+        }),
+      ]).create();
+
+      await expectResolves(result: {'foo': '1.0.0'});
+    },
+  );
+
+  test('fails when both min_age and before are specified', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
+        'policy': {
+          'cooldown': {'min_age': '7d', 'before': '2026-05-28T12:00:00Z'},
+        },
+      }),
+    ]).create();
+
+    await runPub(
+      args: ['get'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+      error: contains('Only one of "min_age" and "before" can be specified.'),
+      exitCode: 65,
+    );
+  });
+
+  test('fails when neither min_age nor before are specified', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
+        'policy': {
+          'cooldown': {
+            'exclude': ['foo'],
+          },
+        },
+      }),
+    ]).create();
+
+    await runPub(
+      args: ['get'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+      error: contains('One of "min_age" or "before" must be specified.'),
+      exitCode: 65,
+    );
+  });
+
+  test('fails when before lacks timezone', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
+        'policy': {
+          'cooldown': {'before': '2026-05-28T12:00:00'},
+        },
+      }),
+    ]).create();
+
+    await runPub(
+      args: ['get'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+      error: contains('"before" must contain timezone information'),
+      exitCode: 65,
+    );
+  });
+
+  test('fails when stability is used with before', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
+        'policy': {
+          'cooldown': {'before': '2026-05-28T12:00:00Z', 'stability': true},
+        },
+      }),
+    ]).create();
+
+    await runPub(
+      args: ['get'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+      error: contains(
+        '"stability" is only supported when "min_age" is specified.',
+      ),
+      exitCode: 65,
+    );
+  });
+
+  test('fails when stability: false is used with before', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
+        'policy': {
+          'cooldown': {'before': '2026-05-28T12:00:00Z', 'stability': false},
+        },
+      }),
+    ]).create();
+
+    await runPub(
+      args: ['get'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+      error: contains(
+        '"stability" is only supported when "min_age" is specified.',
+      ),
+      exitCode: 65,
+    );
+  });
 }
 
 /// Runs "pub get" and makes assertions about its results.

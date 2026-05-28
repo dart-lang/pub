@@ -309,16 +309,26 @@ class PackageLister {
           _knownInvalidVersions = _knownInvalidVersions.union(id.version);
           String reasonPrefix;
           if (published != null) {
-            final age = DateTime.now().difference(published);
-            final blockedByAge = age < policy.minAge;
-            reasonPrefix =
-                blockedByAge
-                    ? 'version ${id.version} of ${id.name} is too new '
-                        '(released less than '
-                        '${policy.minAge.inDays} days ago)\n'
-                    : 'version ${id.version} of ${id.name} is unstable '
-                        '(newer release within '
-                        '${policy.minAge.inDays} days)\n';
+            final minAge = policy.minAge;
+            final before = policy.before;
+            if (minAge != null) {
+              final age = DateTime.now().difference(published);
+              final blockedByAge = age < minAge;
+              reasonPrefix =
+                  blockedByAge
+                      ? 'version ${id.version} of ${id.name} is too new '
+                          '(released less than '
+                          '${minAge.inDays} days ago)\n'
+                      : 'version ${id.version} of ${id.name} is unstable '
+                          '(newer release within '
+                          '${minAge.inDays} days)\n';
+            } else if (before != null) {
+              reasonPrefix =
+                  'version ${id.version} of ${id.name} is too new '
+                  '(released after $before)\n';
+            } else {
+              reasonPrefix = 'version ${id.version} of ${id.name} is blocked\n';
+            }
           } else {
             reasonPrefix =
                 'version ${id.version} of ${id.name} lacks publication date '
