@@ -1122,7 +1122,7 @@ void touch(String path) {
     try {
       Process.runSync('touch', [path]);
       return;
-    } catch (_) {
+    } on Exception catch (_) {
       // Fallback if touch command is somehow not found.
     }
   }
