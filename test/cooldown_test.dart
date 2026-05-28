@@ -108,7 +108,7 @@ void main() {
         'policy': {
           'cooldown': {
             'min_age': '7d',
-            'exclude': ['foo'],
+            'exclude': {'foo': 'any'},
           },
         },
       }),
@@ -204,7 +204,7 @@ void main() {
         'policy': {
           'cooldown': {
             'min_age': '7d',
-            'exclude': ['foo'],
+            'exclude': {'foo': 'any'},
           },
         },
       }),
@@ -541,7 +541,7 @@ void main() {
         'environment': {'sdk': '^3.14.0'},
         'policy': {
           'cooldown': {
-            'exclude': ['foo'],
+            'exclude': {'foo': 'any'},
           },
         },
       }),
@@ -612,6 +612,87 @@ void main() {
       error: contains(
         '"stability" is only supported when "min_age" is specified.',
       ),
+      exitCode: 65,
+    );
+  });
+
+  test('exclude policy supports version-specific constraints', () async {
+    final server = await servePackages();
+    server.serve(
+      'foo',
+      '1.0.0',
+      published: DateTime.now().subtract(const Duration(days: 10)),
+    );
+    server.serve(
+      'foo',
+      '1.0.1',
+      published: DateTime.now().subtract(const Duration(days: 2)),
+    );
+    server.serve(
+      'foo',
+      '2.0.0',
+      published: DateTime.now().subtract(const Duration(days: 2)),
+    );
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
+        'dependencies': {'foo': 'any'},
+        'policy': {
+          'cooldown': {
+            'min_age': '7d',
+            'exclude': {'foo': '^1.0.0'},
+          },
+        },
+      }),
+    ]).create();
+
+    // 1.0.1 matches ^1.0.0 and is allowed despite cooldown.
+    // 2.0.0 is in cooldown and does not match ^1.0.0, so it is blocked.
+    await expectResolves(result: {'foo': '1.0.1'});
+  });
+
+  test('fails when exclude is not a map', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
+        'policy': {
+          'cooldown': {
+            'min_age': '7d',
+            'exclude': ['foo'], // List instead of Map
+          },
+        },
+      }),
+    ]).create();
+
+    await runPub(
+      args: ['get'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+      error: contains('"exclude" must be a map'),
+      exitCode: 65,
+    );
+  });
+
+  test('fails when exclude map has invalid package name', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
+        'policy': {
+          'cooldown': {
+            'min_age': '7d',
+            'exclude': {'not a valid name!': 'any'},
+          },
+        },
+      }),
+    ]).create();
+
+    await runPub(
+      args: ['get'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+      error: contains('Not a valid package name.'),
       exitCode: 65,
     );
   });

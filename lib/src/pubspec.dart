@@ -222,18 +222,30 @@ environment:
       }
 
       final excludeNode = cooldownNode.nodes['exclude'];
-      final exclude = <String>[];
+      final exclude = <String, VersionConstraint>{};
       if (excludeNode != null) {
-        if (excludeNode is! YamlList) {
-          _error('"exclude" must be a list', excludeNode.span);
+        if (excludeNode is! YamlMap) {
+          _error('"exclude" must be a map', excludeNode.span);
         }
-        for (final node in excludeNode.nodes) {
-          final val = node.value;
-          if (val is! String) {
-            _error('"exclude" members must be strings', node.span);
+        excludeNode.nodes.forEach((key, constraintNode) {
+          final keyNode = key as YamlNode;
+          final packageName = keyNode.value;
+          if (packageName is! String) {
+            _error(
+              'Exclude keys must be package names (strings).',
+              keyNode.span,
+            );
           }
-          exclude.add(val);
-        }
+          if (!packageNameRegExp.hasMatch(packageName)) {
+            _error('Not a valid package name.', keyNode.span);
+          }
+          final constraint = _parseVersionConstraint(
+            constraintNode as YamlNode?,
+            _packageName,
+            _FileType.pubspec,
+          );
+          exclude[packageName] = constraint;
+        });
       }
 
       final stabilityNode = cooldownNode.nodes['stability'];
@@ -1028,7 +1040,7 @@ class Policy {
 class CooldownPolicy {
   final Duration? minAge;
   final DateTime? before;
-  final List<String> exclude;
+  final Map<String, VersionConstraint> exclude;
   final bool stability;
   CooldownPolicy({
     this.minAge,
@@ -1048,7 +1060,8 @@ class CooldownPolicy {
     DateTime? published,
     List<(Version, DateTime?)> allVersions,
   ) {
-    if (exclude.contains(packageName)) return false;
+    final constraint = exclude[packageName];
+    if (constraint != null && constraint.allows(version)) return false;
     if (published == null) return true;
 
     final minAge = this.minAge;
