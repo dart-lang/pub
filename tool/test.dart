@@ -41,7 +41,6 @@ Future<void> main(List<String> args) async {
       outputPath: pubSnapshotFilename,
       name: 'bin/pub.dart',
       packageConfigPath: p.join('.dart_tool', 'package_config.json'),
-      
     );
     stderr.writeln(' (${stopwatch.elapsed.inMilliseconds}ms)');
     testProcess = await Process.start(
