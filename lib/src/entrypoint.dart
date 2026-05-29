@@ -1349,7 +1349,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     }
 
     if (!updateOutOfDateTimestamps &&
-        !packageConfigStat.modified.isAfterWithPrecision(lockFileModified)) {
+        packageConfigStat.modified.isBeforeWithPrecision(lockFileModified)) {
       log.fine(
         'Timestamps are out of order (updateOutOfDateTimestamps: false)',
       );
@@ -1358,7 +1358,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
     if (touchedLockFile ||
         !lockfileNewerThanPubspecs ||
-        !packageConfigStat.modified.isAfterWithPrecision(lockFileModified)) {
+        packageConfigStat.modified.isBeforeWithPrecision(lockFileModified)) {
       log.fine('`$lockFilePath` is newer than `$packageConfigPath`');
       if (isPackageConfigUpToDate(
         packageConfig,
@@ -1708,5 +1708,15 @@ extension on DateTime {
           other.millisecondsSinceEpoch ~/ 1000;
     }
     return isAfter(other);
+  }
+
+  /// Whether this [DateTime] is strictly before [other], ignoring
+  /// sub-second precision on Windows due to `setLastModifiedSync` truncation.
+  bool isBeforeWithPrecision(DateTime other) {
+    if (platform.isWindows) {
+      return millisecondsSinceEpoch ~/ 1000 <
+          other.millisecondsSinceEpoch ~/ 1000;
+    }
+    return isBefore(other);
   }
 }
