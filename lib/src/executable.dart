@@ -421,7 +421,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     final packageConfigStat = tryStatFile(packageConfigPath);
     if (snapshotStat == null ||
         packageConfigStat == null ||
-        !snapshotStat.modified.isAfter(packageConfigStat.modified) ||
+        packageConfigStat.modified.isAfter(snapshotStat.modified) ||
         (await entrypoint.packageGraph).isPackageMutable(package)) {
       try {
         await errorsOnlyUnlessTerminal(
