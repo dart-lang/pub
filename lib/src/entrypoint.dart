@@ -879,6 +879,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       /// Returns whether the locked version of [dep] matches the dependency.
       bool isDependencyUpToDate(PackageRange dep) {
         if (dep.name == root.name) return true;
+        // Workspace packages are local source packages and are never listed in
+        // the `packages` section of `pubspec.lock`. They are always considered
+        // up-to-date here.
         if (workspaceRoot.transitiveWorkspace.any((p) => p.name == dep.name)) {
           return true;
         }
