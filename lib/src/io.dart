@@ -14,7 +14,7 @@ import 'dart:typed_data';
 
 import 'package:async/async.dart';
 import 'package:cli_util/cli_util.dart'
-    show EnvironmentNotFoundException, applicationConfigHome;
+    show BaseDirectories, EnvironmentNotFoundException;
 import 'package:collection/collection.dart';
 import 'package:file/file.dart' as f;
 import 'package:file/local.dart' as f;
@@ -1372,7 +1372,7 @@ final String? dartConfigDir = () {
     return null;
   }
   try {
-    return applicationConfigHome('dart');
+    return BaseDirectories('dart').configHome;
   } on EnvironmentNotFoundException {
     return null;
   }
