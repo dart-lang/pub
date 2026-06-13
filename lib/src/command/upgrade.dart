@@ -116,36 +116,43 @@ class UpgradeCommand extends PubCommand {
 
   bool get _precompile => argResults.flag('precompile');
 
-  late final Future<List<String>> _packagesToUpgrade =
-      _computePackagesToUpgrade();
+  late final Future<List<String>> _rootPackagesToUpgrade =
+      _computePackagesToUpgrade(entrypoint);
 
   late final List<_UpgradeTarget> _upgradeTargets =
       argResults.rest.map(_parseUpgradeTarget).toList();
-
-  late final Future<List<ConstraintAndCause>?> _additionalConstraints =
-      _upgradeTargetConstraints();
-
-  late final Future<Map<String, PackageId>> _latestResolvablePackages =
-      _computeLatestResolvablePackages();
 
   /// List of package names to upgrade, if empty then upgrade all packages.
   ///
   /// This allows the user to specify list of names that they want the
   /// upgrade command to affect.
-  Future<List<String>> _computePackagesToUpgrade() async {
+  Future<List<String>> _packagesToUpgrade(Entrypoint e) {
+    if (identical(e, entrypoint)) return _rootPackagesToUpgrade;
+    return _computePackagesToUpgrade(e);
+  }
+
+  Future<List<String>> _computePackagesToUpgrade(Entrypoint e) async {
     if (argResults.flag('unlock-transitive')) {
-      final graph = await entrypoint.packageGraph;
-      return _upgradeTargets
-          .expand(
-            (target) => graph
-                .transitiveDependencies(
-                  target.name,
-                  followDevDependenciesFromPackage: true,
-                )
-                .map((p) => p.name),
-          )
-          .toSet()
-          .toList();
+      final graph = await e.packageGraph;
+      final packagesToUnlock =
+          _upgradeTargets
+              .expand(
+                (target) =>
+                    graph.packages.containsKey(target.name)
+                        ? graph
+                            .transitiveDependencies(
+                              target.name,
+                              followDevDependenciesFromPackage: true,
+                            )
+                            .map((p) => p.name)
+                        : const <String>[],
+              )
+              .toSet()
+              .toList();
+      if (_upgradeTargets.isNotEmpty && packagesToUnlock.isEmpty) {
+        return _upgradeTargets.map((target) => target.name).toList();
+      }
+      return packagesToUnlock;
     } else {
       return _upgradeTargets.map((target) => target.name).toList();
     }
@@ -180,6 +187,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
           'Cannot use `:latest` or `:resolvable` with `--tighten`.',
         );
       }
+      _validateUpgradeTargetEntrypoints();
     }
 
     if (_upgradeMajorVersions) {
@@ -209,7 +217,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
           }
         }
         final changes = entrypoint.tighten(
-          packagesToUpgrade: await _packagesToUpgrade,
+          packagesToUpgrade: await _rootPackagesToUpgrade,
         );
         entrypoint.applyChanges(changes, _dryRun);
       }
@@ -224,8 +232,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   Future<void> _runUpgrade(Entrypoint e, {bool onlySummary = false}) async {
     await e.acquireDependencies(
       SolveType.upgrade,
-      unlock: await _packagesToUpgrade,
-      additionalConstraints: await _additionalConstraints,
+      unlock: await _packagesToUpgrade(e),
+      additionalConstraints: await _upgradeTargetConstraints(e),
       dryRun: _dryRun,
       precompile: _precompile,
       summaryOnly: onlySummary,
@@ -234,17 +242,64 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     _showOfflineWarning();
   }
 
-  Future<List<ConstraintAndCause>?> _upgradeTargetConstraints() async {
+  List<Entrypoint> get _entrypointsToUpgrade => [
+    entrypoint,
+    if (argResults.flag('example')) ...entrypoint.examples,
+  ];
+
+  void _validateUpgradeTargetEntrypoints() {
+    for (final target in _upgradeTargets) {
+      if (target.kind == null) continue;
+      if (_entrypointsToUpgrade.any(
+        (e) => _packageRef(e, target.name) != null,
+      )) {
+        continue;
+      }
+      final entrypoints =
+          argResults.flag('example')
+              ? 'the root package or any examples'
+              : 'the root package';
+      dataError(
+        'Package `${target.name}` is not in the current resolution. '
+        'It was not found in $entrypoints.',
+      );
+    }
+  }
+
+  Future<List<ConstraintAndCause>?> _upgradeTargetConstraints(
+    Entrypoint e,
+  ) async {
     final constraintFutures = <Future<ConstraintAndCause>>[];
+    Future<Map<String, PackageId>>? latestResolvablePackages;
+
+    Future<PackageId> latestResolvable(String package) async {
+      if (_packageRef(e, package) == null) {
+        dataError('Package `$package` is not in the current resolution.');
+      }
+      final packages =
+          await (latestResolvablePackages ??= _computeLatestResolvablePackages(
+            e,
+          ));
+      final latestResolvable = packages[package];
+      if (latestResolvable == null) {
+        dataError(
+          'Package `$package` is not in the latest resolvable resolution.',
+        );
+      }
+      return latestResolvable;
+    }
+
     for (final target in _upgradeTargets) {
       final kind = target.kind;
       if (kind == null) continue;
+      final ref = _packageRef(e, target.name);
+      if (ref == null) continue;
 
       constraintFutures.add(
         (() async {
           final targetPackage = switch (kind) {
-            _UpgradeTargetKind.latest => await _latest(target.name),
-            _UpgradeTargetKind.resolvable => await _latestResolvable(
+            _UpgradeTargetKind.latest => await _latest(e, target.name, ref),
+            _UpgradeTargetKind.resolvable => await latestResolvable(
               target.name,
             ),
           };
@@ -260,12 +315,14 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     return constraints.isEmpty ? null : constraints;
   }
 
-  Future<Map<String, PackageId>> _computeLatestResolvablePackages() async {
+  Future<Map<String, PackageId>> _computeLatestResolvablePackages(
+    Entrypoint e,
+  ) async {
     final solveResult = await log.spinner('Resolving dependencies', () async {
       return await resolveVersions(
         SolveType.upgrade,
         cache,
-        entrypoint.workspaceRoot.transformWorkspace(
+        e.workspaceRoot.transformWorkspace(
           (package) => stripVersionBounds(package.pubspec),
         ),
       );
@@ -273,43 +330,33 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     return {for (final package in solveResult.packages) package.name: package};
   }
 
-  Future<PackageId> _latestResolvable(String package) async {
-    if (_packageRef(package) == null) {
-      dataError('Package `$package` is not in the current resolution.');
-    }
-    final latestResolvable = (await _latestResolvablePackages)[package];
-    if (latestResolvable == null) {
-      dataError(
-        'Package `$package` is not in the latest resolvable resolution.',
-      );
-    }
-    return latestResolvable;
-  }
-
-  Future<PackageId> _latest(String package) async {
-    final ref = _packageRef(package);
-    if (ref == null) {
-      dataError('Package `$package` is not in the current resolution.');
-    }
-    final current = entrypoint.lockFile.packages[package];
-    final latest = await cache.getLatest(ref, version: current?.version);
+  Future<PackageId> _latest(
+    Entrypoint e,
+    String package,
+    PackageRef ref,
+  ) async {
+    final current = e.lockFile.packages[package];
+    final currentVersionForRef =
+        current?.toRef() == ref ? current?.version : null;
+    final latest = await cache.getLatest(ref, version: currentVersionForRef);
     if (latest == null) {
       dataError('Could not find package `$package`.');
     }
     return latest;
   }
 
-  PackageRef? _packageRef(String package) {
-    final current = entrypoint.lockFile.packages[package];
-    if (current != null) return current.toRef();
+  PackageRef? _packageRef(Entrypoint e, String package) {
+    final override = e.workspaceRoot.allOverridesInWorkspace[package];
+    if (override != null) return override.toRef();
 
-    for (final workspacePackage
-        in entrypoint.workspaceRoot.transitiveWorkspace) {
+    for (final workspacePackage in e.workspaceRoot.transitiveWorkspace) {
       final dependency = workspacePackage.dependencies[package];
       if (dependency != null) return dependency.toRef();
       final devDependency = workspacePackage.devDependencies[package];
       if (devDependency != null) return devDependency.toRef();
     }
+    final current = e.lockFile.packages[package];
+    if (current != null) return current.toRef();
     return null;
   }
 
@@ -362,7 +409,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
             ...package.devDependencies.keys,
           ],
         }.toList();
-    final packagesToUpgrade = await _packagesToUpgrade;
+    final packagesToUpgrade = await _rootPackagesToUpgrade;
     final toUpgrade =
         packagesToUpgrade.isEmpty ? directDeps : packagesToUpgrade;
 
@@ -382,7 +429,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
 
   Future<void> _runUpgradeMajorVersions() async {
     final toUpgrade = await _directDependenciesToUpgrade();
-    final resolvedPackages = await _latestResolvablePackages;
+    final resolvedPackages = await _computeLatestResolvablePackages(entrypoint);
     final dependencyOverriddenDeps = <String>[];
     // Changes to be made to `pubspec.yaml` of each package.
     // Mapping from original to changed value.
@@ -433,7 +480,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         }),
       );
       changes = entrypoint.tighten(
-        packagesToUpgrade: await _packagesToUpgrade,
+        packagesToUpgrade: await _rootPackagesToUpgrade,
         existingChanges: changes,
         packageVersions: solveResult.packages,
       );
@@ -445,7 +492,9 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     // But without a specific package we want to get as many non-major updates
     // as possible (SolveType.upgrade).
     final solveType =
-        (await _packagesToUpgrade).isEmpty ? SolveType.upgrade : SolveType.get;
+        (await _rootPackagesToUpgrade).isEmpty
+            ? SolveType.upgrade
+            : SolveType.get;
 
     entrypoint.applyChanges(changes, _dryRun);
     await entrypoint
@@ -458,7 +507,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
           solveType,
           dryRun: _dryRun,
           precompile: !_dryRun && _precompile,
-          unlock: await _packagesToUpgrade,
+          unlock: await _rootPackagesToUpgrade,
         );
 
     // If any of the packages to upgrade are dependency overrides, then we

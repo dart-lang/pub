@@ -218,6 +218,225 @@ void main() {
     );
   });
 
+  test('`dependency:latest` is resolved separately for examples', () async {
+    final server = await servePackages();
+    server.serve('bar', '1.0.0');
+
+    await d.dir(appPath, [
+      d.appPubspec(dependencies: {'bar': '^1.0.0'}),
+      d.dir('bar', [d.libPubspec('bar', '2.0.0'), d.libDir('bar')]),
+      d.dir('example', [
+        d.pubspec({
+          'name': 'app_example',
+          'dependencies': {
+            'bar': {'path': '../bar'},
+          },
+        }),
+      ]),
+    ]).create();
+
+    await pubGet(args: ['--example']);
+
+    server.serve('bar', '1.5.0');
+
+    await pubUpgrade(
+      args: ['--example', 'bar:latest'],
+      output: contains('> bar 1.5.0'),
+    );
+
+    await d.dir(appPath, [
+      d.dir('example', [
+        d.file(
+          'pubspec.lock',
+          allOf(contains('source: path'), contains('version: "2.0.0"')),
+        ),
+      ]),
+    ]).validate();
+  });
+
+  test('`dependency:latest` can target an example-only dependency', () async {
+    final server = await servePackages();
+    server.serve('bar', '1.0.0');
+
+    await d.dir(appPath, [
+      d.appPubspec(),
+      d.dir('example', [
+        d.pubspec({
+          'name': 'app_example',
+          'dependencies': {'bar': 'any'},
+        }),
+      ]),
+    ]).create();
+
+    await pubGet(args: ['--example']);
+
+    server.serve('bar', '2.0.0');
+
+    await pubUpgrade(
+      args: ['--example', 'bar:latest'],
+      output: contains('Got dependencies in'),
+    );
+
+    await d.dir(appPath, [
+      d.dir('example', [
+        d.file(
+          'pubspec.lock',
+          allOf(contains('source: hosted'), contains('version: "2.0.0"')),
+        ),
+      ]),
+    ]).validate();
+  });
+
+  test('`--unlock-transitive` can target an example-only dependency', () async {
+    final server = await servePackages();
+    server.serve('root_dep', '1.0.0');
+    server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
+    server.serve('bar', '1.0.0');
+
+    await d.dir(appPath, [
+      d.appPubspec(dependencies: {'root_dep': 'any'}),
+      d.dir('example', [
+        d.pubspec({
+          'name': 'app_example',
+          'dependencies': {'foo': 'any'},
+        }),
+      ]),
+    ]).create();
+
+    await pubGet(args: ['--example']);
+
+    server.serve('root_dep', '2.0.0');
+    server.serve('foo', '1.5.0', deps: {'bar': '^1.0.0'});
+    server.serve('bar', '1.5.0');
+
+    await pubUpgrade(
+      args: ['--example', '--unlock-transitive', 'foo:latest'],
+      output: contains('Got dependencies in'),
+    );
+
+    await d.dir(appPath, [
+      d.file(
+        'pubspec.lock',
+        allOf(contains('root_dep:'), contains('version: "1.0.0"')),
+      ),
+      d.dir('example', [
+        d.file(
+          'pubspec.lock',
+          allOf(
+            matches(RegExp(r'bar:[\s\S]*version: "1\.5\.0"')),
+            matches(RegExp(r'foo:[\s\S]*version: "1\.5\.0"')),
+          ),
+        ),
+      ]),
+    ]).validate();
+  });
+
+  test('`--unlock-transitive` does not unlock unrelated examples', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    server.serve('example_dep', '1.0.0');
+
+    await d.dir(appPath, [
+      d.appPubspec(dependencies: {'foo': 'any'}),
+      d.dir('example', [
+        d.pubspec({
+          'name': 'app_example',
+          'dependencies': {'example_dep': 'any'},
+        }),
+      ]),
+    ]).create();
+
+    await pubGet(args: ['--example']);
+
+    server.serve('foo', '1.5.0');
+    server.serve('example_dep', '2.0.0');
+
+    await pubUpgrade(
+      args: ['--example', '--unlock-transitive', 'foo:latest'],
+      output: allOf(contains('> foo 1.5.0'), contains('Got dependencies in')),
+    );
+
+    await d.dir(appPath, [
+      d.dir('example', [
+        d.file(
+          'pubspec.lock',
+          allOf(contains('example_dep:'), contains('version: "1.0.0"')),
+        ),
+      ]),
+    ]).validate();
+  });
+
+  test('`dependency:latest` uses the dependency source from pubspec', () async {
+    final server = await servePackages();
+    server.serve('bar', '1.0.0');
+    server.serve('bar', '1.5.0');
+
+    await d.dir('bar', [
+      d.libPubspec('bar', '2.0.0'),
+      d.libDir('bar'),
+    ]).create();
+
+    await d.appDir(dependencies: {'bar': '^1.0.0'}).create();
+
+    await pubGet(output: contains('+ bar 1.5.0'));
+
+    await d
+        .appDir(
+          dependencies: {
+            'bar': {'path': '../bar'},
+          },
+        )
+        .create();
+
+    await pubUpgrade(
+      args: ['bar:latest'],
+      output: contains('* bar 2.0.0 from path'),
+    );
+
+    await d.dir(appPath, [
+      d.file(
+        'pubspec.lock',
+        allOf(contains('source: path'), contains('version: "2.0.0"')),
+      ),
+    ]).validate();
+  });
+
+  test('`dependency:latest` uses the dependency override source', () async {
+    final server = await servePackages();
+    server.serve('bar', '1.0.0');
+    server.serve('bar', '2.0.0');
+
+    await d.dir('bar', [
+      d.libPubspec('bar', '3.0.0'),
+      d.libDir('bar'),
+    ]).create();
+
+    await d
+        .appDir(
+          dependencies: {'bar': 'any'},
+          pubspec: {
+            'dependency_overrides': {
+              'bar': {'path': '../bar'},
+            },
+          },
+        )
+        .create();
+
+    await pubGet();
+
+    await pubUpgrade(
+      args: ['bar:latest'],
+      output: contains('No dependencies changed.'),
+    );
+
+    await d.dir(appPath, [
+      d.file(
+        'pubspec.lock',
+        allOf(contains('source: path'), contains('version: "3.0.0"')),
+      ),
+    ]).validate();
+  });
+
   test(
     '`dependency:latest` requires a package from the current resolution',
     () async {
@@ -231,6 +450,26 @@ void main() {
       );
     },
   );
+
+  test('`dependency:latest` requires a package from the current resolution '
+      'with examples', () async {
+    await servePackages();
+    await d.dir(appPath, [
+      d.appPubspec(),
+      d.dir('example', [
+        d.pubspec({'name': 'app_example'}),
+      ]),
+    ]).create();
+
+    await pubUpgrade(
+      args: ['--example', 'missing:latest'],
+      error: allOf(
+        contains('Package `missing` is not in the current resolution.'),
+        contains('It was not found in the root package or any examples.'),
+      ),
+      exitCode: exit_codes.DATA,
+    );
+  });
 
   test(
     '`dependency:latest` cannot be combined with --major-versions',
