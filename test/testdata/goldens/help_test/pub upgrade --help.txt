@@ -4,12 +4,14 @@
 $ pub upgrade --help
 Upgrade the current package's dependencies to latest versions.
 
-Append `:latest` to a dependency to require the latest available version.
+Append `@<version>` to a dependency to require a specific version.
 
-Append `:resolvable` to require the newest version resolvable with the rest of
+Append `@latest` to a dependency to require the latest available version.
+
+Append `@resolvable` to require the newest version resolvable with the rest of
 the dependency graph.
 
-Usage: pub upgrade [dependencies[:latest|:resolvable]...]
+Usage: pub upgrade [dependencies[@<version>|@latest|@resolvable]...]
 -h, --help                 Print this usage information.
     --[no-]offline         Use cached packages instead of accessing the network.
 -n, --dry-run              Report what dependencies would change but don't change any.

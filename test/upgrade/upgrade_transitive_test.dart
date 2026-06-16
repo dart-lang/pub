@@ -106,7 +106,7 @@ void main() {
     );
   });
 
-  test('`dependency:latest` explains why latest cannot be selected', () async {
+  test('`dependency@latest` explains why latest cannot be selected', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
     server.serve('bar', '1.0.0');
@@ -118,10 +118,10 @@ void main() {
     server.serve('bar', '2.0.0');
 
     await pubUpgrade(
-      args: ['bar:latest'],
+      args: ['bar@latest'],
       error: allOf(
         contains('bar 2.0.0'),
-        contains('bar:latest'),
+        contains('bar@latest'),
         contains('foo'),
         contains('bar ^1.0.0'),
         contains('version solving failed'),
@@ -130,7 +130,7 @@ void main() {
   });
 
   test(
-    '`dependency:latest` upgrades a transitive dependency to latest',
+    '`dependency@latest` upgrades a transitive dependency to latest',
     () async {
       final server = await servePackages();
       server.serve('foo', '1.0.0', deps: {'bar': 'any'});
@@ -142,11 +142,11 @@ void main() {
 
       server.serve('bar', '2.0.0');
 
-      await pubUpgrade(args: ['bar:latest'], output: contains('> bar 2.0.0'));
+      await pubUpgrade(args: ['bar@latest'], output: contains('> bar 2.0.0'));
     },
   );
 
-  test('`dependency:resolvable` upgrades a transitive dependency to latest '
+  test('`dependency@resolvable` upgrades a transitive dependency to latest '
       'resolvable', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
@@ -160,13 +160,78 @@ void main() {
     server.serve('bar', '2.0.0');
 
     await pubUpgrade(
-      args: ['bar:resolvable'],
+      args: ['bar@resolvable'],
       output: allOf(contains('> bar 1.5.0'), isNot(contains('bar 2.0.0'))),
     );
   });
 
   test(
-    '`dependency:resolvable` explains why resolvable cannot be selected',
+    '`dependency@version` upgrades a transitive dependency to that version',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0', deps: {'bar': 'any'});
+      server.serve('bar', '1.0.0');
+
+      await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+      await pubGet(output: contains('+ foo 1.0.0'));
+
+      server.serve('bar', '1.5.0');
+      server.serve('bar', '2.0.0');
+
+      await pubUpgrade(
+        args: ['bar@1.5.0'],
+        output: allOf(contains('> bar 1.5.0'), isNot(contains('bar 2.0.0'))),
+      );
+    },
+  );
+
+  test('`dependency@version` can target a pre-release version', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'bar': 'any'});
+    server.serve('bar', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+    await pubGet(output: contains('+ foo 1.0.0'));
+
+    server.serve('bar', '1.5.0-beta');
+    server.serve('bar', '2.0.0');
+
+    await pubUpgrade(
+      args: ['bar@1.5.0-beta'],
+      output: allOf(contains('> bar 1.5.0-beta'), isNot(contains('bar 2.0.0'))),
+    );
+  });
+
+  test(
+    '`dependency@version` explains why that version cannot be selected',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
+      server.serve('bar', '1.0.0');
+
+      await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+      await pubGet(output: contains('+ foo 1.0.0'));
+
+      server.serve('bar', '2.0.0');
+
+      await pubUpgrade(
+        args: ['bar@2.0.0'],
+        error: allOf(
+          contains('bar 2.0.0'),
+          contains('bar@2.0.0'),
+          contains('foo'),
+          contains('bar ^1.0.0'),
+          contains('version solving failed'),
+        ),
+      );
+    },
+  );
+
+  test(
+    '`dependency@resolvable` explains why resolvable cannot be selected',
     () async {
       final server = await servePackages();
       server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
@@ -180,10 +245,10 @@ void main() {
       server.serve('bar', '2.0.0');
 
       await pubUpgrade(
-        args: ['bar:resolvable'],
+        args: ['bar@resolvable'],
         error: allOf(
           contains('bar 2.0.0'),
-          contains('bar:resolvable'),
+          contains('bar@resolvable'),
           contains('foo'),
           contains('bar ^1.0.0'),
           contains('version solving failed'),
@@ -208,7 +273,7 @@ void main() {
     server.serve('baz', '2.0.0');
 
     await pubUpgrade(
-      args: ['foo', 'bar:latest', 'baz:resolvable'],
+      args: ['foo', 'bar@latest', 'baz@resolvable'],
       output: allOf(
         contains('> foo 1.5.0'),
         contains('> bar 2.0.0'),
@@ -218,7 +283,7 @@ void main() {
     );
   });
 
-  test('`dependency:latest` is resolved separately for examples', () async {
+  test('`dependency@latest` is resolved separately for examples', () async {
     final server = await servePackages();
     server.serve('bar', '1.0.0');
 
@@ -240,7 +305,7 @@ void main() {
     server.serve('bar', '1.5.0');
 
     await pubUpgrade(
-      args: ['--example', 'bar:latest'],
+      args: ['--example', 'bar@latest'],
       output: contains('> bar 1.5.0'),
     );
 
@@ -254,7 +319,7 @@ void main() {
     ]).validate();
   });
 
-  test('`dependency:latest` can target an example-only dependency', () async {
+  test('`dependency@latest` can target an example-only dependency', () async {
     final server = await servePackages();
     server.serve('bar', '1.0.0');
 
@@ -273,7 +338,7 @@ void main() {
     server.serve('bar', '2.0.0');
 
     await pubUpgrade(
-      args: ['--example', 'bar:latest'],
+      args: ['--example', 'bar@latest'],
       output: contains('Got dependencies in'),
     );
 
@@ -310,7 +375,7 @@ void main() {
     server.serve('bar', '1.5.0');
 
     await pubUpgrade(
-      args: ['--example', '--unlock-transitive', 'foo:latest'],
+      args: ['--example', '--unlock-transitive', 'foo@latest'],
       output: contains('Got dependencies in'),
     );
 
@@ -352,7 +417,7 @@ void main() {
     server.serve('example_dep', '2.0.0');
 
     await pubUpgrade(
-      args: ['--example', '--unlock-transitive', 'foo:latest'],
+      args: ['--example', '--unlock-transitive', 'foo@latest'],
       output: allOf(contains('> foo 1.5.0'), contains('Got dependencies in')),
     );
 
@@ -366,7 +431,29 @@ void main() {
     ]).validate();
   });
 
-  test('`dependency:latest` uses the dependency source from pubspec', () async {
+  test(
+    '`--unlock-transitive` rejects unknown packages in mixed targets',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
+      server.serve('bar', '1.0.0');
+
+      await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+      await pubGet(output: contains('+ foo 1.0.0'));
+
+      await pubUpgrade(
+        args: ['--no-example', '--unlock-transitive', 'foo', 'missing'],
+        error: allOf(
+          contains('Package `missing` is not in the current resolution.'),
+          contains('It was not found in the root package.'),
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    },
+  );
+
+  test('`dependency@latest` uses the dependency source from pubspec', () async {
     final server = await servePackages();
     server.serve('bar', '1.0.0');
     server.serve('bar', '1.5.0');
@@ -389,7 +476,7 @@ void main() {
         .create();
 
     await pubUpgrade(
-      args: ['bar:latest'],
+      args: ['bar@latest'],
       output: contains('* bar 2.0.0 from path'),
     );
 
@@ -401,7 +488,7 @@ void main() {
     ]).validate();
   });
 
-  test('`dependency:latest` uses the dependency override source', () async {
+  test('`dependency@latest` uses the dependency override source', () async {
     final server = await servePackages();
     server.serve('bar', '1.0.0');
     server.serve('bar', '2.0.0');
@@ -425,7 +512,7 @@ void main() {
     await pubGet();
 
     await pubUpgrade(
-      args: ['bar:latest'],
+      args: ['bar@latest'],
       output: contains('No dependencies changed.'),
     );
 
@@ -438,20 +525,20 @@ void main() {
   });
 
   test(
-    '`dependency:latest` requires a package from the current resolution',
+    '`dependency@latest` requires a package from the current resolution',
     () async {
       await servePackages();
       await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
 
       await pubUpgrade(
-        args: ['missing:latest'],
+        args: ['missing@latest'],
         error: contains('Package `missing` is not in the current resolution.'),
         exitCode: exit_codes.DATA,
       );
     },
   );
 
-  test('`dependency:latest` requires a package from the current resolution '
+  test('`dependency@latest` requires a package from the current resolution '
       'with examples', () async {
     await servePackages();
     await d.dir(appPath, [
@@ -462,7 +549,7 @@ void main() {
     ]).create();
 
     await pubUpgrade(
-      args: ['--example', 'missing:latest'],
+      args: ['--example', 'missing@latest'],
       error: allOf(
         contains('Package `missing` is not in the current resolution.'),
         contains('It was not found in the root package or any examples.'),
@@ -472,32 +559,96 @@ void main() {
   });
 
   test(
-    '`dependency:latest` cannot be combined with --major-versions',
+    '`dependency@latest` cannot be combined with --major-versions',
     () async {
       await servePackages();
       await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
 
       await pubUpgrade(
-        args: ['--major-versions', 'foo:latest'],
+        args: ['--major-versions', 'foo@latest'],
         error: contains(
-          'Cannot use `:latest` or `:resolvable` with `--major-versions`.',
+          'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
+          '`--major-versions`.',
         ),
         exitCode: exit_codes.USAGE,
       );
     },
   );
 
-  test('dependency target cannot contain multiple colons', () async {
+  test('`dependency@version` cannot be combined with --tighten', () async {
     await servePackages();
     await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
 
     await pubUpgrade(
-      args: ['foo:bar:latest'],
+      args: ['--tighten', 'foo@1.0.0'],
+      error: contains(
+        'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
+        '`--tighten`.',
+      ),
+      exitCode: exit_codes.USAGE,
+    );
+  });
+
+  test('dependency target uses @ instead of colon', () async {
+    await servePackages();
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+    for (final target in [
+      'foo:latest',
+      'foo:resolvable',
+      'foo_bar:latest',
+      'foo_bar:resolvable',
+    ]) {
+      await pubUpgrade(
+        args: [target],
+        error: allOf(
+          contains('Unknown upgrade target `$target`.'),
+          contains('Use `<package>`'),
+          contains('`<package>@<version>`'),
+          contains('`<package>@latest`'),
+          contains('`<package>@resolvable`.'),
+        ),
+        exitCode: exit_codes.USAGE,
+      );
+    }
+  });
+
+  test('dependency target requires a valid suffix after @', () async {
+    await servePackages();
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+    for (final target in [
+      'foo@',
+      'foo@Latest',
+      'foo@not-a-version',
+      'foo@^1.0.0',
+    ]) {
+      await pubUpgrade(
+        args: [target],
+        error: allOf(
+          contains('Unknown upgrade target `$target`.'),
+          contains('Use `<package>`'),
+          contains('`<package>@<version>`'),
+          contains('`<package>@latest`'),
+          contains('`<package>@resolvable`.'),
+        ),
+        exitCode: exit_codes.USAGE,
+      );
+    }
+  });
+
+  test('dependency target cannot contain multiple @ separators', () async {
+    await servePackages();
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+    await pubUpgrade(
+      args: ['foo@bar@latest'],
       error: allOf(
-        contains('Could not parse upgrade target `foo:bar:latest`.'),
+        contains('Could not parse upgrade target `foo@bar@latest`.'),
         contains('Use `<package>`'),
-        contains('`<package>:latest`'),
-        contains('`<package>:resolvable`.'),
+        contains('`<package>@<version>`'),
+        contains('`<package>@latest`'),
+        contains('`<package>@resolvable`.'),
       ),
       exitCode: exit_codes.USAGE,
     );

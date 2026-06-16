@@ -28,14 +28,17 @@ class UpgradeCommand extends PubCommand {
   String get description =>
       "Upgrade the current package's dependencies to latest versions.\n"
       '\n'
-      'Append `:latest` to a dependency to require the latest available '
+      'Append `@<version>` to a dependency to require a specific version.\n'
+      '\n'
+      'Append `@latest` to a dependency to require the latest available '
       'version.\n'
       '\n'
-      'Append `:resolvable` to require the newest version resolvable with the '
+      'Append `@resolvable` to require the newest version resolvable with the '
       'rest of\n'
       'the dependency graph.';
   @override
-  String get argumentsDescription => '[dependencies[:latest|:resolvable]...]';
+  String get argumentsDescription =>
+      '[dependencies[@<version>|@latest|@resolvable]...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-upgrade';
 
@@ -176,18 +179,28 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         ),
       );
     }
-    if (_upgradeTargets.any((target) => target.kind != null)) {
+    final hasUpgradeTargetConstraints = _upgradeTargets.any(
+      (target) => target.kind != null,
+    );
+    if (hasUpgradeTargetConstraints) {
       if (_upgradeMajorVersions) {
         usageException(
-          'Cannot use `:latest` or `:resolvable` with `--major-versions`.',
+          'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
+          '`--major-versions`.',
         );
       }
       if (_tighten) {
         usageException(
-          'Cannot use `:latest` or `:resolvable` with `--tighten`.',
+          'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
+          '`--tighten`.',
         );
       }
-      _validateUpgradeTargetEntrypoints();
+    }
+    if (hasUpgradeTargetConstraints ||
+        (argResults.flag('unlock-transitive') && _upgradeTargets.isNotEmpty)) {
+      _validateUpgradeTargetEntrypoints(
+        validatePlainTargets: argResults.flag('unlock-transitive'),
+      );
     }
 
     if (_upgradeMajorVersions) {
@@ -247,9 +260,9 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     if (argResults.flag('example')) ...entrypoint.examples,
   ];
 
-  void _validateUpgradeTargetEntrypoints() {
+  void _validateUpgradeTargetEntrypoints({required bool validatePlainTargets}) {
     for (final target in _upgradeTargets) {
-      if (target.kind == null) continue;
+      if (target.kind == null && !validatePlainTargets) continue;
       if (_entrypointsToUpgrade.any(
         (e) => _packageRef(e, target.name) != null,
       )) {
@@ -297,15 +310,24 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
       constraintFutures.add(
         (() async {
-          final targetPackage = switch (kind) {
-            _UpgradeTargetKind.latest => await _latest(e, target.name, ref),
-            _UpgradeTargetKind.resolvable => await latestResolvable(
-              target.name,
-            ),
-          };
+          late final PackageRange targetRange;
+          late final Version targetVersion;
+          switch (kind) {
+            case _UpgradeTargetKind.latest:
+              final targetPackage = await _latest(e, target.name, ref);
+              targetRange = targetPackage.toRange();
+              targetVersion = targetPackage.version;
+            case _UpgradeTargetKind.resolvable:
+              final targetPackage = await latestResolvable(target.name);
+              targetRange = targetPackage.toRange();
+              targetVersion = targetPackage.version;
+            case _UpgradeTargetKind.version:
+              targetVersion = target.version!;
+              targetRange = ref.withConstraint(targetVersion);
+          }
           return ConstraintAndCause(
-            targetPackage.toRange(),
-            '${targetPackage.name} ${targetPackage.version} was requested by '
+            targetRange,
+            '${targetRange.name} $targetVersion was requested by '
             '`$topLevelProgram pub upgrade ${target.argument}`.',
           );
         })(),
@@ -361,11 +383,24 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   }
 
   _UpgradeTarget _parseUpgradeTarget(String argument) {
-    final parts = argument.split(':');
+    final oldStyleParts = argument.split(':');
+    if (oldStyleParts.length == 2 &&
+        packageNameRegExp.hasMatch(oldStyleParts.first) &&
+        (oldStyleParts.last == 'latest' ||
+            oldStyleParts.last == 'resolvable')) {
+      usageException(
+        'Unknown upgrade target `$argument`. Use `<package>`, '
+        '`<package>@<version>`, `<package>@latest`, or '
+        '`<package>@resolvable`.',
+      );
+    }
+
+    final parts = argument.split('@');
     if (parts.length > 2) {
       usageException(
         'Could not parse upgrade target `$argument`. Use `<package>`, '
-        '`<package>:latest`, or `<package>:resolvable`.',
+        '`<package>@<version>`, `<package>@latest`, or '
+        '`<package>@resolvable`.',
       );
     }
 
@@ -385,10 +420,20 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       _ => null,
     };
     if (kind == null) {
-      usageException(
-        'Unknown upgrade target `$argument`. Use `<package>`, '
-        '`<package>:latest`, or `<package>:resolvable`.',
-      );
+      try {
+        return _UpgradeTarget(
+          argument,
+          package,
+          _UpgradeTargetKind.version,
+          Version.parse(suffix),
+        );
+      } on FormatException catch (_) {
+        usageException(
+          'Unknown upgrade target `$argument`. Use `<package>`, '
+          '`<package>@<version>`, `<package>@latest`, or '
+          '`<package>@resolvable`.',
+        );
+      }
     }
     return _UpgradeTarget(argument, package, kind);
   }
@@ -555,12 +600,13 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
   }
 }
 
-enum _UpgradeTargetKind { latest, resolvable }
+enum _UpgradeTargetKind { latest, resolvable, version }
 
 class _UpgradeTarget {
   final String argument;
   final String name;
   final _UpgradeTargetKind? kind;
+  final Version? version;
 
-  _UpgradeTarget(this.argument, this.name, this.kind);
+  _UpgradeTarget(this.argument, this.name, this.kind, [this.version]);
 }
