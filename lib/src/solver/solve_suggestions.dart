@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command_runner.dart';
@@ -155,7 +154,12 @@ String _packageAddCommand(
   final command = StringBuffer('$topLevelProgram pub add');
   if (_needsDirectoryOption(package)) {
     final packageDir = escapeShellArgument(
-      p.normalize(p.relative(package.dir)),
+      p.normalize(
+        p.relative(
+          p.canonicalize(p.absolute(package.dir)),
+          from: p.canonicalize(p.current),
+        ),
+      ),
     );
     command.write(' --directory $packageDir');
   }
@@ -180,8 +184,7 @@ String _upgradeMajorVersionsCommand(Entrypoint entrypoint) {
 bool _needsDirectoryOption(Package package) {
   final currentDir = p.canonicalize(p.current);
   final packageDir = p.canonicalize(p.absolute(package.dir));
-  return !p.equals(currentDir, packageDir) &&
-      !p.isWithin(packageDir, currentDir);
+  return !p.equals(currentDir, packageDir);
 }
 
 bool _samePackage(Package a, Package b) {
@@ -373,9 +376,20 @@ class _ResolutionContext {
         priority: 4,
       );
     } else {
+      final packagesNeedingConstraintChanges = {
+        for (final update in updatedPackageVersions)
+          if (!update.range.constraint.allows(update.id.version))
+            update.id.name,
+      };
+      final command = StringBuffer(_upgradeMajorVersionsCommand(entrypoint));
+      final sortedPackageNames =
+          packagesNeedingConstraintChanges.toList()..sort();
+      for (final packageName in sortedPackageNames) {
+        command.write(' ${escapeShellArgument(packageName)}');
+      }
       return _ResolutionSuggestion(
         '* Try an upgrade of your constraints: '
-        '${_upgradeMajorVersionsCommand(entrypoint)}',
+        '$command',
         priority: 4,
       );
     }
