@@ -35,7 +35,7 @@ class UpgradeCommand extends PubCommand {
       '\n'
       'Append `@resolvable` to require the newest version resolvable with the '
       'rest of\n'
-      'the dependency graph.';
+      'the dependencies.';
   @override
   String get argumentsDescription =>
       '[dependencies[@<version>|@latest|@resolvable]...]';
