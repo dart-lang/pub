@@ -133,40 +133,40 @@ environment:
   }();
 
   /// The policy configuration.
-  Policy? get policy => _policy ??= _parsePolicy();
-  Policy? _policy;
+  Policies? get policies => _policies ??= _parsePolicies();
+  Policies? _policies;
 
-  Policy? _parsePolicy() {
-    final policyNode = fields.nodes['policy'];
-    if (policyNode == null || policyNode.value == null) return null;
+  Policies? _parsePolicies() {
+    final policiesNode = fields.nodes['policies'];
+    if (policiesNode == null || policiesNode.value == null) return null;
 
     if (!languageVersion.supportsCooldown) {
       _error(
-        'The "policy" field requires at least language version '
+        'The "policies" field requires at least language version '
         '${LanguageVersion.firstVersionWithCooldown}, '
         'current is $languageVersion.',
-        policyNode.span,
+        policiesNode.span,
       );
     }
 
-    if (policyNode is! YamlMap) {
-      _error('"policy" must be a map', policyNode.span);
+    if (policiesNode is! YamlMap) {
+      _error('"policies" must be a map', policiesNode.span);
     }
 
     const knownPolicies = {'cooldown'};
-    for (final keyNode in policyNode.nodes.keys) {
+    for (final keyNode in policiesNode.nodes.keys) {
       if (keyNode is! YamlNode) continue;
       final value = keyNode.value;
       if (value is! String || !knownPolicies.contains(value)) {
         _error(
-          'Invalid policy field "$value". '
+          'Invalid policies field "$value". '
           'Only ${knownPolicies.map((e) => '"$e"').join(', ')} is supported.',
           keyNode.span,
         );
       }
     }
 
-    final cooldownNode = policyNode.nodes['cooldown'];
+    final cooldownNode = policiesNode.nodes['cooldown'];
     CooldownPolicy? cooldown;
     if (cooldownNode != null && cooldownNode.value != null) {
       if (cooldownNode is! YamlMap) {
@@ -273,7 +273,7 @@ environment:
       );
     }
 
-    return Policy(cooldown: cooldown, span: policyNode.span);
+    return Policies(cooldown: cooldown, span: policiesNode.span);
   }
 
   Duration _parseDuration(String s) {
@@ -502,8 +502,8 @@ environment:
     this.workspace = const <String>[],
     this.dependencyOverridesFromOverridesFile = false,
     this.resolution = Resolution.none,
-    Policy? policy,
-  }) : _policy = policy,
+    Policies? policies,
+  }) : _policies = policies,
        _dependencies =
            dependencies == null
                ? null
@@ -628,7 +628,7 @@ environment:
     List<String>? workspace,
     //this.dependencyOverridesFromOverridesFile = false,
     Resolution? resolution,
-    Policy? policy,
+    Policies? policies,
   }) {
     return Pubspec(
       name ?? this.name,
@@ -640,7 +640,7 @@ environment:
       sdkConstraints: sdkConstraints ?? this.sdkConstraints,
       workspace: workspace ?? this.workspace,
       resolution: resolution ?? this.resolution,
-      policy: policy ?? this.policy,
+      policies: policies ?? this.policies,
     );
   }
 
@@ -1031,10 +1031,10 @@ enum Resolution {
   none,
 }
 
-class Policy {
+class Policies {
   final CooldownPolicy? cooldown;
   final SourceSpan span;
-  Policy({this.cooldown, required this.span});
+  Policies({this.cooldown, required this.span});
 }
 
 class CooldownPolicy {

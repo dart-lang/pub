@@ -33,7 +33,7 @@ class PackageLister {
   final Package? _rootPackage;
 
   /// The policy to apply, if any.
-  final Policy? _policy;
+  final Policies? _policies;
 
   /// The version of this package in the lockfile.
   ///
@@ -120,10 +120,10 @@ class PackageLister {
     this._allowedRetractedVersion, {
     bool downgrade = false,
     this.sdkOverrides = const {},
-    Policy? policy,
+    Policies? policies,
   }) : _isDowngrade = downgrade,
        _rootPackage = null,
-       _policy = policy;
+       _policies = policies;
 
   /// Creates a package lister for the root [package].
   PackageLister.root(
@@ -131,7 +131,7 @@ class PackageLister {
     this._systemCache, {
     required Set<String> overriddenPackages,
     required Map<String, Version>? sdkOverrides,
-    Policy? policy,
+    Policies? policies,
   }) : _ref = PackageRef.root(package),
        // Treat the package as locked so we avoid the logic for finding the
        // boundaries of various constraints, which is useless for the root
@@ -142,7 +142,7 @@ class PackageLister {
        _allowedRetractedVersion = null,
        sdkOverrides = sdkOverrides ?? {},
        _rootPackage = package,
-       _policy = policy ?? package.pubspec.policy;
+       _policies = policies ?? package.pubspec.policies;
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
@@ -214,8 +214,8 @@ class PackageLister {
   Future<List<Incompatibility>> incompatibilitiesFor(PackageId id) async {
     if (_knownInvalidVersions.allows(id.version)) return const [];
 
-    final policyWrapper = _policy;
-    final policy = policyWrapper?.cooldown;
+    final policiesWrapper = _policies;
+    final policy = policiesWrapper?.cooldown;
 
     final allVersions = <(Version, DateTime?)>[];
     final statusMap = <Version, PackageStatus>{};
@@ -260,8 +260,8 @@ class PackageLister {
               reason:
                   'all versions of ${id.name} are too new for cooldown policy\n'
                   'Cooldown policy defined at '
-                  '${policyWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml'}:'
-                  '${policyWrapper.span.start.line + 1}',
+                  '${policiesWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml'}:'
+                  '${policiesWrapper.span.start.line + 1}',
             ),
           ),
         ];
@@ -297,7 +297,7 @@ class PackageLister {
 
     final description = id.description;
     if (description is ResolvedHostedDescription) {
-      final policy = _policy?.cooldown;
+      final policy = _policies?.cooldown;
       if (policy != null) {
         final status = await id.toRef().source.status(
           id.toRef(),
@@ -337,8 +337,8 @@ class PackageLister {
           final reason =
               '$reasonPrefix'
               'Cooldown policy defined at '
-              '${policyWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml'}:'
-              '${policyWrapper.span.start.line + 1}';
+              '${policiesWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml'}:'
+              '${policiesWrapper.span.start.line + 1}';
           return [
             Incompatibility([
               Term(id.toRange(), true),

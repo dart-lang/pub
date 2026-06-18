@@ -519,19 +519,19 @@ Workspace members must have unique names.
     namesSeen[package.name] = package;
   }
 
-  // Check that at most one policy is specified.
-  Policy? policySeen;
+  // Check that at most one policies configuration is specified.
+  Policies? policiesSeen;
   for (final package in root.transitiveWorkspace) {
-    final currentPolicy = package.pubspec.policy;
-    if (currentPolicy != null) {
-      if (policySeen != null) {
+    final currentPolicies = package.pubspec.policies;
+    if (currentPolicies != null) {
+      if (policiesSeen != null) {
         fail('''
-Only a single policy specification is allowed across all workspace pubspec.yaml files.
+Only a single policies configuration is allowed across all workspace pubspec.yaml files.
 Found policies in both:
-* ${policySeen.span.sourceUrl?.path ?? 'pubspec.yaml'}
-* ${currentPolicy.span.sourceUrl?.path ?? 'pubspec.yaml'}''');
+* ${policiesSeen.span.sourceUrl?.path ?? 'pubspec.yaml'}
+* ${currentPolicies.span.sourceUrl?.path ?? 'pubspec.yaml'}''');
       }
-      policySeen = currentPolicy;
+      policiesSeen = currentPolicies;
     }
   }
 

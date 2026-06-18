@@ -20,12 +20,12 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 void main() {
-  test('policy field requires language version 3.14', () async {
+  test('policies field requires language version 3.14', () async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp_gating',
         'environment': {'sdk': '^3.13.0'},
-        'policy': {
+        'policies': {
           'cooldown': {'min_age': '7d'},
         },
       }),
@@ -35,18 +35,18 @@ void main() {
       args: ['get'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
       error: contains(
-        'The "policy" field requires at least language version 3.14',
+        'The "policies" field requires at least language version 3.14',
       ),
       exitCode: 65,
     );
   });
 
-  test('policy field does not allow unknown fields', () async {
+  test('policies field does not allow unknown fields', () async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp_gating',
         'environment': {'sdk': '^3.14.0'},
-        'policy': {'unknown_field': 'value'},
+        'policies': {'unknown_field': 'value'},
       }),
     ]).create();
 
@@ -54,7 +54,7 @@ void main() {
       args: ['get'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
       error: contains(
-        'Invalid policy field "unknown_field". Only "cooldown" is supported.',
+        'Invalid policies field "unknown_field". Only "cooldown" is supported.',
       ),
       exitCode: 65,
     );
@@ -78,7 +78,7 @@ void main() {
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
-        'policy': {
+        'policies': {
           'cooldown': {'min_age': '7d'},
         },
       }),
@@ -105,7 +105,7 @@ void main() {
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
-        'policy': {
+        'policies': {
           'cooldown': {
             'min_age': '7d',
             'exclude': {'foo': 'any'},
@@ -131,7 +131,7 @@ void main() {
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
-        'policy': {
+        'policies': {
           'cooldown': {'min_age': '7d'},
         },
       }),
@@ -170,7 +170,7 @@ void main() {
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
-        'policy': {
+        'policies': {
           'cooldown': {'min_age': '7d'},
         },
       }),
@@ -201,7 +201,7 @@ void main() {
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
-        'policy': {
+        'policies': {
           'cooldown': {
             'min_age': '7d',
             'exclude': {'foo': 'any'},
@@ -226,7 +226,7 @@ void main() {
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
-        'policy': {
+        'policies': {
           'cooldown': {'min_age': '7d'},
         },
       }),
@@ -270,7 +270,7 @@ void main() {
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any', 'bar': 'any'},
-        'policy': {
+        'policies': {
           'cooldown': {'min_age': '7d'},
         },
       }),
@@ -303,7 +303,7 @@ void main() {
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
-        'policy': {
+        'policies': {
           'cooldown': {'min_age': '7d'},
         },
       }),
@@ -344,7 +344,7 @@ void main() {
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': '^1.0.0'},
-        'policy': {
+        'policies': {
           'cooldown': {'min_age': '7d'},
         },
       }),
@@ -381,7 +381,7 @@ void main() {
           'name': 'myapp',
           'environment': {'sdk': '^3.14.0'},
           'dependencies': {'foo': '1.0.0'},
-          'policy': {
+          'policies': {
             'cooldown': {'min_age': '7d', 'stability': true},
           },
         }),
@@ -416,7 +416,7 @@ void main() {
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': '1.0.0'},
-        'policy': {
+        'policies': {
           'cooldown': {'min_age': '7d', 'stability': true},
         },
       }),
@@ -454,7 +454,7 @@ void main() {
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': '1.0.1'},
-        'policy': {
+        'policies': {
           'cooldown': {'min_age': '7d', 'stability': true},
         },
       }),
@@ -476,7 +476,7 @@ void main() {
         'dependencies': {
           'foo': {'path': '../foo'},
         },
-        'policy': {
+        'policies': {
           'cooldown': {'min_age': '7d'},
         },
       }),
@@ -505,7 +505,7 @@ void main() {
           'name': 'myapp',
           'environment': {'sdk': '^3.14.0'},
           'dependencies': {'foo': 'any'},
-          'policy': {
+          'policies': {
             'cooldown': {'before': '2026-05-28T12:00:00Z'},
           },
         }),
@@ -520,7 +520,7 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
-        'policy': {
+        'policies': {
           'cooldown': {'min_age': '7d', 'before': '2026-05-28T12:00:00Z'},
         },
       }),
@@ -539,7 +539,7 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
-        'policy': {
+        'policies': {
           'cooldown': {
             'exclude': {'foo': 'any'},
           },
@@ -560,7 +560,7 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
-        'policy': {
+        'policies': {
           'cooldown': {'before': '2026-05-28T12:00:00'},
         },
       }),
@@ -579,7 +579,7 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
-        'policy': {
+        'policies': {
           'cooldown': {'before': '2026-05-28T12:00:00Z', 'stability': true},
         },
       }),
@@ -600,7 +600,7 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
-        'policy': {
+        'policies': {
           'cooldown': {'before': '2026-05-28T12:00:00Z', 'stability': false},
         },
       }),
@@ -639,7 +639,7 @@ void main() {
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
         'dependencies': {'foo': 'any'},
-        'policy': {
+        'policies': {
           'cooldown': {
             'min_age': '7d',
             'exclude': {'foo': '^1.0.0'},
@@ -658,7 +658,7 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
-        'policy': {
+        'policies': {
           'cooldown': {
             'min_age': '7d',
             'exclude': ['foo'], // List instead of Map
@@ -680,7 +680,7 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'environment': {'sdk': '^3.14.0'},
-        'policy': {
+        'policies': {
           'cooldown': {
             'min_age': '7d',
             'exclude': {'not a valid name!': 'any'},

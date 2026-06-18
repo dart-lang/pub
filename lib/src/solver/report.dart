@@ -467,7 +467,7 @@ $contentHashesDocumentationUrl
             newerStable
                 ? maxAll(versions, Version.prioritize)
                 : maxAll(versions);
-        final policy = _rootPubspec.policy?.cooldown;
+        final policy = _rootPubspec.policies?.cooldown;
         final desc = newId.description;
         if (policy != null && desc is ResolvedHostedDescription) {
           final latestStatus = await newId.toRef().source.status(
