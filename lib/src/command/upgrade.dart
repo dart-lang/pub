@@ -17,6 +17,7 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
+import '../solver/version_solver.dart';
 import '../utils.dart';
 
 /// Handles the `upgrade` pub command.
@@ -25,9 +26,19 @@ class UpgradeCommand extends PubCommand {
   String get name => 'upgrade';
   @override
   String get description =>
-      "Upgrade the current package's dependencies to latest versions.";
+      "Upgrade the current package's dependencies to latest versions.\n"
+      '\n'
+      'Append `@<version>` to a dependency to require a specific version.\n'
+      '\n'
+      'Append `@latest` to a dependency to require the latest available '
+      'version.\n'
+      '\n'
+      'Append `@resolvable` to require the newest version resolvable with the '
+      'rest of\n'
+      'the dependencies.';
   @override
-  String get argumentsDescription => '[dependencies...]';
+  String get argumentsDescription =>
+      '[dependencies[@<version>|@latest|@resolvable]...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-upgrade';
 
@@ -108,29 +119,45 @@ class UpgradeCommand extends PubCommand {
 
   bool get _precompile => argResults.flag('precompile');
 
-  late final Future<List<String>> _packagesToUpgrade =
-      _computePackagesToUpgrade();
+  late final Future<List<String>> _rootPackagesToUpgrade =
+      _computePackagesToUpgrade(entrypoint);
+
+  late final List<_UpgradeTarget> _upgradeTargets =
+      argResults.rest.map(_parseUpgradeTarget).toList();
 
   /// List of package names to upgrade, if empty then upgrade all packages.
   ///
   /// This allows the user to specify list of names that they want the
   /// upgrade command to affect.
-  Future<List<String>> _computePackagesToUpgrade() async {
+  Future<List<String>> _packagesToUpgrade(Entrypoint e) {
+    if (identical(e, entrypoint)) return _rootPackagesToUpgrade;
+    return _computePackagesToUpgrade(e);
+  }
+
+  Future<List<String>> _computePackagesToUpgrade(Entrypoint e) async {
     if (argResults.flag('unlock-transitive')) {
-      final graph = await entrypoint.packageGraph;
-      return argResults.rest
-          .expand(
-            (package) => graph
-                .transitiveDependencies(
-                  package,
-                  followDevDependenciesFromPackage: true,
-                )
-                .map((p) => p.name),
-          )
-          .toSet()
-          .toList();
+      final graph = await e.packageGraph;
+      final packagesToUnlock =
+          _upgradeTargets
+              .expand(
+                (target) =>
+                    graph.packages.containsKey(target.name)
+                        ? graph
+                            .transitiveDependencies(
+                              target.name,
+                              followDevDependenciesFromPackage: true,
+                            )
+                            .map((p) => p.name)
+                        : const <String>[],
+              )
+              .toSet()
+              .toList();
+      if (_upgradeTargets.isNotEmpty && packagesToUnlock.isEmpty) {
+        return _upgradeTargets.map((target) => target.name).toList();
+      }
+      return packagesToUnlock;
     } else {
-      return argResults.rest;
+      return _upgradeTargets.map((target) => target.name).toList();
     }
   }
 
@@ -150,6 +177,29 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         log.yellow(
           'The --packages-dir flag is no longer used and does nothing.',
         ),
+      );
+    }
+    final hasUpgradeTargetConstraints = _upgradeTargets.any(
+      (target) => target.kind != null,
+    );
+    if (hasUpgradeTargetConstraints) {
+      if (_upgradeMajorVersions) {
+        usageException(
+          'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
+          '`--major-versions`.',
+        );
+      }
+      if (_tighten) {
+        usageException(
+          'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
+          '`--tighten`.',
+        );
+      }
+    }
+    if (hasUpgradeTargetConstraints ||
+        (argResults.flag('unlock-transitive') && _upgradeTargets.isNotEmpty)) {
+      _validateUpgradeTargetEntrypoints(
+        validatePlainTargets: argResults.flag('unlock-transitive'),
       );
     }
 
@@ -180,7 +230,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
           }
         }
         final changes = entrypoint.tighten(
-          packagesToUpgrade: await _packagesToUpgrade,
+          packagesToUpgrade: await _rootPackagesToUpgrade,
         );
         entrypoint.applyChanges(changes, _dryRun);
       }
@@ -195,13 +245,197 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   Future<void> _runUpgrade(Entrypoint e, {bool onlySummary = false}) async {
     await e.acquireDependencies(
       SolveType.upgrade,
-      unlock: await _packagesToUpgrade,
+      unlock: await _packagesToUpgrade(e),
+      additionalConstraints: await _upgradeTargetConstraints(e),
       dryRun: _dryRun,
       precompile: _precompile,
       summaryOnly: onlySummary,
     );
 
     _showOfflineWarning();
+  }
+
+  List<Entrypoint> get _entrypointsToUpgrade => [
+    entrypoint,
+    if (argResults.flag('example')) ...entrypoint.examples,
+  ];
+
+  void _validateUpgradeTargetEntrypoints({required bool validatePlainTargets}) {
+    for (final target in _upgradeTargets) {
+      if (target.kind == null && !validatePlainTargets) continue;
+      if (_entrypointsToUpgrade.any(
+        (e) => _packageRef(e, target.name) != null,
+      )) {
+        continue;
+      }
+      final entrypoints =
+          argResults.flag('example')
+              ? 'the root package or any examples'
+              : 'the root package';
+      dataError(
+        'Package `${target.name}` is not in the current resolution. '
+        'It was not found in $entrypoints.',
+      );
+    }
+  }
+
+  Future<List<ConstraintAndCause>?> _upgradeTargetConstraints(
+    Entrypoint e,
+  ) async {
+    final constraintFutures = <Future<ConstraintAndCause>>[];
+    Future<Map<String, PackageId>>? latestResolvablePackages;
+
+    Future<PackageId> latestResolvable(String package) async {
+      if (_packageRef(e, package) == null) {
+        dataError('Package `$package` is not in the current resolution.');
+      }
+      final packages =
+          await (latestResolvablePackages ??= _computeLatestResolvablePackages(
+            e,
+          ));
+      final latestResolvable = packages[package];
+      if (latestResolvable == null) {
+        dataError(
+          'Package `$package` is not in the latest resolvable resolution.',
+        );
+      }
+      return latestResolvable;
+    }
+
+    for (final target in _upgradeTargets) {
+      final kind = target.kind;
+      if (kind == null) continue;
+      final ref = _packageRef(e, target.name);
+      if (ref == null) continue;
+
+      constraintFutures.add(
+        (() async {
+          late final PackageRange targetRange;
+          late final Version targetVersion;
+          switch (kind) {
+            case _UpgradeTargetKind.latest:
+              final targetPackage = await _latest(e, target.name, ref);
+              targetRange = targetPackage.toRange();
+              targetVersion = targetPackage.version;
+            case _UpgradeTargetKind.resolvable:
+              final targetPackage = await latestResolvable(target.name);
+              targetRange = targetPackage.toRange();
+              targetVersion = targetPackage.version;
+            case _UpgradeTargetKind.version:
+              targetVersion = target.version!;
+              targetRange = ref.withConstraint(targetVersion);
+          }
+          return ConstraintAndCause(
+            targetRange,
+            '${targetRange.name} $targetVersion was requested by '
+            '`$topLevelProgram pub upgrade ${target.argument}`.',
+          );
+        })(),
+      );
+    }
+    final constraints = await Future.wait(constraintFutures);
+    return constraints.isEmpty ? null : constraints;
+  }
+
+  Future<Map<String, PackageId>> _computeLatestResolvablePackages(
+    Entrypoint e,
+  ) async {
+    final solveResult = await log.spinner('Resolving dependencies', () async {
+      return await resolveVersions(
+        SolveType.upgrade,
+        cache,
+        e.workspaceRoot.transformWorkspace(
+          (package) => stripVersionBounds(package.pubspec),
+        ),
+      );
+    }, condition: _shouldShowSpinner);
+    return {for (final package in solveResult.packages) package.name: package};
+  }
+
+  Future<PackageId> _latest(
+    Entrypoint e,
+    String package,
+    PackageRef ref,
+  ) async {
+    final current = e.lockFile.packages[package];
+    final currentVersionForRef =
+        current?.toRef() == ref ? current?.version : null;
+    final latest = await cache.getLatest(ref, version: currentVersionForRef);
+    if (latest == null) {
+      dataError('Could not find package `$package`.');
+    }
+    return latest;
+  }
+
+  PackageRef? _packageRef(Entrypoint e, String package) {
+    final override = e.workspaceRoot.allOverridesInWorkspace[package];
+    if (override != null) return override.toRef();
+
+    for (final workspacePackage in e.workspaceRoot.transitiveWorkspace) {
+      final dependency = workspacePackage.dependencies[package];
+      if (dependency != null) return dependency.toRef();
+      final devDependency = workspacePackage.devDependencies[package];
+      if (devDependency != null) return devDependency.toRef();
+    }
+    final current = e.lockFile.packages[package];
+    if (current != null) return current.toRef();
+    return null;
+  }
+
+  _UpgradeTarget _parseUpgradeTarget(String argument) {
+    final oldStyleParts = argument.split(':');
+    if (oldStyleParts.length == 2 &&
+        packageNameRegExp.hasMatch(oldStyleParts.first) &&
+        (oldStyleParts.last == 'latest' ||
+            oldStyleParts.last == 'resolvable')) {
+      usageException(
+        'Unknown upgrade target `$argument`. Use `<package>`, '
+        '`<package>@<version>`, `<package>@latest`, or '
+        '`<package>@resolvable`.',
+      );
+    }
+
+    final parts = argument.split('@');
+    if (parts.length > 2) {
+      usageException(
+        'Could not parse upgrade target `$argument`. Use `<package>`, '
+        '`<package>@<version>`, `<package>@latest`, or '
+        '`<package>@resolvable`.',
+      );
+    }
+
+    final package = parts.first;
+    if (!packageNameRegExp.hasMatch(package)) {
+      usageException('Not a valid package name: "$package"');
+    }
+
+    if (parts.length == 1) {
+      return _UpgradeTarget(argument, package, null);
+    }
+
+    final suffix = parts.last;
+    final kind = switch (suffix) {
+      'latest' => _UpgradeTargetKind.latest,
+      'resolvable' => _UpgradeTargetKind.resolvable,
+      _ => null,
+    };
+    if (kind == null) {
+      try {
+        return _UpgradeTarget(
+          argument,
+          package,
+          _UpgradeTargetKind.version,
+          Version.parse(suffix),
+        );
+      } on FormatException catch (_) {
+        usageException(
+          'Unknown upgrade target `$argument`. Use `<package>`, '
+          '`<package>@<version>`, `<package>@latest`, or '
+          '`<package>@resolvable`.',
+        );
+      }
+    }
+    return _UpgradeTarget(argument, package, kind);
   }
 
   /// Return names of packages to be upgraded, and throws [UsageException] if
@@ -220,7 +454,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
             ...package.devDependencies.keys,
           ],
         }.toList();
-    final packagesToUpgrade = await _packagesToUpgrade;
+    final packagesToUpgrade = await _rootPackagesToUpgrade;
     final toUpgrade =
         packagesToUpgrade.isEmpty ? directDeps : packagesToUpgrade;
 
@@ -240,21 +474,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
 
   Future<void> _runUpgradeMajorVersions() async {
     final toUpgrade = await _directDependenciesToUpgrade();
-    // Solve [resolvablePubspec] in-memory and consolidate the resolved
-    // versions of the packages into a map for quick searching.
-    final resolvedPackages = <String, PackageId>{};
-    final solveResult = await log.spinner('Resolving dependencies', () async {
-      return await resolveVersions(
-        SolveType.upgrade,
-        cache,
-        entrypoint.workspaceRoot.transformWorkspace(
-          (package) => stripVersionBounds(package.pubspec),
-        ),
-      );
-    }, condition: _shouldShowSpinner);
-    for (final resolvedPackage in solveResult.packages) {
-      resolvedPackages[resolvedPackage.name] = resolvedPackage;
-    }
+    final resolvedPackages = await _computeLatestResolvablePackages(entrypoint);
     final dependencyOverriddenDeps = <String>[];
     // Changes to be made to `pubspec.yaml` of each package.
     // Mapping from original to changed value.
@@ -305,7 +525,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         }),
       );
       changes = entrypoint.tighten(
-        packagesToUpgrade: await _packagesToUpgrade,
+        packagesToUpgrade: await _rootPackagesToUpgrade,
         existingChanges: changes,
         packageVersions: solveResult.packages,
       );
@@ -317,7 +537,9 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     // But without a specific package we want to get as many non-major updates
     // as possible (SolveType.upgrade).
     final solveType =
-        (await _packagesToUpgrade).isEmpty ? SolveType.upgrade : SolveType.get;
+        (await _rootPackagesToUpgrade).isEmpty
+            ? SolveType.upgrade
+            : SolveType.get;
 
     entrypoint.applyChanges(changes, _dryRun);
     await entrypoint
@@ -330,7 +552,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
           solveType,
           dryRun: _dryRun,
           precompile: !_dryRun && _precompile,
-          unlock: await _packagesToUpgrade,
+          unlock: await _rootPackagesToUpgrade,
         );
 
     // If any of the packages to upgrade are dependency overrides, then we
@@ -376,4 +598,15 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       );
     }
   }
+}
+
+enum _UpgradeTargetKind { latest, resolvable, version }
+
+class _UpgradeTarget {
+  final String argument;
+  final String name;
+  final _UpgradeTargetKind? kind;
+  final Version? version;
+
+  _UpgradeTarget(this.argument, this.name, this.kind, [this.version]);
 }

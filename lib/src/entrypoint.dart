@@ -35,6 +35,7 @@ import 'sdk/flutter.dart';
 import 'solver.dart';
 import 'solver/report.dart';
 import 'solver/solve_suggestions.dart';
+import 'solver/version_solver.dart';
 import 'source/cached.dart';
 import 'source/hosted.dart';
 import 'source/root.dart';
@@ -564,6 +565,10 @@ See $workspacesDocUrl for more information.''',
   /// The iterable [unlock] specifies the list of packages whose versions can be
   /// changed even if they are locked in the pubspec.lock file.
   ///
+  /// The iterable [additionalConstraints] specifies extra constraints the
+  /// version solver must satisfy. When omitted, no extra constraints are
+  /// applied.
+  ///
   /// Shows a report of the changes made relative to the previous lockfile. If
   /// this is an upgrade or downgrade, all transitive dependencies are shown in
   /// the report. Otherwise, only dependencies that were changed are shown. If
@@ -583,6 +588,7 @@ See $workspacesDocUrl for more information.''',
   Future<void> acquireDependencies(
     SolveType type, {
     Iterable<String> unlock = const [],
+    Iterable<ConstraintAndCause>? additionalConstraints,
     bool dryRun = false,
     bool precompile = false,
     bool summaryOnly = false,
@@ -616,6 +622,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
           workspaceRoot,
           lockFile: lockFile,
           unlock: unlock,
+          additionalConstraints: additionalConstraints,
         );
       });
     } on SolveFailure catch (e) {
