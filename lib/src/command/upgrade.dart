@@ -28,7 +28,8 @@ class UpgradeCommand extends PubCommand {
   String get description =>
       "Upgrade the current package's dependencies to latest versions.\n"
       '\n'
-      'Append `@<version>` to a dependency to require a specific version.\n'
+      'Append `@<constraint>` to a dependency to require a specific version '
+      'constraint.\n'
       '\n'
       'Append `@latest` to a dependency to require the latest available '
       'version.\n'
@@ -38,7 +39,7 @@ class UpgradeCommand extends PubCommand {
       'the dependencies.';
   @override
   String get argumentsDescription =>
-      '[dependencies[@<version>|@latest|@resolvable]...]';
+      '[dependencies[@<constraint>|@latest|@resolvable]...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-upgrade';
 
@@ -185,13 +186,13 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     if (hasUpgradeTargetConstraints) {
       if (_upgradeMajorVersions) {
         usageException(
-          'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
+          'Cannot use `@<constraint>`, `@latest`, or `@resolvable` with '
           '`--major-versions`.',
         );
       }
       if (_tighten) {
         usageException(
-          'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
+          'Cannot use `@<constraint>`, `@latest`, or `@resolvable` with '
           '`--tighten`.',
         );
       }
@@ -311,23 +312,23 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       constraintFutures.add(
         (() async {
           late final PackageRange targetRange;
-          late final Version targetVersion;
+          late final VersionConstraint targetConstraint;
           switch (kind) {
             case _UpgradeTargetKind.latest:
               final targetPackage = await _latest(e, target.name, ref);
               targetRange = targetPackage.toRange();
-              targetVersion = targetPackage.version;
+              targetConstraint = targetPackage.version;
             case _UpgradeTargetKind.resolvable:
               final targetPackage = await latestResolvable(target.name);
               targetRange = targetPackage.toRange();
-              targetVersion = targetPackage.version;
-            case _UpgradeTargetKind.version:
-              targetVersion = target.version!;
-              targetRange = ref.withConstraint(targetVersion);
+              targetConstraint = targetPackage.version;
+            case _UpgradeTargetKind.constraint:
+              targetConstraint = target.constraint!;
+              targetRange = ref.withConstraint(targetConstraint);
           }
           return ConstraintAndCause(
             targetRange,
-            '${targetRange.name} $targetVersion was requested by '
+            '${targetRange.name} $targetConstraint was requested by '
             '`$topLevelProgram pub upgrade ${target.argument}`.',
           );
         })(),
@@ -390,7 +391,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
             oldStyleParts.last == 'resolvable')) {
       usageException(
         'Unknown upgrade target `$argument`. Use `<package>`, '
-        '`<package>@<version>`, `<package>@latest`, or '
+        '`<package>@<constraint>`, `<package>@latest`, or '
         '`<package>@resolvable`.',
       );
     }
@@ -399,7 +400,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     if (parts.length > 2) {
       usageException(
         'Could not parse upgrade target `$argument`. Use `<package>`, '
-        '`<package>@<version>`, `<package>@latest`, or '
+        '`<package>@<constraint>`, `<package>@latest`, or '
         '`<package>@resolvable`.',
       );
     }
@@ -424,13 +425,13 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         return _UpgradeTarget(
           argument,
           package,
-          _UpgradeTargetKind.version,
-          Version.parse(suffix),
+          _UpgradeTargetKind.constraint,
+          VersionConstraint.parse(suffix),
         );
       } on FormatException catch (_) {
         usageException(
           'Unknown upgrade target `$argument`. Use `<package>`, '
-          '`<package>@<version>`, `<package>@latest`, or '
+          '`<package>@<constraint>`, `<package>@latest`, or '
           '`<package>@resolvable`.',
         );
       }
@@ -600,13 +601,13 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
   }
 }
 
-enum _UpgradeTargetKind { latest, resolvable, version }
+enum _UpgradeTargetKind { latest, resolvable, constraint }
 
 class _UpgradeTarget {
   final String argument;
   final String name;
   final _UpgradeTargetKind? kind;
-  final Version? version;
+  final VersionConstraint? constraint;
 
-  _UpgradeTarget(this.argument, this.name, this.kind, [this.version]);
+  _UpgradeTarget(this.argument, this.name, this.kind, [this.constraint]);
 }

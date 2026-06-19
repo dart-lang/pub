@@ -567,7 +567,7 @@ void main() {
       await pubUpgrade(
         args: ['--major-versions', 'foo@latest'],
         error: contains(
-          'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
+          'Cannot use `@<constraint>`, `@latest`, or `@resolvable` with '
           '`--major-versions`.',
         ),
         exitCode: exit_codes.USAGE,
@@ -582,7 +582,7 @@ void main() {
     await pubUpgrade(
       args: ['--tighten', 'foo@1.0.0'],
       error: contains(
-        'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
+        'Cannot use `@<constraint>`, `@latest`, or `@resolvable` with '
         '`--tighten`.',
       ),
       exitCode: exit_codes.USAGE,
@@ -604,7 +604,7 @@ void main() {
         error: allOf(
           contains('Unknown upgrade target `$target`.'),
           contains('Use `<package>`'),
-          contains('`<package>@<version>`'),
+          contains('`<package>@<constraint>`'),
           contains('`<package>@latest`'),
           contains('`<package>@resolvable`.'),
         ),
@@ -617,18 +617,13 @@ void main() {
     await servePackages();
     await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
 
-    for (final target in [
-      'foo@',
-      'foo@Latest',
-      'foo@not-a-version',
-      'foo@^1.0.0',
-    ]) {
+    for (final target in ['foo@', 'foo@Latest', 'foo@not-a-version']) {
       await pubUpgrade(
         args: [target],
         error: allOf(
           contains('Unknown upgrade target `$target`.'),
           contains('Use `<package>`'),
-          contains('`<package>@<version>`'),
+          contains('`<package>@<constraint>`'),
           contains('`<package>@latest`'),
           contains('`<package>@resolvable`.'),
         ),
@@ -646,11 +641,32 @@ void main() {
       error: allOf(
         contains('Could not parse upgrade target `foo@bar@latest`.'),
         contains('Use `<package>`'),
-        contains('`<package>@<version>`'),
+        contains('`<package>@<constraint>`'),
         contains('`<package>@latest`'),
         contains('`<package>@resolvable`.'),
       ),
       exitCode: exit_codes.USAGE,
+    );
+  });
+
+  test('`dependency@constraint` upgrades a transitive dependency '
+      'with a constraint', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'bar': 'any'});
+    server.serve('bar', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+    await pubGet(output: contains('+ foo 1.0.0'));
+
+    server.serve('bar', '1.1.0');
+    server.serve('bar', '1.5.0');
+    server.serve('bar', '2.0.0');
+
+    // Upgrades to 1.5.0 because it's the latest satisfying <2.0.0
+    await pubUpgrade(
+      args: ['bar@<2.0.0'],
+      output: allOf(contains('> bar 1.5.0'), isNot(contains('bar 2.0.0'))),
     );
   });
 }
