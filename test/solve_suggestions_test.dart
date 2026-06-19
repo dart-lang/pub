@@ -5,8 +5,9 @@
 @TestOn('vm')
 library;
 
+import 'package:pub/src/io.dart' show escapeShellArgument;
+import 'package:pub/src/path.dart' show p;
 import 'package:shelf/shelf.dart';
-
 import 'package:test/test.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 
@@ -113,6 +114,87 @@ void main() {
     );
   });
 
+  test(
+    'suggests an update to a package constraint in a workspace member',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0', deps: {'bar': '^2.0.0'});
+      server.serve('foo', '0.9.0', deps: {'bar': '^1.0.0'});
+      server.serve('bar', '1.0.0');
+      server.serve('bar', '2.0.0');
+
+      await d.dir(appPath, [
+        d.libPubspec(
+          'myApp',
+          '1.0.0',
+          extras: {
+            'workspace': ['pkgs/a'],
+          },
+          sdk: '^3.5.0',
+        ),
+        d.dir('pkgs', [
+          d.dir('a', [
+            d.libPubspec(
+              'a',
+              '1.0.0',
+              deps: {'foo': '^1.0.0'},
+              devDeps: {'bar': '^1.0.0'},
+              resolutionWorkspace: true,
+            ),
+          ]),
+        ]),
+      ]).create();
+
+      final packageDir = escapeShellArgument(p.join('pkgs', 'a'));
+      await pubGet(
+        args: ['--directory', p.join('pkgs', 'a')],
+        error: allOf([
+          contains(
+            '* Try upgrading your constraint on bar: '
+            'dart pub add --directory $packageDir dev:bar:^2.0.0',
+          ),
+          contains(
+            '* Consider downgrading your constraint on foo: '
+            'dart pub add --directory $packageDir foo:^0.9.0',
+          ),
+        ]),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      );
+    },
+  );
+
+  test(
+    'preserves a dependency source when suggesting a workspace member version',
+    () async {
+      final server = await startPackageServer();
+
+      await d.dir(appPath, [
+        d.libPubspec(
+          'myApp',
+          '1.0.0',
+          deps: {
+            'a': {'version': '^2.0.0', 'hosted': server.url},
+          },
+          extras: {
+            'workspace': ['pkgs/a'],
+          },
+          sdk: '^3.5.0',
+        ),
+        d.dir('pkgs', [
+          d.dir('a', [d.libPubspec('a', '1.0.0', resolutionWorkspace: true)]),
+        ]),
+      ]).create();
+
+      await pubGet(
+        error: contains(
+          '* Consider downgrading your constraint on a: dart pub add '
+          'a:\'{"version":"^1.0.0","hosted":"${server.url}"}\'',
+        ),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      );
+    },
+  );
+
   test('suggests updates to multiple packages', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0', deps: {'bar': '2.0.0'});
@@ -168,10 +250,45 @@ void main() {
         ),
       ]).create();
       await pubGet(
+        args: ['--directory', appPath],
+        workingDirectory: d.sandbox,
         error: contains(
           '* Try an upgrade of your constraints: '
-          'dart pub upgrade --major-versions',
+          'dart pub upgrade --directory $appPath --major-versions',
         ),
+      );
+    },
+  );
+
+  test(
+    'does not suggest versioned path descriptors for workspace members',
+    () async {
+      await d.dir(appPath, [
+        d.libPubspec(
+          'myApp',
+          '1.0.0',
+          deps: {
+            'a': {'path': 'pkgs/a', 'version': '^2.0.0'},
+          },
+          extras: {
+            'workspace': ['pkgs/a'],
+          },
+          sdk: '^3.5.0',
+        ),
+        d.dir('pkgs', [
+          d.dir('a', [d.libPubspec('a', '1.0.0', resolutionWorkspace: true)]),
+        ]),
+      ]).create();
+
+      await pubGet(
+        error: allOf([
+          contains(
+            'Because myApp depends on both a ^2.0.0 from path and a, '
+            'version solving failed.',
+          ),
+          isNot(contains('You can try')),
+        ]),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       );
     },
   );
@@ -218,6 +335,105 @@ void main() {
       ),
     ]).validate();
   });
+
+  test(
+    'suggests multi-package upgrade via pub upgrade --major-versions',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0', deps: {'bar': '^2.0.0'});
+      server.serve('bar', '1.0.0');
+      server.serve('bar', '2.0.0');
+
+      await d.dir(appPath, [
+        d.libPubspec(
+          'myApp',
+          '1.0.0',
+          extras: {
+            'workspace': ['pkgs/a', 'pkgs/b'],
+          },
+          sdk: '^3.5.0',
+        ),
+        d.dir('pkgs', [
+          d.dir('a', [
+            d.libPubspec(
+              'a',
+              '1.0.0',
+              deps: {'foo': '^1.0.0', 'bar': '^1.0.0'},
+              resolutionWorkspace: true,
+            ),
+          ]),
+          d.dir('b', [
+            d.libPubspec(
+              'b',
+              '1.0.0',
+              deps: {'bar': '^1.0.0'},
+              resolutionWorkspace: true,
+            ),
+          ]),
+        ]),
+      ]).create();
+
+      await pubGet(
+        error: contains(
+          '* Try upgrading your constraints on bar: '
+          'dart pub upgrade --major-versions bar',
+        ),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      );
+    },
+  );
+
+  test(
+    'suggests manual edit for multi-package downgrade',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
+      server.serve('bar', '1.0.0');
+      server.serve('bar', '2.0.0');
+
+      await d.dir(appPath, [
+        d.libPubspec(
+          'myApp',
+          '1.0.0',
+          extras: {
+            'workspace': ['pkgs/a', 'pkgs/b'],
+          },
+          sdk: '^3.5.0',
+        ),
+        d.dir('pkgs', [
+          d.dir('a', [
+            d.libPubspec(
+              'a',
+              '1.0.0',
+              deps: {'foo': '^1.0.0', 'bar': '^2.0.0'},
+              resolutionWorkspace: true,
+            ),
+          ]),
+          d.dir('b', [
+            d.libPubspec(
+              'b',
+              '1.0.0',
+              deps: {'bar': '^2.0.0'},
+              resolutionWorkspace: true,
+            ),
+          ]),
+        ]),
+      ]).create();
+
+      await pubGet(
+        error: allOf([
+          contains('* Try manually updating your constraints on bar:'),
+          contains(
+            '  In pkgs/a/pubspec.yaml: set dependencies -> bar to ^1.0.0',
+          ),
+          contains(
+            '  In pkgs/b/pubspec.yaml: set dependencies -> bar to ^1.0.0',
+          ),
+        ]),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      );
+    },
+  );
 }
 
 const releasesMockResponse = '''
