@@ -183,20 +183,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     final hasUpgradeTargetConstraints = _upgradeTargets.any(
       (target) => target.kind != null,
     );
-    if (hasUpgradeTargetConstraints) {
-      if (_upgradeMajorVersions) {
-        usageException(
-          'Cannot use `@<constraint>`, `@latest`, or `@resolvable` with '
-          '`--major-versions`.',
-        );
-      }
-      if (_tighten) {
-        usageException(
-          'Cannot use `@<constraint>`, `@latest`, or `@resolvable` with '
-          '`--tighten`.',
-        );
-      }
-    }
+
     if (hasUpgradeTargetConstraints ||
         (argResults.flag('unlock-transitive') && _upgradeTargets.isNotEmpty)) {
       _validateUpgradeTargetEntrypoints(
@@ -339,8 +326,9 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   }
 
   Future<Map<String, PackageId>> _computeLatestResolvablePackages(
-    Entrypoint e,
-  ) async {
+    Entrypoint e, {
+    Iterable<ConstraintAndCause>? additionalConstraints,
+  }) async {
     final solveResult = await log.spinner('Resolving dependencies', () async {
       return await resolveVersions(
         SolveType.upgrade,
@@ -348,6 +336,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         e.workspaceRoot.transformWorkspace(
           (package) => stripVersionBounds(package.pubspec),
         ),
+        additionalConstraints: additionalConstraints,
       );
     }, condition: _shouldShowSpinner);
     return {for (final package in solveResult.packages) package.name: package};
@@ -475,7 +464,10 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
 
   Future<void> _runUpgradeMajorVersions() async {
     final toUpgrade = await _directDependenciesToUpgrade();
-    final resolvedPackages = await _computeLatestResolvablePackages(entrypoint);
+    final resolvedPackages = await _computeLatestResolvablePackages(
+      entrypoint,
+      additionalConstraints: await _upgradeTargetConstraints(entrypoint),
+    );
     final dependencyOverriddenDeps = <String>[];
     // Changes to be made to `pubspec.yaml` of each package.
     // Mapping from original to changed value.

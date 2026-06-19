@@ -558,35 +558,42 @@ void main() {
     );
   });
 
-  test(
-    '`dependency@latest` cannot be combined with --major-versions',
-    () async {
-      await servePackages();
-      await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+  test('`dependency@constraint` can be combined with --major-versions', () async {
+    final server = await servePackages();
+    server.serve('bar', '1.0.0');
 
-      await pubUpgrade(
-        args: ['--major-versions', 'foo@latest'],
-        error: contains(
-          'Cannot use `@<constraint>`, `@latest`, or `@resolvable` with '
-          '`--major-versions`.',
-        ),
-        exitCode: exit_codes.USAGE,
-      );
-    },
-  );
+    await d.appDir(dependencies: {'bar': '^1.0.0'}).create();
 
-  test('`dependency@version` cannot be combined with --tighten', () async {
-    await servePackages();
-    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+    await pubGet();
+
+    server.serve('bar', '2.0.0');
+    server.serve('bar', '3.0.0');
 
     await pubUpgrade(
-      args: ['--tighten', 'foo@1.0.0'],
-      error: contains(
-        'Cannot use `@<constraint>`, `@latest`, or `@resolvable` with '
-        '`--tighten`.',
-      ),
-      exitCode: exit_codes.USAGE,
+      args: ['--major-versions', 'bar@^2.0.0'],
+      output: contains('> bar 2.0.0'),
     );
+
+    await d.appDir(dependencies: {'bar': '^2.0.0'}).validate();
+  });
+
+  test('`dependency@constraint` can be combined with --tighten', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+    await pubGet();
+
+    server.serve('foo', '1.5.0');
+    server.serve('foo', '2.0.0');
+
+    await pubUpgrade(
+      args: ['--tighten', 'foo@<2.0.0'],
+      output: contains('> foo 1.5.0'),
+    );
+
+    await d.appDir(dependencies: {'foo': '^1.5.0'}).validate();
   });
 
   test('dependency target uses @ instead of colon', () async {
