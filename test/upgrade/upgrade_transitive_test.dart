@@ -558,7 +558,29 @@ void main() {
     );
   });
 
-  test('`dependency@constraint` can be combined with --major-versions', () async {
+  test(
+    '`dependency@constraint` can be combined with --major-versions',
+    () async {
+      final server = await servePackages();
+      server.serve('bar', '1.0.0');
+
+      await d.appDir(dependencies: {'bar': '^1.0.0'}).create();
+
+      await pubGet();
+
+      server.serve('bar', '2.0.0');
+      server.serve('bar', '3.0.0');
+
+      await pubUpgrade(
+        args: ['--major-versions', 'bar@^2.0.0'],
+        output: contains('> bar 2.0.0'),
+      );
+
+      await d.appDir(dependencies: {'bar': '^2.0.0'}).validate();
+    },
+  );
+
+  test('`dependency@latest` can be combined with --major-versions', () async {
     final server = await servePackages();
     server.serve('bar', '1.0.0');
 
@@ -566,22 +588,50 @@ void main() {
 
     await pubGet();
 
+    server.serve('bar', '1.5.0');
     server.serve('bar', '2.0.0');
     server.serve('bar', '3.0.0');
 
     await pubUpgrade(
-      args: ['--major-versions', 'bar@^2.0.0'],
-      output: contains('> bar 2.0.0'),
+      args: ['--major-versions', 'bar@latest'],
+      output: contains('> bar 3.0.0'),
     );
 
-    await d.appDir(dependencies: {'bar': '^2.0.0'}).validate();
+    await d.appDir(dependencies: {'bar': '^3.0.0'}).validate();
   });
+
+  test(
+    '`dependency@resolvable` can be combined with --major-versions',
+    () async {
+      final server = await servePackages();
+      server.serve('bar', '1.0.0', deps: {'baz': '^1.0.0'});
+      server.serve('baz', '1.0.0');
+      server.serve('qux', '1.0.0', deps: {'baz': '^1.0.0'});
+
+      await d.appDir(dependencies: {'bar': '^1.0.0', 'qux': '^1.0.0'}).create();
+
+      await pubGet();
+
+      server.serve('bar', '2.0.0', deps: {'baz': '^1.0.0'});
+      server.serve('bar', '3.0.0', deps: {'baz': '^2.0.0'});
+      server.serve('baz', '2.0.0');
+
+      await pubUpgrade(
+        args: ['--major-versions', 'bar@resolvable'],
+        output: allOf(contains('> bar 2.0.0'), isNot(contains('bar 3.0.0'))),
+      );
+
+      await d
+          .appDir(dependencies: {'bar': '^2.0.0', 'qux': '^1.0.0'})
+          .validate();
+    },
+  );
 
   test('`dependency@constraint` can be combined with --tighten', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
 
-    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet();
 
@@ -590,10 +640,53 @@ void main() {
 
     await pubUpgrade(
       args: ['--tighten', 'foo@<2.0.0'],
-      output: contains('> foo 1.5.0'),
+      output: allOf(contains('> foo 1.5.0'), isNot(contains('foo 2.0.0'))),
     );
 
     await d.appDir(dependencies: {'foo': '^1.5.0'}).validate();
+  });
+
+  test('`dependency@latest` can be combined with --tighten', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': '>=1.0.0 <3.0.0'}).create();
+
+    await pubGet();
+
+    server.serve('foo', '1.5.0');
+    server.serve('foo', '2.0.0');
+
+    await pubUpgrade(
+      args: ['--tighten', 'foo@latest'],
+      output: contains('> foo 2.0.0'),
+    );
+
+    await d.appDir(dependencies: {'foo': '^2.0.0'}).validate();
+  });
+
+  test('`dependency@resolvable` can be combined with --tighten', () async {
+    final server = await servePackages();
+    server.serve('bar', '1.0.0', deps: {'baz': '^1.0.0'});
+    server.serve('baz', '1.0.0');
+    server.serve('qux', '1.0.0', deps: {'baz': '^1.0.0'});
+
+    await d
+        .appDir(dependencies: {'bar': '>=1.0.0 <3.0.0', 'qux': '^1.0.0'})
+        .create();
+
+    await pubGet();
+
+    server.serve('bar', '2.0.0', deps: {'baz': '^1.0.0'});
+    server.serve('bar', '3.0.0', deps: {'baz': '^2.0.0'});
+    server.serve('baz', '2.0.0');
+
+    await pubUpgrade(
+      args: ['--tighten', 'bar@resolvable'],
+      output: allOf(contains('> bar 2.0.0'), isNot(contains('bar 3.0.0'))),
+    );
+
+    await d.appDir(dependencies: {'bar': '^2.0.0', 'qux': '^1.0.0'}).validate();
   });
 
   test('dependency target uses @ instead of colon', () async {
