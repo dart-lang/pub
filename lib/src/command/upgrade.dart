@@ -464,9 +464,12 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
 
   Future<void> _runUpgradeMajorVersions() async {
     final toUpgrade = await _directDependenciesToUpgrade();
+    final upgradeTargetConstraints = await _upgradeTargetConstraints(
+      entrypoint,
+    );
     final resolvedPackages = await _computeLatestResolvablePackages(
       entrypoint,
-      additionalConstraints: await _upgradeTargetConstraints(entrypoint),
+      additionalConstraints: upgradeTargetConstraints,
     );
     final dependencyOverriddenDeps = <String>[];
     // Changes to be made to `pubspec.yaml` of each package.
@@ -516,6 +519,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         entrypoint.workspaceRoot.transformWorkspace((package) {
           return applyChanges(package.pubspec, changes[package] ?? {});
         }),
+        additionalConstraints: upgradeTargetConstraints,
       );
       changes = entrypoint.tighten(
         packagesToUpgrade: await _rootPackagesToUpgrade,
@@ -546,6 +550,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
           dryRun: _dryRun,
           precompile: !_dryRun && _precompile,
           unlock: await _rootPackagesToUpgrade,
+          additionalConstraints: upgradeTargetConstraints,
         );
 
     // If any of the packages to upgrade are dependency overrides, then we

@@ -580,6 +580,33 @@ void main() {
     },
   );
 
+  test(
+    '`dependency@constraint` constrains the final --major-versions solve',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+
+      await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+      await pubGet();
+
+      server.serve('foo', '1.5.0');
+      server.serve('foo', '1.6.0');
+
+      await pubUpgrade(
+        args: ['--major-versions', 'foo@<=1.5.0'],
+        output: allOf(contains('> foo 1.5.0'), isNot(contains('foo 1.6.0'))),
+      );
+
+      await d.dir(appPath, [
+        d.file(
+          'pubspec.lock',
+          allOf(contains('version: "1.5.0"'), isNot(contains('1.6.0'))),
+        ),
+      ]).validate();
+    },
+  );
+
   test('`dependency@latest` can be combined with --major-versions', () async {
     final server = await servePackages();
     server.serve('bar', '1.0.0');
