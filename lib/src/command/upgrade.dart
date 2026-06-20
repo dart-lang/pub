@@ -28,7 +28,7 @@ class UpgradeCommand extends PubCommand {
   String get description =>
       "Upgrade the current package's dependencies to latest versions.\n"
       '\n'
-      'Append `@<constraint>` to a dependency to require a specific version '
+      'Append `@<constraint>` to a dependency to require a version '
       'constraint.\n'
       '\n'
       'Append `@latest` to a dependency to require the latest available '
@@ -270,24 +270,19 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   Future<List<ConstraintAndCause>?> _upgradeTargetConstraints(
     Entrypoint e,
   ) async {
-    final constraintFutures = <Future<ConstraintAndCause>>[];
-    Future<Map<String, PackageId>>? latestResolvablePackages;
+    final constraints = <ConstraintAndCause>[];
+    final resolvableTargets = <_UpgradeTarget>[];
 
-    Future<PackageId> latestResolvable(String package) async {
-      if (_packageRef(e, package) == null) {
-        dataError('Package `$package` is not in the current resolution.');
-      }
-      final packages =
-          await (latestResolvablePackages ??= _computeLatestResolvablePackages(
-            e,
-          ));
-      final latestResolvable = packages[package];
-      if (latestResolvable == null) {
-        dataError(
-          'Package `$package` is not in the latest resolvable resolution.',
-        );
-      }
-      return latestResolvable;
+    ConstraintAndCause constraintAndCause(
+      PackageRange targetRange,
+      VersionConstraint targetConstraint,
+      String argument,
+    ) {
+      return ConstraintAndCause(
+        targetRange,
+        '${targetRange.name} $targetConstraint was requested by '
+        '`$topLevelProgram pub upgrade $argument`.',
+      );
     }
 
     for (final target in _upgradeTargets) {
@@ -296,32 +291,56 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       final ref = _packageRef(e, target.name);
       if (ref == null) continue;
 
-      constraintFutures.add(
-        (() async {
-          late final PackageRange targetRange;
-          late final VersionConstraint targetConstraint;
-          switch (kind) {
-            case _UpgradeTargetKind.latest:
-              final targetPackage = await _latest(e, target.name, ref);
-              targetRange = targetPackage.toRange();
-              targetConstraint = targetPackage.version;
-            case _UpgradeTargetKind.resolvable:
-              final targetPackage = await latestResolvable(target.name);
-              targetRange = targetPackage.toRange();
-              targetConstraint = targetPackage.version;
-            case _UpgradeTargetKind.constraint:
-              targetConstraint = target.constraint!;
-              targetRange = ref.withConstraint(targetConstraint);
-          }
-          return ConstraintAndCause(
-            targetRange,
-            '${targetRange.name} $targetConstraint was requested by '
-            '`$topLevelProgram pub upgrade ${target.argument}`.',
+      switch (kind) {
+        case _UpgradeTargetKind.latest:
+          final targetPackage = await _latest(e, target.name, ref);
+          constraints.add(
+            constraintAndCause(
+              targetPackage.toRange(),
+              targetPackage.version,
+              target.argument,
+            ),
           );
-        })(),
-      );
+        case _UpgradeTargetKind.resolvable:
+          resolvableTargets.add(target);
+        case _UpgradeTargetKind.constraint:
+          final targetConstraint = target.constraint!;
+          constraints.add(
+            constraintAndCause(
+              ref.withConstraint(targetConstraint),
+              targetConstraint,
+              target.argument,
+            ),
+          );
+      }
     }
-    final constraints = await Future.wait(constraintFutures);
+
+    if (resolvableTargets.isNotEmpty) {
+      final packages = await _computeLatestResolvablePackages(
+        e,
+        additionalConstraints:
+            constraints.isEmpty
+                ? null
+                : List<ConstraintAndCause>.of(constraints),
+      );
+      for (final target in resolvableTargets) {
+        final targetPackage = packages[target.name];
+        if (targetPackage == null) {
+          dataError(
+            'Package `${target.name}` is not in the latest resolvable '
+            'resolution.',
+          );
+        }
+        constraints.add(
+          constraintAndCause(
+            targetPackage.toRange(),
+            targetPackage.version,
+            target.argument,
+          ),
+        );
+      }
+    }
+
     return constraints.isEmpty ? null : constraints;
   }
 
@@ -449,8 +468,10 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         packagesToUpgrade.isEmpty ? directDeps : packagesToUpgrade;
 
     // Check that all package names in upgradeOnly are direct-dependencies
-    final notInDeps = toUpgrade.where((n) => !directDeps.contains(n));
-    if (argResults.rest.any(notInDeps.contains)) {
+    final notInDeps = _upgradeTargets
+        .map((target) => target.name)
+        .where((n) => !directDeps.contains(n));
+    if (notInDeps.isNotEmpty) {
       usageException('''
 Dependencies specified in `$topLevelProgram pub upgrade --major-versions <dependencies>` must
 be direct 'dependencies' or 'dev_dependencies', following packages are not:

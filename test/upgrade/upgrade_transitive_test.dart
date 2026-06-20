@@ -81,6 +81,32 @@ void main() {
     },
   );
 
+  test(
+    '`--major-versions` rejects transitive dependency targets with suffixes',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
+      server.serve('bar', '1.0.0');
+
+      await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+      await pubGet(output: contains('+ foo 1.0.0'));
+
+      await pubUpgrade(
+        args: ['--major-versions', 'bar@^2.0.0'],
+        error: allOf(
+          contains(
+            'Dependencies specified in `dart pub upgrade --major-versions '
+            '<dependencies>`',
+          ),
+          contains('be direct'),
+          contains(' - bar'),
+        ),
+        exitCode: exit_codes.USAGE,
+      );
+    },
+  );
+
   test('`--unlock-transitive --major-versions` allows transitive dependencies '
       'be upgraded along with the named packages', () async {
     final server = await servePackages();
@@ -280,6 +306,25 @@ void main() {
         contains('> baz 1.5.0'),
         isNot(contains('baz 2.0.0')),
       ),
+    );
+  });
+
+  test('`dependency@resolvable` honors other target constraints', () async {
+    final server = await servePackages();
+    server.serve('bar', '1.0.0', deps: {'baz': '<2.0.0'});
+    server.serve('baz', '1.0.0');
+
+    await d.appDir(dependencies: {'bar': 'any', 'baz': 'any'}).create();
+
+    await pubGet(output: contains('+ bar 1.0.0'));
+
+    server.serve('bar', '2.0.0', deps: {'baz': '^2.0.0'});
+    server.serve('baz', '1.5.0');
+    server.serve('baz', '2.0.0');
+
+    await pubUpgrade(
+      args: ['bar@1.0.0', 'baz@resolvable'],
+      output: allOf(contains('> baz 1.5.0'), isNot(contains('baz 2.0.0'))),
     );
   });
 

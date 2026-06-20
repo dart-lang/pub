@@ -4,7 +4,7 @@
 $ pub upgrade --help
 Upgrade the current package's dependencies to latest versions.
 
-Append `@<constraint>` to a dependency to require a specific version constraint.
+Append `@<constraint>` to a dependency to require a version constraint.
 
 Append `@latest` to a dependency to require the latest available version.
 
