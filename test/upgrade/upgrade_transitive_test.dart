@@ -841,4 +841,170 @@ void main() {
       output: allOf(contains('> bar 1.5.0'), isNot(contains('bar 2.0.0'))),
     );
   });
+
+  test('`dependency@constraint` suggests --major-versions when blocked by '
+      'the root constraint', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+    await pubGet(
+      workingDirectory: d.sandbox,
+      args: ['--directory', appPath],
+      output: contains('+ foo 1.0.0'),
+    );
+
+    server.serve('foo', '2.0.0');
+
+    final suggestedArgs = [
+      '--major-versions',
+      '--tighten',
+      '--directory',
+      appPath,
+      'foo@2.0.0',
+    ];
+
+    await pubUpgrade(
+      workingDirectory: d.sandbox,
+      args: ['--tighten', '--directory', appPath, 'foo@2.0.0'],
+      error: allOf(
+        contains('The requested constraint `2.0.0` for `foo`'),
+        contains('current constraint `^1.0.0`'),
+        contains('pubspec.yaml'),
+        contains(['dart', 'pub', 'upgrade', ...suggestedArgs].join(' ')),
+        isNot(contains('version solving failed')),
+      ),
+      exitCode: exit_codes.DATA,
+    );
+
+    await pubUpgrade(
+      workingDirectory: d.sandbox,
+      args: suggestedArgs,
+      output: contains('> foo 2.0.0'),
+    );
+
+    await d.appDir(dependencies: {'foo': '^2.0.0'}).validate();
+  });
+
+  test(
+    '`dependency@constraint` allows overlap with the root constraint',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+
+      await d.appDir(dependencies: {'foo': '>=1.0.0 <3.0.0'}).create();
+
+      await pubGet(output: contains('+ foo 1.0.0'));
+
+      server.serve('foo', '2.0.0');
+
+      await pubUpgrade(args: ['foo@2.0.0'], output: contains('> foo 2.0.0'));
+    },
+  );
+
+  test('`dependency@constraint` suggests --major-versions when blocked by '
+      'a workspace constraint', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myapp',
+        '1.0.0',
+        sdk: '^3.5.0',
+        extras: {
+          'workspace': ['a'],
+        },
+      ),
+      d.dir('a', [
+        d.libPubspec(
+          'a',
+          '1.0.0',
+          deps: {'foo': '^1.0.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).create();
+
+    await pubGet(
+      workingDirectory: d.sandbox,
+      args: ['--directory', appPath],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: contains('+ foo 1.0.0'),
+    );
+
+    server.serve('foo', '2.0.0');
+
+    final suggestedArgs = [
+      '--major-versions',
+      '--directory',
+      appPath,
+      'foo@2.0.0',
+    ];
+
+    await pubUpgrade(
+      workingDirectory: d.sandbox,
+      args: ['--directory', appPath, 'foo@2.0.0'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      error: allOf(
+        contains('The requested constraint `2.0.0` for `foo`'),
+        contains('current constraint `^1.0.0`'),
+        matches(RegExp(r'a[\\/]pubspec\.yaml')),
+        contains(['dart', 'pub', 'upgrade', ...suggestedArgs].join(' ')),
+      ),
+      exitCode: exit_codes.DATA,
+    );
+
+    await pubUpgrade(
+      workingDirectory: d.sandbox,
+      args: suggestedArgs,
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: contains('> foo 2.0.0'),
+    );
+
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myapp',
+        '1.0.0',
+        sdk: '^3.5.0',
+        extras: {
+          'workspace': ['a'],
+        },
+      ),
+      d.dir('a', [
+        d.libPubspec(
+          'a',
+          '1.0.0',
+          deps: {'foo': '^2.0.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).validate();
+  });
+
+  test('`dependency@constraint` does not suggest --major-versions for '
+      'dependency override conflicts', () async {
+    await servePackages();
+
+    await d
+        .appDir(
+          dependencies: {'foo': 'any'},
+          pubspec: {
+            'dependency_overrides': {'foo': '1.0.0'},
+          },
+        )
+        .create();
+
+    await pubUpgrade(
+      args: ['foo@2.0.0'],
+      error: allOf(
+        contains('The requested constraint `2.0.0` for `foo`'),
+        contains('dependency override constraint `1.0.0`'),
+        contains('Update or remove the dependency override before retrying.'),
+        isNot(contains('--major-versions')),
+      ),
+      exitCode: exit_codes.DATA,
+    );
+  });
 }

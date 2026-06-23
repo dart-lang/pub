@@ -189,6 +189,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       _validateUpgradeTargetEntrypoints(
         validatePlainTargets: argResults.flag('unlock-transitive'),
       );
+      _validateUpgradeTargetConstraintsOverlap();
     }
 
     if (_upgradeMajorVersions) {
@@ -265,6 +266,77 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         'It was not found in $entrypoints.',
       );
     }
+  }
+
+  void _validateUpgradeTargetConstraintsOverlap() {
+    if (_upgradeMajorVersions) return;
+
+    for (final target in _upgradeTargets) {
+      if (target.kind != _UpgradeTargetKind.constraint) continue;
+      for (final entrypoint in _entrypointsToUpgrade) {
+        _validateUpgradeTargetConstraintOverlap(entrypoint, target);
+      }
+    }
+  }
+
+  void _validateUpgradeTargetConstraintOverlap(
+    Entrypoint e,
+    _UpgradeTarget target,
+  ) {
+    final targetConstraint = target.constraint!;
+    var hasOverride = false;
+    for (final workspacePackage in e.workspaceRoot.transitiveWorkspace) {
+      final override =
+          workspacePackage.pubspec.dependencyOverrides[target.name];
+      if (override == null) continue;
+      hasOverride = true;
+      if (!override.constraint.allowsAny(targetConstraint)) {
+        final pubspecPath =
+            workspacePackage.pubspec.dependencyOverridesFromOverridesFile
+                ? workspacePackage.pubspecOverridesPath
+                : workspacePackage.pubspecPath;
+        dataError(
+          'The requested constraint `$targetConstraint` for `${target.name}` '
+          'does not overlap with the dependency override constraint '
+          '`${override.constraint}` in `$pubspecPath`.\n'
+          'Update or remove the dependency override before retrying.',
+        );
+      }
+    }
+    if (hasOverride) return;
+
+    for (final workspacePackage in e.workspaceRoot.transitiveWorkspace) {
+      final dependency = workspacePackage.dependencies[target.name];
+      final devDependency = workspacePackage.devDependencies[target.name];
+      final declaredConstraint =
+          dependency?.constraint ?? devDependency?.constraint;
+      if (declaredConstraint == null ||
+          declaredConstraint.allowsAny(targetConstraint)) {
+        continue;
+      }
+      dataError(
+        'The requested constraint `$targetConstraint` for `${target.name}` '
+        'does not overlap with the current constraint `$declaredConstraint` '
+        'in `${workspacePackage.pubspecPath}`.\n'
+        'To update the constraint, run '
+        '`${_suggestedMajorVersionsCommand(e, target)}`.',
+      );
+    }
+  }
+
+  String _suggestedMajorVersionsCommand(Entrypoint e, _UpgradeTarget target) {
+    final directoryOption =
+        identical(e, entrypoint) ? directory : e.workspaceRoot.dir;
+    return [
+      topLevelProgram,
+      'pub',
+      'upgrade',
+      '--major-versions',
+      if (_tighten) '--tighten',
+      if (argResults.flag('unlock-transitive')) '--unlock-transitive',
+      if (directoryOption != '.') ...['--directory', directoryOption],
+      target.argument,
+    ].map(escapeShellArgument).join(' ');
   }
 
   Future<List<ConstraintAndCause>?> _upgradeTargetConstraints(
