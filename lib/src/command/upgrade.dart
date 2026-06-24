@@ -327,6 +327,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   String _suggestedMajorVersionsCommand(Entrypoint e, _UpgradeTarget target) {
     final directoryOption =
         identical(e, entrypoint) ? directory : e.workspaceRoot.dir;
+    final disableExamples = e.examples.isNotEmpty;
     return [
       topLevelProgram,
       'pub',
@@ -334,6 +335,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       '--major-versions',
       if (_tighten) '--tighten',
       if (argResults.flag('unlock-transitive')) '--unlock-transitive',
+      if (disableExamples) '--no-example',
       if (directoryOption != '.') ...['--directory', directoryOption],
       target.argument,
     ].map(escapeShellArgument).join(' ');

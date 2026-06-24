@@ -888,6 +888,56 @@ void main() {
   });
 
   test(
+    '`dependency@constraint` suggestion does not fall through to examples',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+
+      await d.dir(appPath, [
+        d.appPubspec(dependencies: {'foo': '^1.0.0'}),
+        d.dir('example', [
+          d.pubspec({
+            'name': 'myapp_example',
+            'dependencies': {'foo': '^1.0.0'},
+          }),
+        ]),
+      ]).create();
+
+      await pubGet(args: ['--example'], output: contains('+ foo 1.0.0'));
+
+      server.serve('foo', '2.0.0');
+
+      final suggestedArgs = ['--major-versions', '--no-example', 'foo@2.0.0'];
+
+      for (final args in [
+        ['foo@2.0.0'],
+        ['--no-example', 'foo@2.0.0'],
+      ]) {
+        await pubUpgrade(
+          args: args,
+          error: allOf(
+            contains('The requested constraint `2.0.0` for `foo`'),
+            contains(['dart', 'pub', 'upgrade', ...suggestedArgs].join(' ')),
+          ),
+          exitCode: exit_codes.DATA,
+        );
+      }
+
+      await pubUpgrade(args: suggestedArgs, output: contains('> foo 2.0.0'));
+
+      await d.dir(appPath, [
+        d.appPubspec(dependencies: {'foo': '^2.0.0'}),
+        d.dir('example', [
+          d.pubspec({
+            'name': 'myapp_example',
+            'dependencies': {'foo': '^1.0.0'},
+          }),
+        ]),
+      ]).validate();
+    },
+  );
+
+  test(
     '`dependency@constraint` allows overlap with the root constraint',
     () async {
       final server = await servePackages();
