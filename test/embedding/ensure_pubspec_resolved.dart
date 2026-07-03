@@ -540,7 +540,7 @@ Future _touch(String path) async {
 
 /// Schedules a non-semantic modification to [path] with an artificial delay.
 Future _touchWithDelay(String path) async {
-  await Future<void>.delayed(const Duration(seconds: 1));
+  await Future<void>.delayed(const Duration(milliseconds: 10));
   path = p.join(d.sandbox, 'myapp', path);
   touch(path);
 }
