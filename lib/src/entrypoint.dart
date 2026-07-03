@@ -1303,10 +1303,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         return null;
       }
 
-      if (!lockFileModified.isAfterWithPrecision(pubspecStat.modified)) {
+      if (!lockFileModified.isAfter(pubspecStat.modified)) {
         log.fine('`$pubspecPath` is newer than `$lockFilePath`');
         lockfileNewerThanPubspecs = false;
-        if (pubspecStat.modified.isAfterWithPrecision(lockFileModified)) {
+        if (pubspecStat.modified.isAfter(lockFileModified)) {
           pubspecStrictlyNewer = true;
           break;
         }
@@ -1320,14 +1320,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         // This will wrongly require you to reresolve if a
         // `pubspec_overrides.yaml` in a path-dependency is updated. That
         // seems acceptable.
-        if (!lockFileModified.isAfterWithPrecision(
-          pubspecOverridesStat.modified,
-        )) {
+        if (!lockFileModified.isAfter(pubspecOverridesStat.modified)) {
           log.fine('`$pubspecOverridesPath` is newer than `$lockFilePath`');
           lockfileNewerThanPubspecs = false;
-          if (pubspecOverridesStat.modified.isAfterWithPrecision(
-            lockFileModified,
-          )) {
+          if (pubspecOverridesStat.modified.isAfter(lockFileModified)) {
             pubspecStrictlyNewer = true;
             break;
           }
@@ -1355,7 +1351,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     }
 
     if (!updateOutOfDateTimestamps &&
-        packageConfigStat.modified.isBeforeWithPrecision(lockFileModified)) {
+        packageConfigStat.modified.isBefore(lockFileModified)) {
       log.fine(
         'Timestamps are out of order (updateOutOfDateTimestamps: false)',
       );
@@ -1364,7 +1360,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
     if (touchedLockFile ||
         !lockfileNewerThanPubspecs ||
-        packageConfigStat.modified.isBeforeWithPrecision(lockFileModified)) {
+        packageConfigStat.modified.isBefore(lockFileModified)) {
       log.fine('`$lockFilePath` is newer than `$packageConfigPath`');
       if (isPackageConfigUpToDate(
         packageConfig,
@@ -1374,7 +1370,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         lockFilePath: lockFilePath,
       )) {
         if (touchedLockFile ||
-            lockFileModified.isAfterWithPrecision(packageConfigStat.modified)) {
+            lockFileModified.isAfter(packageConfigStat.modified)) {
           touch(packageConfigPath);
         }
       } else {
@@ -1704,25 +1700,3 @@ See https://dart.dev/go/sdk-constraint
 
 /// For each package in a workspace, a set of changes to dependencies.
 typedef ChangeSet = Map<Package, Map<PackageRange, PackageRange>>;
-
-extension on DateTime {
-  /// Whether this [DateTime] is strictly after [other], ignoring
-  /// sub-second precision on Windows due to `setLastModifiedSync` truncation.
-  bool isAfterWithPrecision(DateTime other) {
-    if (platform.isWindows) {
-      return millisecondsSinceEpoch ~/ 1000 >
-          other.millisecondsSinceEpoch ~/ 1000;
-    }
-    return isAfter(other);
-  }
-
-  /// Whether this [DateTime] is strictly before [other], ignoring
-  /// sub-second precision on Windows due to `setLastModifiedSync` truncation.
-  bool isBeforeWithPrecision(DateTime other) {
-    if (platform.isWindows) {
-      return millisecondsSinceEpoch ~/ 1000 <
-          other.millisecondsSinceEpoch ~/ 1000;
-    }
-    return isBefore(other);
-  }
-}

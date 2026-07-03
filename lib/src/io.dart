@@ -1118,15 +1118,6 @@ class PubProcess {
 /// Updates [path]'s modification time.
 void touch(String path) {
   log.fine('Touching `$path`');
-  if (platform.isLinux || platform.isMacOS) {
-    try {
-      // setLastModifiedSync has poor resolution. We call out to touch instead.
-      Process.runSync('touch', [path]);
-      return;
-    } on Exception catch (_) {
-      // Fallback if touch command is somehow not found.
-    }
-  }
   File(path).setLastModifiedSync(DateTime.now());
 }
 
