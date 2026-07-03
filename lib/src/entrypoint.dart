@@ -852,14 +852,11 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     String relativeIfNeeded(String path) =>
         wasRelative ? p.relative(path) : path;
 
-    late final rootPackageDir = () {
-      for (final parent in parentDirs(dir)) {
-        if (tryStatFile(p.join(parent, 'pubspec.yaml')) != null) {
-          return parent;
-        }
-      }
-      return dir;
-    }();
+    late final rootPackageDir =
+        parentDirs(dir).firstWhereOrNull(
+          (parent) => tryStatFile(p.join(parent, 'pubspec.yaml')) != null,
+        ) ??
+        dir;
     late final root = Package.load(
       rootPackageDir,
       loadPubspec: Pubspec.loadRootWithSources(cache.sources),
