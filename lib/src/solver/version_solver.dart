@@ -48,7 +48,10 @@ class VersionSolver {
 
   /// The partial solution that contains package versions we've selected and
   /// assignments we've derived from those versions and [_incompatibilities].
-  final _solution = PartialSolution();
+  late final _solution = PartialSolution({
+    for (final package in _rootPackages.values)
+      package.name: PackageRef.root(package),
+  });
 
   /// Package listers that lazily convert package versions' dependencies into
   /// incompatibilities.
@@ -330,7 +333,9 @@ class VersionSolver {
         for (var term in incompatibility.terms)
           if (term != mostRecentTerm) term,
         for (var term in mostRecentSatisfier.cause!.terms)
-          if (term.package != mostRecentSatisfier.package) term,
+          if (_solution.canonicalize(term.package) !=
+              mostRecentSatisfier.package)
+            term,
       ];
 
       // The [mostRecentSatisfier] may not satisfy [mostRecentTerm] on its own

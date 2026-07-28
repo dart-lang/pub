@@ -169,6 +169,67 @@ void main() {
     ], generatorVersion: '3.5.0').validate();
   });
 
+  test('reports dependency conflicts with nested workspace members', () async {
+    final server = await servePackages();
+    server.serve('workspace_dep', '1.0.0');
+    server.serve('shared_dep', '1.0.0');
+    server.serve('shared_dep', '2.0.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        devDeps: {'shared_dep': '^2.0.0'},
+        extras: {
+          'workspace': ['pkgs/app', 'pkgs/inner'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('pkgs', [
+        dir('app', [
+          libPubspec(
+            'app',
+            '1.0.0',
+            deps: {'workspace_dep': 'any'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+        dir('inner', [
+          libPubspec(
+            'inner',
+            '1.0.0',
+            extras: {
+              'workspace': ['workspace_dep'],
+            },
+            resolutionWorkspace: true,
+          ),
+          dir('workspace_dep', [
+            libPubspec(
+              'workspace_dep',
+              '1.0.0',
+              devDeps: {'shared_dep': '^1.0.0'},
+              resolutionWorkspace: true,
+            ),
+          ]),
+        ]),
+      ]),
+    ]).create();
+
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      error: allOf(
+        contains('workspace_dep'),
+        contains('shared_dep ^1.0.0'),
+        contains('shared_dep ^2.0.0'),
+        contains('version solving failed.'),
+        isNot(contains('Null check operator used on a null value')),
+        isNot(contains('!term.isPositive')),
+        isNot(
+          contains('Duplicate name workspace_dep in generated package config'),
+        ),
+      ),
+    );
+  });
+
   test('checks constraints between workspace members', () async {
     await servePackages();
     await dir(appPath, [
