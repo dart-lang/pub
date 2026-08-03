@@ -1960,6 +1960,42 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
       ], generatorVersion: '3.11.0'),
     ]).validate();
   });
+
+  test(
+    'literal workspace entries are resolved with newer language versions',
+    () async {
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/foo-bar', 'pkgs/baz_qux', 'other_pkgs/*'],
+          },
+          sdk: '^3.11.0',
+        ),
+        dir('pkgs', [
+          dir('foo-bar', [
+            libPubspec('foo_bar', '1.1.1', resolutionWorkspace: true),
+          ]),
+          dir('baz_qux', [
+            libPubspec('baz_qux', '1.1.1', resolutionWorkspace: true),
+          ]),
+        ]),
+        dir('other_pkgs', [
+          dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+        ]),
+      ]).create();
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
+      await dir(appPath, [
+        packageConfigFile([
+          packageConfigEntry(name: 'myapp', path: '.'),
+          packageConfigEntry(name: 'foo_bar', path: 'pkgs/foo-bar'),
+          packageConfigEntry(name: 'baz_qux', path: 'pkgs/baz_qux'),
+          packageConfigEntry(name: 'a', path: 'other_pkgs/a'),
+        ], generatorVersion: '3.11.0'),
+      ]).validate();
+    },
+  );
 }
 
 final s = p.separator;

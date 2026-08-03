@@ -181,7 +181,8 @@ class Package {
         pubspec.workspace.expand((workspacePath) {
           final packages = <Package>[];
           var globHint = '';
-          if (pubspec.languageVersion.supportsWorkspaceGlobs) {
+          if (pubspec.languageVersion.supportsWorkspaceGlobs &&
+              _hasGlobWildcards(workspacePath)) {
             final Glob glob;
             try {
               glob = Glob(workspacePath);
@@ -200,9 +201,14 @@ class Package {
               );
             }
           } else {
-            final pubspecPath = p.join(dir, workspacePath, 'pubspec.yaml');
+            final pubspecPath = p.join(
+              dir,
+              _useBackSlashesOnWindows(workspacePath),
+              'pubspec.yaml',
+            );
             if (!fileExists(pubspecPath)) {
-              if (_looksLikeGlob(workspacePath)) {
+              if (!pubspec.languageVersion.supportsWorkspaceGlobs &&
+                  _hasGlobWildcards(workspacePath)) {
                 globHint = '''
 \n\nGlob syntax is only supported from language version ${LanguageVersion.firstVersionWithWorkspaceGlobs}.
 Consider changing the language version of ${p.join(dir, 'pubspec.yaml')} to ${LanguageVersion.firstVersionWithWorkspaceGlobs}.
@@ -583,7 +589,8 @@ See https://dart.dev/go/workspaces-stray-files for details.
   }
 }
 
-bool _looksLikeGlob(String s) => Glob.quote(s) != s;
+bool _hasGlobWildcards(String s) =>
+    s.contains('*') || s.contains('?') || s.contains('[') || s.contains('{');
 String _useBackSlashesOnWindows(String path) {
   if (platform.isWindows) {
     return p.joinAll(p.split(path));
