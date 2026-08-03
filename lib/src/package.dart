@@ -589,6 +589,14 @@ See https://dart.dev/go/workspaces-stray-files for details.
   }
 }
 
+/// Returns whether [s] contains any glob wildcard syntax characters.
+///
+/// We intentionally do not account for backslash-escaped wildcards (like `\*`).
+/// Paths without any of these characters are guaranteed to be plain relative
+/// paths that can be checked directly on the filesystem without unescaping or
+/// glob parsing. Paths containing these characters (even if escaped) are
+/// delegated to `package:glob` to handle unescaping properly and to avoid
+/// conflicting with Windows `\` path separators.
 bool _hasGlobWildcards(String s) =>
     s.contains('*') || s.contains('?') || s.contains('[') || s.contains('{');
 String _useBackSlashesOnWindows(String path) {
