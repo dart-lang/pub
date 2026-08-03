@@ -2087,7 +2087,7 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
         'No workspace packages matching `pkgs/nonexistent`.\n'
         'That was included in the workspace of `.${s}pubspec.yaml`.',
       ),
-      exitCode: DATA,
+      exitCode: 1,
     );
   });
 }
