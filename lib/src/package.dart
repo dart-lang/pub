@@ -301,14 +301,11 @@ See $workspacesDocUrl for more information.
   }) {
     final packageDir = dir;
     final root = git.repoRoot(packageDir) ?? packageDir;
-    beneath =
-        p
-            .toUri(
-              p.normalize(
-                p.relative(p.join(packageDir, beneath ?? '.'), from: root),
-              ),
-            )
-            .path;
+    beneath = p.posix.joinAll(
+      p.split(
+        p.normalize(p.relative(p.join(packageDir, beneath ?? '.'), from: root)),
+      ),
+    );
     if (beneath == './') beneath = '.';
     String resolve(String path) {
       if (platform.isWindows) {
