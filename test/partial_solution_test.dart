@@ -58,6 +58,13 @@ void main() {
     }
   });
 
+  test('finds a satisfier for a non-root workspace reference', () {
+    final hostedNegative = Term(firstRef.withConstraint(firstVersion), false);
+    final solution = solutionFor([hostedNegative]);
+
+    expect(solution.satisfier(hostedNegative).index, 0);
+  });
+
   test('keeps ordinary source references separate', () {
     final solution = PartialSolution();
     final firstNegative = Term(firstRef.withConstraint(firstVersion), false);

@@ -14,6 +14,12 @@ import 'term.dart';
 ///
 /// See https://github.com/dart-lang/pub/tree/master/doc/solver.md#partial-solution.
 class PartialSolution {
+  /// The canonical [PackageRef]s of workspace root packages, keyed by package
+  /// name.
+  ///
+  /// A dependency on any member of a workspace is treated as a dependency on
+  /// that workspace's root package, so all solver operations canonicalize
+  /// member references through this map before registering or relating terms.
   final Map<String, PackageRef> _rootRefs;
 
   PartialSolution([this._rootRefs = const {}]);
@@ -145,7 +151,6 @@ class PartialSolution {
   ///
   /// Throws a [StateError] if [term] isn't satisfied by `this`.
   Assignment satisfier(Term term) {
-    term = Term(canonicalize(term.package), term.isPositive);
     final prefix = PartialSolution(_rootRefs);
     for (var assignment in _assignments) {
       if (assignment.package.name != term.package.name) continue;
