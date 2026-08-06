@@ -11,6 +11,7 @@ dependencies:
   collection: ^1.19.1
   convert: ^3.1.2
   crypto: ^3.0.7
+  dart_apitool: ^0.23.2
   file: ^7.0.1
   frontend_server_client: ^4.0.0
   glob: ^2.1.3
