@@ -16,7 +16,9 @@ import '../validator.dart';
 ///
 /// Gives an info when publishing a new version, if the latest published
 /// version lower to this was not opted into null-safety.
-class RelativeVersionNumberingValidator extends Validator {
+final class RelativeVersionNumberingValidator extends Validator {
+  @override
+  String get name => 'relative_version_numbering';
   static const String semverUrl =
       'https://dart.dev/tools/pub/versioning#semantic-versions';
 

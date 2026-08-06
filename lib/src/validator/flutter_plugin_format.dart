@@ -17,7 +17,9 @@ const _pluginDocsUrl =
 ///
 /// See:
 /// https://flutter.dev/docs/development/packages-and-plugins/developing-packages
-class FlutterPluginFormatValidator extends Validator {
+final class FlutterPluginFormatValidator extends Validator {
+  @override
+  String get name => 'flutter_plugin_format';
   @override
   Future validate() async {
     final pubspec = package.pubspec;

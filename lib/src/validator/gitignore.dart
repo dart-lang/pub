@@ -19,7 +19,9 @@ import '../validator.dart';
 /// A validator that validates that no checked in files are ignored by a
 /// .gitignore. These would be considered part of the package by previous
 /// versions of pub.
-class GitignoreValidator extends Validator {
+final class GitignoreValidator extends Validator {
+  @override
+  String get name => 'gitignore';
   @override
   Future<void> validate() async {
     if (package.inGitRepo) {

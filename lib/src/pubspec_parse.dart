@@ -8,6 +8,7 @@ import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart';
 import 'utils.dart' show ExpectField, identifierRegExp;
+import 'validator.dart' show allValidatorNames;
 
 /// A regular expression matching allowed package names.
 ///
@@ -144,6 +145,51 @@ abstract class PubspecBase {
   }
 
   Set<String>? _ignoredAdvisories;
+
+  /// The list of publication validations to be ignored during package
+  /// publication.
+  ///
+  /// It is an error if this is not a list of strings, or contains unrecognized
+  /// validator names.
+  Set<String> get ignoredValidations {
+    var validations = _ignoredValidations;
+    if (validations != null) {
+      return validations;
+    }
+    validations = <String>{};
+
+    Never ignoredValidationsError(SourceSpan span, [String? message]) => _error(
+      message ??
+          '"ignored_validations" field must be a list of validator names',
+      span,
+    );
+
+    final ignoredValidationsNode = fields.nodes['ignored_validations'];
+    if (ignoredValidationsNode == null) {
+      return _ignoredValidations = Set.unmodifiable(validations);
+    }
+    if (ignoredValidationsNode is! YamlList) {
+      ignoredValidationsError(ignoredValidationsNode.span);
+    }
+    for (final node in ignoredValidationsNode.nodes) {
+      final value = node.value;
+      if (value is! String) {
+        ignoredValidationsError(node.span);
+      }
+      if (!allValidatorNames.contains(value)) {
+        ignoredValidationsError(
+          node.span,
+          'Unrecognized validator name "$value" in "ignored_validations". '
+          'Valid validator names are: ${allValidatorNames.join(', ')}.',
+        );
+      }
+      validations.add(value);
+    }
+
+    return _ignoredValidations = Set.unmodifiable(validations);
+  }
+
+  Set<String>? _ignoredValidations;
 
   /// The list of patterns covering _false-positive secrets_ in the package.
   ///

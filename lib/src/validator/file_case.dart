@@ -9,7 +9,9 @@ import 'package:collection/collection.dart';
 import '../validator.dart';
 
 /// Validates that a package files all are unique even after case-normalization.
-class FileCaseValidator extends Validator {
+final class FileCaseValidator extends Validator {
+  @override
+  String get name => 'file_case';
   @override
   Future validate() async {
     final lowerCaseToFile = <String, String>{};

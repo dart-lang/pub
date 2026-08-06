@@ -16,7 +16,9 @@ import '../source/sdk.dart';
 import '../validator.dart';
 
 /// A validator that validates a package's dependencies.
-class DependencyValidator extends Validator {
+final class DependencyValidator extends Validator {
+  @override
+  String get name => 'dependencies';
   @override
   Future validate() async {
     /// Whether any dependency has a caret constraint.

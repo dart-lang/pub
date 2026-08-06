@@ -8,7 +8,9 @@ import '../validator.dart';
 
 /// A validator that checks that the pubspec has valid "author" and "homepage"
 /// fields.
-class PubspecFieldValidator extends Validator {
+final class PubspecFieldValidator extends Validator {
+  @override
+  String get name => 'pubspec_fields';
   @override
   Future<void> validate() {
     _validateFieldIsString('description');

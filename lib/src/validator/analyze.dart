@@ -11,7 +11,9 @@ import '../platform_info.dart';
 import '../validator.dart';
 
 /// Runs `dart analyze` and gives a warning if it returns non-zero.
-class AnalyzeValidator extends Validator {
+final class AnalyzeValidator extends Validator {
+  @override
+  String get name => 'analyze';
   // Only analyze dart code in the following sub-folders and files.
   static const List<String> _entriesToAnalyze = [
     'bin',

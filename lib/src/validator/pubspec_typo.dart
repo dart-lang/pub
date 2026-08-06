@@ -6,7 +6,9 @@ import '../levenshtein.dart';
 import '../validator.dart';
 
 /// Validates that a package's pubspec does not contain any typos in its keys.
-class PubspecTypoValidator extends Validator {
+final class PubspecTypoValidator extends Validator {
+  @override
+  String get name => 'pubspec_typos';
   @override
   Future validate() async {
     final fields = package.pubspec.fields;
@@ -74,6 +76,7 @@ const _validPubspecKeys = [
   'funding',
   'topics',
   'ignored_advisories',
+  'ignored_validations',
   'workspace',
   'resolution',
 ];

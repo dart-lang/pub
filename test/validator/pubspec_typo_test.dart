@@ -38,6 +38,7 @@ void main() {
           'executables': '',
           'publish_to': '',
           'flutter': {},
+          'ignored_validations': ['git_status'],
         }),
       ]).create();
 

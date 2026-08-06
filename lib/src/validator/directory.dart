@@ -9,7 +9,9 @@ import '../path.dart';
 import '../validator.dart';
 
 /// A validator that validates a package's top-level directories.
-class DirectoryValidator extends Validator {
+final class DirectoryValidator extends Validator {
+  @override
+  String get name => 'package_layout';
   static final _pluralNames = [
     'benchmarks',
     'docs',

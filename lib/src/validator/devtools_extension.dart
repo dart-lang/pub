@@ -10,7 +10,9 @@ import '../validator.dart';
 
 //   If the `extension/devtools/` directory exists
 //  verify the directory contains a file `config.yaml` and a non-empty `build/` directory
-class DevtoolsExtensionValidator extends Validator {
+final class DevtoolsExtensionValidator extends Validator {
+  @override
+  String get name => 'devtools_extension';
   static String docUrl = 'https://docs.flutter.dev/tools/devtools/extensions';
 
   @override

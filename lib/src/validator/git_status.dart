@@ -16,7 +16,9 @@ import '../validator.dart';
 ///
 /// Doesn't report on newly added files, as generated files might not be checked
 /// in to git.
-class GitStatusValidator extends Validator {
+final class GitStatusValidator extends Validator {
+  @override
+  String get name => 'git_status';
   @override
   Future<void> validate() async {
     if (!package.inGitRepo) {

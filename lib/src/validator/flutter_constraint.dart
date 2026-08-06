@@ -9,7 +9,9 @@ import 'package:pub_semver/pub_semver.dart';
 import '../validator.dart';
 
 /// Validates that a package's flutter constraint doesn't contain an upper bound
-class FlutterConstraintValidator extends Validator {
+final class FlutterConstraintValidator extends Validator {
+  @override
+  String get name => 'flutter_constraint';
   static const explanationUrl =
       'https://dart.dev/go/flutter-upper-bound-deprecation';
 

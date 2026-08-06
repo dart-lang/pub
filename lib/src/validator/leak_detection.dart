@@ -29,6 +29,9 @@ const _falseSecretsDocumentationLink = 'https://dart.dev/go/false-secrets';
 /// accidentally leaked.
 final class LeakDetectionValidator extends Validator {
   @override
+  String get name => 'leak_detection';
+
+  @override
   Future<void> validate() async {
     // Load `false_secrets` from `pubspec.yaml`.
     final falseSecrets = Ignore(

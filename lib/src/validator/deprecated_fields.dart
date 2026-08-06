@@ -8,7 +8,9 @@ import '../validator.dart';
 
 /// A validator that validates that a pubspec is not including deprecated fields
 /// which are no longer read.
-class DeprecatedFieldsValidator extends Validator {
+final class DeprecatedFieldsValidator extends Validator {
+  @override
+  String get name => 'deprecated_fields';
   @override
   Future validate() async {
     if (package.pubspec.fields.containsKey('transformers')) {

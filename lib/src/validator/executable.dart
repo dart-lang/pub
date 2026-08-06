@@ -10,7 +10,9 @@ import '../validator.dart';
 
 /// Validates that a package's pubspec doesn't contain executables that
 /// reference non-existent scripts.
-class ExecutableValidator extends Validator {
+final class ExecutableValidator extends Validator {
+  @override
+  String get name => 'executables';
   @override
   Future validate() async {
     final binFiles = filesBeneath(

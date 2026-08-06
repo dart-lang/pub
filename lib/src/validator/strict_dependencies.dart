@@ -17,7 +17,10 @@ import '../utils.dart';
 import '../validator.dart';
 
 /// Validates that Dart source files only import declared dependencies.
-class StrictDependenciesValidator extends Validator {
+final class StrictDependenciesValidator extends Validator {
+  @override
+  String get name => 'strict_dependencies';
+
   /// Lazily returns all dependency uses in [files].
   ///
   /// Files that do not parse and directives that don't import or export

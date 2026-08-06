@@ -12,7 +12,9 @@ import '../validator.dart';
 final _readmeRegexp = RegExp(r'^README($|\.)', caseSensitive: false);
 
 /// Validates that a package's README exists and is valid utf-8.
-class ReadmeValidator extends Validator {
+final class ReadmeValidator extends Validator {
+  @override
+  String get name => 'readme';
   @override
   Future<void> validate() async {
     // Find the path to the README file at the root of the entrypoint.

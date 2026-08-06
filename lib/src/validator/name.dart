@@ -11,7 +11,9 @@ import '../validator.dart';
 
 /// A validator that the name of a package is legal and matches the library name
 /// in the case of a single library.
-class NameValidator extends Validator {
+final class NameValidator extends Validator {
+  @override
+  String get name => 'name';
   @override
   Future validate() {
     return Future.sync(() {

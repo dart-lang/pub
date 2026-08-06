@@ -541,6 +541,7 @@ environment:
     () => falseSecrets,
     () => sdkConstraints,
     () => ignoredAdvisories,
+    () => ignoredValidations,
   ]);
 
   /// Returns the type of dependency from this package onto [name].

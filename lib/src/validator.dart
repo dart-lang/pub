@@ -39,6 +39,35 @@ import 'validator/sdk_constraint.dart';
 import 'validator/size.dart';
 import 'validator/strict_dependencies.dart';
 
+/// The canonical names of all publication validators.
+const allValidatorNames = {
+  'analyze',
+  'changelog',
+  'compiled_dartdoc',
+  'dependencies',
+  'dependency_overrides',
+  'deprecated_fields',
+  'devtools_extension',
+  'executables',
+  'file_case',
+  'flutter_constraint',
+  'flutter_plugin_format',
+  'git_status',
+  'gitignore',
+  'leak_detection',
+  'license',
+  'name',
+  'package_layout',
+  'pubspec_exists',
+  'pubspec_fields',
+  'pubspec_typos',
+  'readme',
+  'relative_version_numbering',
+  'sdk_constraint',
+  'size',
+  'strict_dependencies',
+};
+
 /// The base class for validators that check whether a package is fit for
 /// uploading.
 ///
@@ -47,6 +76,9 @@ import 'validator/strict_dependencies.dart';
 /// package not to be uploaded; warnings will require the user to confirm the
 /// upload.
 abstract class Validator {
+  /// The canonical name of this validator.
+  String get name;
+
   /// The accumulated errors for this validator.
   ///
   /// Filled by calling [validate].
@@ -142,6 +174,7 @@ abstract class Validator {
     required List<String> hints,
     required List<String> warnings,
     required List<String> errors,
+    Set<String> ignoredValidations = const {},
   }) async {
     final validators = [
       FileCaseValidator(),
@@ -183,11 +216,47 @@ abstract class Validator {
         await validator.validate();
       }),
     ).then((_) {
-      hints.addAll([for (final validator in validators) ...validator.hints]);
-      warnings.addAll([
-        for (final validator in validators) ...validator.warnings,
+      final activeValidators = validators.where(
+        (v) => !ignoredValidations.contains(v.name),
+      );
+      final ignored = validators.where(
+        (v) => ignoredValidations.contains(v.name),
+      );
+
+      hints.addAll([
+        for (final validator in activeValidators) ...validator.hints,
       ]);
-      errors.addAll([for (final validator in validators) ...validator.errors]);
+      warnings.addAll([
+        for (final validator in activeValidators) ...validator.warnings,
+      ]);
+      errors.addAll([
+        for (final validator in activeValidators) ...validator.errors,
+      ]);
+
+      for (final validator in ignored) {
+        if (entrypoint.workPackage.pubspec.ignoredValidations.contains(
+          validator.name,
+        )) {
+          if (validator.errors.isEmpty && validator.warnings.isEmpty) {
+            warnings.add(
+              'Validation "${validator.name}" was ignored in pubspec.yaml, '
+              'but produced no warnings or errors. Consider removing it from '
+              '"ignored_validations".',
+            );
+          }
+        }
+      }
+
+      final ignoredWithIssues =
+          ignored
+              .where((v) => v.errors.isNotEmpty || v.warnings.isNotEmpty)
+              .map((v) => v.name)
+              .toList();
+      if (ignoredWithIssues.isNotEmpty) {
+        log.message(
+          'Ignored validation issues from: ${ignoredWithIssues.join(', ')}.\n',
+        );
+      }
 
       String presentDiagnostics(List<String> diagnostics) => diagnostics
           .map((diagnostic) => "* ${diagnostic.split('\n').join('\n  ')}\n")

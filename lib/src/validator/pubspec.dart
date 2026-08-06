@@ -12,7 +12,9 @@ import '../validator.dart';
 ///
 /// In most cases this is clearly true, since pub can't run without a pubspec,
 /// but it's possible that the pubspec is gitignored.
-class PubspecValidator extends Validator {
+final class PubspecValidator extends Validator {
+  @override
+  String get name => 'pubspec_exists';
   @override
   Future validate() async {
     if (!filesBeneath(

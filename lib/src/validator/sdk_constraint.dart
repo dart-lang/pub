@@ -14,7 +14,9 @@ import '../validator.dart';
 /// * has an upper bound.
 /// * is not depending on a prerelease, unless the package itself is a
 /// prerelease.
-class SdkConstraintValidator extends Validator {
+final class SdkConstraintValidator extends Validator {
+  @override
+  String get name => 'sdk_constraint';
   @override
   Future validate() async {
     final dartConstraint = package.pubspec.dartSdkConstraint;

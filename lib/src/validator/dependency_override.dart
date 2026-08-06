@@ -8,7 +8,9 @@ import '../validator.dart';
 
 /// Complains (with a hint) if any of the transitive dependencies of a package's
 /// non-dev dependencies are overridden anywhere in the workspace.
-class DependencyOverrideValidator extends Validator {
+final class DependencyOverrideValidator extends Validator {
+  @override
+  String get name => 'dependency_overrides';
   @override
   Future<void> validate() async {
     final graph = await context.entrypoint.packageGraph;

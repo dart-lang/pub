@@ -13,7 +13,9 @@ final licenseLike = RegExp(
 );
 
 /// A validator that checks that a LICENSE-like file exists.
-class LicenseValidator extends Validator {
+final class LicenseValidator extends Validator {
+  @override
+  String get name => 'license';
   @override
   Future validate() {
     return Future.sync(() {

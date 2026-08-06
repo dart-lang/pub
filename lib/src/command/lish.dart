@@ -130,6 +130,13 @@ class LishCommand extends PubCommand {
       help: 'Do not treat warnings as fatal.',
       negatable: false,
     );
+    argParser.addMultiOption(
+      'ignore-validation',
+      help:
+          'Ignore a specific validation (can be passed multiple times).\n'
+          'Valid names are: ${allValidatorNames.join(', ')}',
+      valueHelp: 'name',
+    );
   }
 
   Future<void> _publishUsingClient(
@@ -442,6 +449,20 @@ the \$PUB_HOSTED_URL environment variable.''');
     final warnings = <String>[];
     final errors = <String>[];
 
+    final cliIgnored = argResults.multiOption('ignore-validation');
+    for (final name in cliIgnored) {
+      if (!allValidatorNames.contains(name)) {
+        usageException(
+          'Unrecognized validator name "$name" passed to '
+          '`--ignore-validation`.\n'
+          'Valid validator names are: ${allValidatorNames.join(', ')}.',
+        );
+      }
+    }
+    final allIgnored = entrypoint.workPackage.pubspec.ignoredValidations.union(
+      cliIgnored.toSet(),
+    );
+
     await log.spinner(
       'Validating package',
       () async => await Validator.runAll(
@@ -452,6 +473,7 @@ the \$PUB_HOSTED_URL environment variable.''');
         hints: hints,
         warnings: warnings,
         errors: errors,
+        ignoredValidations: allIgnored,
       ),
     );
 

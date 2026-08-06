@@ -14,7 +14,9 @@ import '../validator.dart';
 final _changelogRegexp = RegExp(r'^CHANGELOG($|\.)', caseSensitive: false);
 
 /// A validator that validates a package's changelog file.
-class ChangelogValidator extends Validator {
+final class ChangelogValidator extends Validator {
+  @override
+  String get name => 'changelog';
   @override
   Future<void> validate() async {
     final changelog = filesBeneath(

@@ -11,7 +11,9 @@ import '../validator.dart';
 const _maxSize = 100 * 1024 * 1024;
 
 /// A validator that validates that a package isn't too big.
-class SizeValidator extends Validator {
+final class SizeValidator extends Validator {
+  @override
+  String get name => 'size';
   @override
   Future<void> validate() async {
     if (packageSize <= _maxSize) return;
