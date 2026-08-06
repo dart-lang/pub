@@ -96,8 +96,8 @@ class ApiBreakageValidator extends Validator {
           'bump.\n'
           'Suggested version: '
           '${baselineForBreakingCheck.version.nextBreaking}\n'
-          'Please bump your version according to Semantic Versioning before '
-          'publishing.\n'
+          'Consider either bumping your version or fixing the breaking '
+          'change(s) before publishing.\n'
           '\nDetected breaking changes:',
         );
         for (final change in breakingChanges) {
