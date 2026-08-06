@@ -43,6 +43,7 @@ class ApiBreakageValidator extends Validator {
 
     // If currentVersion is already a breaking SemVer bump relative to
     // previousVersion, breaking changes are expected.
+    // We compare baseVersion to account for pre-release versions.
     if (isBreakingVersionBump(previousVersion, currentVersion)) {
       return;
     }
@@ -52,14 +53,16 @@ class ApiBreakageValidator extends Validator {
       final previousDir = cache.getDirectory(downloadResult.packageId);
       final currentDir = package.dir;
 
-      final oldApi = await PackageApiAnalyzer(
-        packagePath: previousDir,
-        doAnalyzePlatformConstraints: false,
-      ).analyze();
-      final newApi = await PackageApiAnalyzer(
-        packagePath: currentDir,
-        doAnalyzePlatformConstraints: false,
-      ).analyze();
+      final oldApi =
+          await PackageApiAnalyzer(
+            packagePath: previousDir,
+            doAnalyzePlatformConstraints: false,
+          ).analyze();
+      final newApi =
+          await PackageApiAnalyzer(
+            packagePath: currentDir,
+            doAnalyzePlatformConstraints: false,
+          ).analyze();
 
       final diffResult = PackageApiDiffer().diff(
         oldApi: oldApi,
@@ -100,10 +103,9 @@ class ApiBreakageValidator extends Validator {
 /// Returns true if [newVersion] is a breaking change version bump over
 /// [oldVersion] according to Dart Semantic Versioning rules.
 bool isBreakingVersionBump(Version oldVersion, Version newVersion) {
-  final baseNewVersion = Version(
-    newVersion.major,
-    newVersion.minor,
-    newVersion.patch,
-  );
-  return baseNewVersion >= oldVersion.nextBreaking;
+  return newVersion.baseVersion >= oldVersion.nextBreaking;
+}
+
+extension on Version {
+  Version get baseVersion => Version(major, minor, patch);
 }
