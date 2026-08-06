@@ -109,9 +109,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: d94e6f6bf4ba268e14387a1059efd28c089a2799
-      resolved-ref: d94e6f6bf4ba268e14387a1059efd28c089a2799
-      url: "https://github.com/bmw-tech/dart_apitool.git"
+      ref: "64b6e78bc30400675abadfca016dd68f84ab942b"
+      resolved-ref: "64b6e78bc30400675abadfca016dd68f84ab942b"
+      url: "https://github.com/mosuem/dart_apitool.git"
     source: git
     version: "0.23.3"
   dart_flutter_team_lints:
