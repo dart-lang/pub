@@ -100,5 +100,10 @@ class ApiBreakageValidator extends Validator {
 /// Returns true if [newVersion] is a breaking change version bump over
 /// [oldVersion] according to Dart Semantic Versioning rules.
 bool isBreakingVersionBump(Version oldVersion, Version newVersion) {
-  return newVersion >= oldVersion.nextBreaking;
+  final baseNewVersion = Version(
+    newVersion.major,
+    newVersion.minor,
+    newVersion.patch,
+  );
+  return baseNewVersion >= oldVersion.nextBreaking;
 }

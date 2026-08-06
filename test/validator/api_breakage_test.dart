@@ -36,6 +36,16 @@ void main() {
       );
     });
 
+    test('1.0.0 to 2.0.0-dev is breaking', () {
+      expect(
+        isBreakingVersionBump(
+          Version.parse('1.0.0'),
+          Version.parse('2.0.0-dev'),
+        ),
+        isTrue,
+      );
+    });
+
     test('0.1.0 to 0.1.1 is not breaking', () {
       expect(
         isBreakingVersionBump(Version.parse('0.1.0'), Version.parse('0.1.1')),
@@ -47,6 +57,26 @@ void main() {
       expect(
         isBreakingVersionBump(Version.parse('0.1.0'), Version.parse('0.2.0')),
         isTrue,
+      );
+    });
+
+    test('0.2.0 to 0.3.0-wip is breaking', () {
+      expect(
+        isBreakingVersionBump(
+          Version.parse('0.2.0'),
+          Version.parse('0.3.0-wip'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('0.2.0 to 0.2.1-wip is not breaking', () {
+      expect(
+        isBreakingVersionBump(
+          Version.parse('0.2.0'),
+          Version.parse('0.2.1-wip'),
+        ),
+        isFalse,
       );
     });
   });
@@ -108,6 +138,37 @@ void main() {
           d.file('LICENSE', 'Eh, do what you want.'),
           d.file('README.md', "This package isn't real."),
           d.file('CHANGELOG.md', '# 2.0.0\nFirst version\n'),
+          d.dir('lib', [
+            d.file('test_pkg.dart', 'void bar() {}'),
+          ]),
+        ]).create();
+
+        await expectValidation();
+      },
+    );
+
+    test(
+      'no warnings if breaking changes are in a breaking prerelease bump',
+      () async {
+        final server = await servePackages();
+        server.serve(
+          'test_pkg',
+          '0.2.0',
+          pubspec: {
+            'environment': {'sdk': '>=3.1.2 <=3.2.0'},
+          },
+          contents: [
+            d.dir('lib', [
+              d.file('test_pkg.dart', 'void foo() {}'),
+            ]),
+          ],
+        );
+
+        await d.dir(appPath, [
+          d.validPubspec(extras: {'version': '0.3.0-wip'}),
+          d.file('LICENSE', 'Eh, do what you want.'),
+          d.file('README.md', "This package isn't real."),
+          d.file('CHANGELOG.md', '# 0.3.0-wip\nFirst version\n'),
           d.dir('lib', [
             d.file('test_pkg.dart', 'void bar() {}'),
           ]),
