@@ -97,9 +97,7 @@ void main() {
           'environment': {'sdk': '>=3.1.2 <=3.2.0'},
         },
         contents: [
-          d.dir('lib', [
-            d.file('test_pkg.dart', 'void foo() {}'),
-          ]),
+          d.dir('lib', [d.file('test_pkg.dart', 'void foo() {}')]),
         ],
       );
 
@@ -108,9 +106,7 @@ void main() {
         d.file('LICENSE', 'Eh, do what you want.'),
         d.file('README.md', "This package isn't real."),
         d.file('CHANGELOG.md', '# 1.1.0\nFirst version\n'),
-        d.dir('lib', [
-          d.file('test_pkg.dart', 'void foo() {}\nvoid bar() {}'),
-        ]),
+        d.dir('lib', [d.file('test_pkg.dart', 'void foo() {}\nvoid bar() {}')]),
       ]).create();
 
       await expectValidation();
@@ -127,9 +123,7 @@ void main() {
             'environment': {'sdk': '>=3.1.2 <=3.2.0'},
           },
           contents: [
-            d.dir('lib', [
-              d.file('test_pkg.dart', 'void foo() {}'),
-            ]),
+            d.dir('lib', [d.file('test_pkg.dart', 'void foo() {}')]),
           ],
         );
 
@@ -138,9 +132,7 @@ void main() {
           d.file('LICENSE', 'Eh, do what you want.'),
           d.file('README.md', "This package isn't real."),
           d.file('CHANGELOG.md', '# 2.0.0\nFirst version\n'),
-          d.dir('lib', [
-            d.file('test_pkg.dart', 'void bar() {}'),
-          ]),
+          d.dir('lib', [d.file('test_pkg.dart', 'void bar() {}')]),
         ]).create();
 
         await expectValidation();
@@ -158,9 +150,7 @@ void main() {
             'environment': {'sdk': '>=3.1.2 <=3.2.0'},
           },
           contents: [
-            d.dir('lib', [
-              d.file('test_pkg.dart', 'void foo() {}'),
-            ]),
+            d.dir('lib', [d.file('test_pkg.dart', 'void foo() {}')]),
           ],
         );
 
@@ -169,9 +159,7 @@ void main() {
           d.file('LICENSE', 'Eh, do what you want.'),
           d.file('README.md', "This package isn't real."),
           d.file('CHANGELOG.md', '# 0.3.0-wip\nFirst version\n'),
-          d.dir('lib', [
-            d.file('test_pkg.dart', 'void bar() {}'),
-          ]),
+          d.dir('lib', [d.file('test_pkg.dart', 'void bar() {}')]),
         ]).create();
 
         await expectValidation();
@@ -189,9 +177,7 @@ void main() {
             'environment': {'sdk': '>=3.1.2 <=3.2.0'},
           },
           contents: [
-            d.dir('lib', [
-              d.file('test_pkg.dart', 'void foo() {}'),
-            ]),
+            d.dir('lib', [d.file('test_pkg.dart', 'void foo() {}')]),
           ],
         );
 
@@ -200,9 +186,7 @@ void main() {
           d.file('LICENSE', 'Eh, do what you want.'),
           d.file('README.md', "This package isn't real."),
           d.file('CHANGELOG.md', '# 1.1.0\nFirst version\n'),
-          d.dir('lib', [
-            d.file('test_pkg.dart', 'void bar() {}'),
-          ]),
+          d.dir('lib', [d.file('test_pkg.dart', 'void bar() {}')]),
         ]).create();
 
         await expectValidationWarning(
