@@ -14,7 +14,7 @@ dependencies:
   dart_apitool:
     git:
       url: https://github.com/mosuem/dart_apitool.git
-      ref: 64b6e78bc30400675abadfca016dd68f84ab942b
+      ref: 6e94a0652c4c1c5566062408cd4263a7682a8e17
   file: ^7.0.1
   frontend_server_client: ^4.0.0
   glob: ^2.1.3
