@@ -11,7 +11,10 @@ dependencies:
   collection: ^1.19.1
   convert: ^3.1.2
   crypto: ^3.0.7
-  dart_apitool: ^0.23.2
+  dart_apitool:
+    git:
+      url: https://github.com/bmw-tech/dart_apitool.git
+      ref: d94e6f6bf4ba268e14387a1059efd28c089a2799
   file: ^7.0.1
   frontend_server_client: ^4.0.0
   glob: ^2.1.3

@@ -41,10 +41,20 @@ class ApiBreakageValidator extends Validator {
 
     final previousVersion = previousRelease.version;
 
-    // If currentVersion is already a breaking SemVer bump relative to
-    // previousVersion, breaking changes are expected.
-    // We compare baseVersion to account for pre-release versions.
-    if (isBreakingVersionBump(previousVersion, currentVersion)) {
+    // Find the latest stable release before currentVersion to determine if
+    // currentVersion represents a breaking release cycle.
+    final previousStable = existingVersions.lastWhereOrNull(
+      (id) => !id.version.isPreRelease && id.version < currentVersion,
+    );
+
+    // If currentVersion is already a breaking SemVer bump relative to the
+    // previous stable version (or previous release), breaking changes are
+    // expected.
+    final baselineForBreakingCheck = previousStable ?? previousRelease;
+    if (isBreakingVersionBump(
+      baselineForBreakingCheck.version,
+      currentVersion,
+    )) {
       return;
     }
 
@@ -84,7 +94,8 @@ class ApiBreakageValidator extends Validator {
           '$previousVersion.\n'
           'Your current version ($currentVersion) is not a breaking SemVer '
           'bump.\n'
-          'Suggested version: ${previousVersion.nextBreaking}\n'
+          'Suggested version: '
+          '${baselineForBreakingCheck.version.nextBreaking}\n'
           'Please bump your version according to Semantic Versioning before '
           'publishing.\n'
           '\nDetected breaking changes:',
