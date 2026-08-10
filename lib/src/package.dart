@@ -5,7 +5,6 @@
 import 'dart:io';
 
 import 'package:glob/glob.dart';
-import 'package:glob/list_local_fs.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'exceptions.dart';
@@ -188,7 +187,14 @@ class Package {
             } on FormatException catch (e) {
               fail('Failed to parse glob `$workspacePath`. $e');
             }
-            for (final globResult in glob.listSync(root: dir)) {
+            final globResults =
+                glob
+                    .listFileSystemSync(
+                      currentFileSystem,
+                      root: p.absolute(dir),
+                    )
+                    .toList();
+            for (final globResult in globResults) {
               final pubspecPath = p.join(globResult.path, 'pubspec.yaml');
               if (!fileExists(pubspecPath)) continue;
               packages.add(
