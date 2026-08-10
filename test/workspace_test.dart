@@ -2027,9 +2027,13 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
   });
 
   test('globs are resolved when using overridden filesystem', () async {
-    final fs = MemoryFileSystem();
-    fs.directory('/myapp').createSync();
-    fs.file('/myapp/pubspec.yaml').writeAsStringSync('''
+    final fs = MemoryFileSystem(
+      style:
+          Platform.isWindows ? FileSystemStyle.windows : FileSystemStyle.posix,
+    );
+    final myappPath = fs.path.absolute('myapp');
+    fs.directory(myappPath).createSync(recursive: true);
+    fs.file(fs.path.join(myappPath, 'pubspec.yaml')).writeAsStringSync('''
 name: myapp
 version: 1.2.3
 workspace:
@@ -2037,8 +2041,9 @@ workspace:
 environment:
   sdk: '^3.11.0'
 ''');
-    fs.directory('/myapp/pkgs/a').createSync(recursive: true);
-    fs.file('/myapp/pkgs/a/pubspec.yaml').writeAsStringSync('''
+    final pkgAPath = fs.path.join(myappPath, 'pkgs', 'a');
+    fs.directory(pkgAPath).createSync(recursive: true);
+    fs.file(fs.path.join(pkgAPath, 'pubspec.yaml')).writeAsStringSync('''
 name: a
 version: 1.1.1
 resolution: workspace
@@ -2048,7 +2053,7 @@ environment:
 
     await withOverrides(() async {
       final package = Package.load(
-        '/myapp',
+        myappPath,
         loadPubspec: Pubspec.loadRootWithSources(
           (name) => throw UnimplementedError(),
         ),
