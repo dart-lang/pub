@@ -6,6 +6,7 @@
 library;
 
 import 'package:pub/src/exit_codes.dart';
+import 'package:pub/src/path.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -155,8 +156,10 @@ include: ../../parent_options.yaml
       ]).create();
 
       await expectValidationWarning(
-        'The analysis options file `example/analysis_options.yaml` includes '
-        '`../../parent_options.yaml`, which points to a file outside the package.',
+        'The analysis options file '
+        '`${p.join('example', 'analysis_options.yaml')}` includes '
+        '`../../parent_options.yaml`, which points to a file outside the '
+        'package.',
       );
     },
   );
