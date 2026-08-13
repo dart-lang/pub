@@ -8,8 +8,12 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:file/memory.dart';
 import 'package:pub/src/exit_codes.dart';
+import 'package:pub/src/io.dart';
+import 'package:pub/src/package.dart';
 import 'package:pub/src/path.dart';
+import 'package:pub/src/pubspec.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
@@ -2020,6 +2024,42 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
         packageConfigEntry(name: 'b', path: 'pkgs/b'),
       ], generatorVersion: '3.11.0'),
     ]).validate();
+  });
+
+  test('globs are resolved when using overridden filesystem', () async {
+    final fs = MemoryFileSystem(
+      style:
+          Platform.isWindows ? FileSystemStyle.windows : FileSystemStyle.posix,
+    );
+    final myappPath = fs.path.absolute('myapp');
+    fs.directory(myappPath).createSync(recursive: true);
+    fs.file(fs.path.join(myappPath, 'pubspec.yaml')).writeAsStringSync('''
+name: myapp
+version: 1.2.3
+workspace:
+  - pkgs/a
+environment:
+  sdk: '^3.11.0'
+''');
+    final pkgAPath = fs.path.join(myappPath, 'pkgs', 'a');
+    fs.directory(pkgAPath).createSync(recursive: true);
+    fs.file(fs.path.join(pkgAPath, 'pubspec.yaml')).writeAsStringSync('''
+name: a
+version: 1.1.1
+resolution: workspace
+environment:
+  sdk: '^3.11.0'
+''');
+
+    await withOverrides(() async {
+      final package = Package.load(
+        myappPath,
+        loadPubspec: Pubspec.loadRootWithSources(
+          (name) => throw UnimplementedError(),
+        ),
+      );
+      expect(package.transitiveWorkspace.map((pkg) => pkg.name), contains('a'));
+    }, fileSystem: fs);
   });
 }
 
