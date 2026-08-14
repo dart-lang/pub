@@ -84,10 +84,7 @@ abstract class Validator {
       version1.major == version2.major;
 
   /// The default package descriptor used for package validation.
-  static const defaultValidationPackage = 'pub_validation@^0.1.0';
-
-  /// The default trusted repository URL for installing validation tools.
-  static const defaultValidationHostedUrl = 'https://pub.dev';
+  static const defaultValidationPackage = 'pub_validation@^0.1.0-dev';
 
   /// Run package validation on the [entrypoint] package via `pub_validation`
   /// and print results.
@@ -102,21 +99,15 @@ abstract class Validator {
     required List<String> warnings,
     required List<String> errors,
     String? validationPackage,
-    Uri? validationHostedUrl,
   }) async {
     final pkgDescriptor = validationPackage ?? defaultValidationPackage;
     final pkgName = pkgDescriptor.split('@').first;
-    final hostedUrl =
-        (validationHostedUrl ?? Uri.parse(defaultValidationHostedUrl))
-            .toString();
 
     // Install the validation package via `dart install`.
     try {
       final installResult = await runProcess(platform.resolvedExecutable, [
         'install',
         pkgDescriptor,
-        '--hosted-url',
-        hostedUrl,
       ]);
       if (installResult.exitCode != 0) {
         log.fine('dart install $pkgDescriptor: ${installResult.stderr}');
@@ -125,9 +116,11 @@ abstract class Validator {
       log.fine('Failed to run dart install $pkgDescriptor: $e');
     }
 
+    final executable = _installedExecutablePath(pkgName);
+
     StringProcessResult result;
     try {
-      result = await runProcess(pkgName, [
+      result = await runProcess(executable, [
         '-C',
         entrypoint.workPackage.dir,
         '--package-size',
@@ -135,10 +128,7 @@ abstract class Validator {
         '--json',
       ]);
     } catch (_) {
-      // If not on PATH directly, attempt running via `dart run`.
-      result = await runProcess(platform.resolvedExecutable, [
-        'run',
-        '$pkgName:$pkgName',
+      result = await runProcess(pkgName, [
         '-C',
         entrypoint.workPackage.dir,
         '--package-size',
@@ -215,4 +205,28 @@ class ValidationContext {
   final List<String> files;
 
   ValidationContext(this.entrypoint, this.packageSize, this.files);
+}
+
+/// Resolves the file path of a globally installed tool executable.
+String _installedExecutablePath(String pkgName) {
+  if (platform.isWindows) {
+    final localAppData = platform.environment['LOCALAPPDATA'] ?? '';
+    final installBinDir = p.join(localAppData, 'Dart', 'install', 'bin');
+    final bat = p.join(installBinDir, '$pkgName.bat');
+    if (fileExists(bat)) return bat;
+    final exe = p.join(installBinDir, '$pkgName.exe');
+    if (fileExists(exe)) return exe;
+  } else {
+    final xdgStateHome = platform.environment['XDG_STATE_HOME'];
+    final String installBinDir;
+    if (xdgStateHome != null && xdgStateHome.isNotEmpty) {
+      installBinDir = p.join(xdgStateHome, 'Dart', 'install', 'bin');
+    } else {
+      final home = platform.environment['HOME'] ?? '';
+      installBinDir = p.join(home, '.local', 'state', 'Dart', 'install', 'bin');
+    }
+    final exe = p.join(installBinDir, pkgName);
+    if (fileExists(exe)) return exe;
+  }
+  return pkgName;
 }
