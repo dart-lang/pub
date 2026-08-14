@@ -84,11 +84,17 @@ abstract class Validator {
       version1.minor == version2.minor &&
       version1.major == version2.major;
 
+  /// The default package descriptor used for package validation.
+  static const defaultValidationPackage = 'pub_validation@^0.1.0';
+
+  /// The default trusted repository URL for installing validation tools.
+  static const defaultValidationHostedUrl = 'https://pub.dev';
+
   /// Run package validation on the [entrypoint] package via `pub_validation`
   /// and print results.
   ///
-  /// Installs `pub_validation` using `dart install pub_validation` and executes
-  /// the validator CLI.
+  /// Installs `pub_validation` using `dart install` and executes the
+  /// validator CLI.
   static Future<void> runAll(
     Entrypoint entrypoint,
     int packageSize,
@@ -97,52 +103,54 @@ abstract class Validator {
     required List<String> hints,
     required List<String> warnings,
     required List<String> errors,
+    String? validationPackage,
+    Uri? validationHostedUrl,
   }) async {
-    // Install the latest version of pub_validation via `dart install`.
+    final pkgDescriptor = validationPackage ?? defaultValidationPackage;
+    final pkgName = pkgDescriptor.split('@').first;
+    final hostedUrl =
+        (validationHostedUrl ?? Uri.parse(defaultValidationHostedUrl))
+            .toString();
+
+    // Install the validation package via `dart install`.
     try {
       final installResult = await runProcess(platform.resolvedExecutable, [
         'install',
-        'pub_validation',
+        pkgDescriptor,
         '--hosted-url',
-        serverUrl.toString(),
+        hostedUrl,
       ]);
       if (installResult.exitCode != 0) {
-        log.fine('dart install pub_validation: ${installResult.stderr}');
+        log.fine('dart install $pkgDescriptor: ${installResult.stderr}');
       }
     } catch (e) {
-      log.fine('Failed to run dart install pub_validation: $e');
+      log.fine('Failed to run dart install $pkgDescriptor: $e');
     }
 
     StringProcessResult result;
     try {
-      result = await runProcess(
-        'pub_validation',
-        [
-          '-C',
-          entrypoint.workPackage.dir,
-          '--server-url',
-          serverUrl.toString(),
-          '--package-size',
-          packageSize.toString(),
-          '--json',
-        ],
-      );
+      result = await runProcess(pkgName, [
+        '-C',
+        entrypoint.workPackage.dir,
+        '--server-url',
+        serverUrl.toString(),
+        '--package-size',
+        packageSize.toString(),
+        '--json',
+      ]);
     } catch (_) {
       // If not on PATH directly, attempt running via `dart run`.
-      result = await runProcess(
-        platform.resolvedExecutable,
-        [
-          'run',
-          'pub_validation:pub_validation',
-          '-C',
-          entrypoint.workPackage.dir,
-          '--server-url',
-          serverUrl.toString(),
-          '--package-size',
-          packageSize.toString(),
-          '--json',
-        ],
-      );
+      result = await runProcess(platform.resolvedExecutable, [
+        'run',
+        '$pkgName:$pkgName',
+        '-C',
+        entrypoint.workPackage.dir,
+        '--server-url',
+        serverUrl.toString(),
+        '--package-size',
+        packageSize.toString(),
+        '--json',
+      ]);
     }
 
     try {
