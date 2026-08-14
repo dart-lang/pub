@@ -86,6 +86,9 @@ abstract class Validator {
   /// The default package descriptor used for package validation.
   static const defaultValidationPackage = 'pub_validation@^0.1.0-dev';
 
+  /// The default trusted repository URL for installing validation tools.
+  static const defaultValidationHostedUrl = 'https://pub.dev';
+
   /// Run package validation on the [entrypoint] package via `pub_validation`
   /// and print results.
   ///
@@ -99,21 +102,32 @@ abstract class Validator {
     required List<String> warnings,
     required List<String> errors,
     String? validationPackage,
+    Uri? validationHostedUrl,
   }) async {
     final pkgDescriptor = validationPackage ?? defaultValidationPackage;
     final pkgName = pkgDescriptor.split('@').first;
+    final hostedUrl =
+        validationHostedUrl?.toString() ?? defaultValidationHostedUrl;
+
+    var installTarget = pkgDescriptor;
+    if (hostedUrl != defaultValidationHostedUrl &&
+        !pkgDescriptor.contains('{') &&
+        pkgDescriptor.contains('@')) {
+      final parts = pkgDescriptor.split('@');
+      installTarget = '${parts[0]}@{hosted: $hostedUrl, version: ${parts[1]}}';
+    }
 
     // Install the validation package via `dart install`.
     try {
       final installResult = await runProcess(platform.resolvedExecutable, [
         'install',
-        pkgDescriptor,
+        installTarget,
       ]);
       if (installResult.exitCode != 0) {
-        log.fine('dart install $pkgDescriptor: ${installResult.stderr}');
+        log.fine('dart install $installTarget: ${installResult.stderr}');
       }
     } catch (e) {
-      log.fine('Failed to run dart install $pkgDescriptor: $e');
+      log.fine('Failed to run dart install $installTarget: $e');
     }
 
     final executable = _installedExecutablePath(pkgName);
