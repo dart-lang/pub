@@ -467,6 +467,10 @@ Map<String, String> getPubTestEnvironment([String? tokenEndpoint]) => {
   if (tokenEndpoint != null) '_PUB_TEST_TOKEN_ENDPOINT': tokenEndpoint,
   if (_globalServer?.port != null)
     'PUB_HOSTED_URL': 'http://localhost:${_globalServer?.port}',
+  if (Platform.environment['_PUB_VALIDATION_PATH'] != null)
+    '_PUB_VALIDATION_PATH': Platform.environment['_PUB_VALIDATION_PATH']!,
+  if (Platform.environment['_PUB_VALIDATION_COMMAND'] != null)
+    '_PUB_VALIDATION_COMMAND': Platform.environment['_PUB_VALIDATION_COMMAND']!,
   'GIT_CONFIG_COUNT': '1',
   'GIT_CONFIG_KEY_0': 'safe.bareRepository',
   'GIT_CONFIG_VALUE_0': 'explicit',
