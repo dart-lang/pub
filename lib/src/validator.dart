@@ -33,7 +33,6 @@ abstract class Validator {
   Package get package => context.entrypoint.workPackage;
   SystemCache get cache => context.entrypoint.cache;
   int get packageSize => context.packageSize;
-  Uri get serverUrl => context.serverUrl;
   List<String> get files => context.files;
 
   /// Validates the entrypoint, adding any errors and warnings to [errors] and
@@ -98,7 +97,6 @@ abstract class Validator {
   static Future<void> runAll(
     Entrypoint entrypoint,
     int packageSize,
-    Uri serverUrl,
     List<String> files, {
     required List<String> hints,
     required List<String> warnings,
@@ -132,8 +130,6 @@ abstract class Validator {
       result = await runProcess(pkgName, [
         '-C',
         entrypoint.workPackage.dir,
-        '--server-url',
-        serverUrl.toString(),
         '--package-size',
         packageSize.toString(),
         '--json',
@@ -145,8 +141,6 @@ abstract class Validator {
         '$pkgName:$pkgName',
         '-C',
         entrypoint.workPackage.dir,
-        '--server-url',
-        serverUrl.toString(),
         '--package-size',
         packageSize.toString(),
         '--json',
@@ -218,13 +212,7 @@ abstract class Validator {
 class ValidationContext {
   final Entrypoint entrypoint;
   final int packageSize;
-  final Uri serverUrl;
   final List<String> files;
 
-  ValidationContext(
-    this.entrypoint,
-    this.packageSize,
-    this.serverUrl,
-    this.files,
-  );
+  ValidationContext(this.entrypoint, this.packageSize, this.files);
 }
