@@ -98,27 +98,11 @@ abstract class Validator {
     required List<String> warnings,
     required List<String> errors,
   }) async {
-    final validationCmd = platform.environment['_PUB_VALIDATION_COMMAND'];
-    final validationPath = platform.environment['_PUB_VALIDATION_PATH'];
-
     StringProcessResult? result;
 
-    if (validationCmd != null) {
-      final parts = validationCmd.split(' ');
-      result = await runProcess(
-        parts.first,
-        [
-          ...parts.skip(1),
-          '-C',
-          entrypoint.workPackage.dir,
-          '--server-url',
-          serverUrl.toString(),
-          '--package-size',
-          packageSize.toString(),
-          '--json',
-        ],
-      );
-    } else if (validationPath != null) {
+    if (runningFromTest &&
+        platform.environment.containsKey('_PUB_TEST_VALIDATION_PATH')) {
+      final validationPath = platform.environment['_PUB_TEST_VALIDATION_PATH']!;
       result = await runProcess(
         platform.resolvedExecutable,
         [
