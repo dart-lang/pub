@@ -98,16 +98,26 @@ abstract class Validator {
     required List<String> warnings,
     required List<String> errors,
   }) async {
-    StringProcessResult? result;
+    // Install the latest version of pub_validation via `dart install`.
+    try {
+      final installResult = await runProcess(platform.resolvedExecutable, [
+        'install',
+        'pub_validation',
+        '--hosted-url',
+        serverUrl.toString(),
+      ]);
+      if (installResult.exitCode != 0) {
+        log.fine('dart install pub_validation: ${installResult.stderr}');
+      }
+    } catch (e) {
+      log.fine('Failed to run dart install pub_validation: $e');
+    }
 
-    if (runningFromTest &&
-        platform.environment.containsKey('_PUB_TEST_VALIDATION_PATH')) {
-      final validationPath = platform.environment['_PUB_TEST_VALIDATION_PATH']!;
+    StringProcessResult result;
+    try {
       result = await runProcess(
-        platform.resolvedExecutable,
+        'pub_validation',
         [
-          'run',
-          validationPath,
           '-C',
           entrypoint.workPackage.dir,
           '--server-url',
@@ -117,50 +127,22 @@ abstract class Validator {
           '--json',
         ],
       );
-    } else {
-      // Install the latest version of pub_validation via `dart install`.
-      try {
-        final installResult = await runProcess(platform.resolvedExecutable, [
-          'install',
-          'pub_validation',
-        ]);
-        if (installResult.exitCode != 0) {
-          log.fine('dart install pub_validation: ${installResult.stderr}');
-        }
-      } catch (e) {
-        log.fine('Failed to run dart install pub_validation: $e');
-      }
-
-      try {
-        result = await runProcess(
-          'pub_validation',
-          [
-            '-C',
-            entrypoint.workPackage.dir,
-            '--server-url',
-            serverUrl.toString(),
-            '--package-size',
-            packageSize.toString(),
-            '--json',
-          ],
-        );
-      } catch (_) {
-        // If not on PATH directly, attempt running via `dart run`.
-        result = await runProcess(
-          platform.resolvedExecutable,
-          [
-            'run',
-            'pub_validation:pub_validation',
-            '-C',
-            entrypoint.workPackage.dir,
-            '--server-url',
-            serverUrl.toString(),
-            '--package-size',
-            packageSize.toString(),
-            '--json',
-          ],
-        );
-      }
+    } catch (_) {
+      // If not on PATH directly, attempt running via `dart run`.
+      result = await runProcess(
+        platform.resolvedExecutable,
+        [
+          'run',
+          'pub_validation:pub_validation',
+          '-C',
+          entrypoint.workPackage.dir,
+          '--server-url',
+          serverUrl.toString(),
+          '--package-size',
+          packageSize.toString(),
+          '--json',
+        ],
+      );
     }
 
     try {
