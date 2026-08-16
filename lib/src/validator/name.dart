@@ -9,8 +9,7 @@ import '../path.dart';
 import '../utils.dart';
 import '../validator.dart';
 
-/// A validator that the name of a package is legal and matches the library name
-/// in the case of a single library.
+/// A validator that checks package and library names.
 class NameValidator extends Validator {
   @override
   Future validate() {
@@ -18,10 +17,25 @@ class NameValidator extends Validator {
       _checkName(package.name);
 
       final libraries = _libraries(files);
+      final isAnalysisServerPlugin = package.dependencies.containsKey(
+        'analysis_server_plugin',
+      );
+      final pluginEntrypoint = p.join('lib', 'main.dart');
+
+      if (isAnalysisServerPlugin && !libraries.contains(pluginEntrypoint)) {
+        warnings.add(
+          'Packages that depend on `analysis_server_plugin` should contain '
+          'a `lib/main.dart` entrypoint.\n'
+          'The analysis server loads plugins from this file.',
+        );
+      }
 
       if (libraries.length == 1) {
         final libName = p.basenameWithoutExtension(libraries[0]);
-        if (libName == package.name) return;
+        if (libName == package.name ||
+            isAnalysisServerPlugin && libraries[0] == pluginEntrypoint) {
+          return;
+        }
         warnings.add(
           'The name of "${libraries[0]}", "$libName", should match '
           'the name of the package, "${package.name}".\n'
