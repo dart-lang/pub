@@ -60,4 +60,27 @@ void main() {
       ]),
     ]).validate();
   });
+
+  test('overwrites a binstub owned by an inactive package', () async {
+    await d.dir('bar', [
+      d.pubspec({
+        'name': 'bar',
+        'executables': {'bar': 'bar'},
+      }),
+      d.dir('bin', [d.file('bar.dart', "main() => print('ok');")]),
+    ]).create();
+
+    await d.dir(cachePath, [
+      d.dir('bin', [d.file(binStubName('bar'), '# Package: pub')]),
+    ]).create();
+
+    await runPub(
+      args: ['global', 'activate', '-spath', '../bar'],
+      output: contains('Installed executable bar.'),
+    );
+
+    await d.dir(cachePath, [
+      d.dir('bin', [d.file(binStubName('bar'), contains('bar:bar'))]),
+    ]).validate();
+  });
 }

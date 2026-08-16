@@ -963,6 +963,11 @@ Try reactivating the package.
       previousPackage = _binStubProperty(contents, 'Package');
       if (previousPackage == null) {
         log.fine('Could not parse binstub $binStubPath:\n$contents');
+      } else if (!fileExists(_getLockFilePath(previousPackage))) {
+        log.fine(
+          'Binstub $binStubPath refers to inactive package $previousPackage.',
+        );
+        previousPackage = null;
       } else if (!overwrite) {
         return previousPackage;
       }
