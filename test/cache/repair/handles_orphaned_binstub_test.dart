@@ -11,19 +11,19 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 const _orphanedBinstub = '''
-#!/usr/bin/env sh
-# This file was created by pub v0.1.2-3.
-# Package: foo
-# Version: 1.0.0
-# Executable: foo-script
-# Script: script
-dart "/path/to/.pub-cache/global_packages/foo/bin/script.dart.snapshot" "\$@"
+@echo off
+rem This file was created by pub v0.1.2-3.
+rem Package: foo
+rem Version: 1.0.0
+rem Executable: foo-script
+rem Script: script
+dart "/path/to/.pub-cache/global_packages/foo/bin/script.dart.snapshot" %*
 ''';
 
 void main() {
   test('handles an orphaned binstub script', () async {
     await d.dir(cachePath, [
-      d.dir('bin', [d.file(binStubName('script'), _orphanedBinstub)]),
+      d.dir('bin', [d.file(binStubName('foo-script'), _orphanedBinstub)]),
     ]).create();
 
     await runPub(
@@ -33,5 +33,9 @@ void main() {
         contains('From foo: foo-script'),
       ]),
     );
+
+    await d.dir(cachePath, [
+      d.dir('bin', [d.nothing(binStubName('foo-script'))]),
+    ]).validate();
   });
 }

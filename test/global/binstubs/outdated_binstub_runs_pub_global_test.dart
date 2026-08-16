@@ -15,6 +15,14 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 import 'utils.dart';
 
+const _foreignBinStub = '''
+#!/usr/bin/env sh
+# Package: foo
+# Executable: foo-script2
+# Script: script
+echo not-pub
+''';
+
 /// The contents of the binstub for [executable], or `null` if it doesn't exist.
 String? binStub(String executable) {
   final f = File(p.join(d.sandbox, cachePath, 'bin', binStubName(executable)));
@@ -88,6 +96,7 @@ void main() {
             d.dir('bin', [d.outOfDateSnapshot('script.dart-3.0.0.snapshot')]),
           ]),
         ]),
+        d.dir('bin', [d.file(binStubName('foo-script2'), _foreignBinStub)]),
       ]).create();
 
       final process = await TestProcess.start(
@@ -100,7 +109,7 @@ void main() {
 
       expect(binStub('foo-script'), contains('script.dart-3.1.2+3.snapshot'));
 
-      expect(binStub('foo-script2'), contains('script.dart-3.1.2+3.snapshot'));
+      expect(binStub('foo-script2'), _foreignBinStub);
 
       expect(
         binStub('foo-script-not-installed'),

@@ -10,6 +10,14 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
+const _foreignBinStub = '''
+#!/usr/bin/env sh
+# Package: foo
+# Executable: one
+# Script: one
+echo not-pub
+''';
+
 void main() {
   test('removes binstubs when the package is deactivated', () async {
     final server = await servePackages();
@@ -28,11 +36,14 @@ void main() {
     );
 
     await runPub(args: ['global', 'activate', 'foo']);
+    await d.dir(cachePath, [
+      d.dir('bin', [d.file(binStubName('one'), _foreignBinStub)]),
+    ]).create();
     await runPub(args: ['global', 'deactivate', 'foo']);
 
     await d.dir(cachePath, [
       d.dir('bin', [
-        d.nothing(binStubName('one')),
+        d.file(binStubName('one'), _foreignBinStub),
         d.nothing(binStubName('two')),
       ]),
     ]).validate();

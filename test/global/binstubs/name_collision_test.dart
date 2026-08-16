@@ -5,10 +5,50 @@
 @TestOn('vm')
 library;
 
+import 'dart:io';
+
+import 'package:pub/src/path.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
+
+const _inactivePubBinStub = '''
+# This file was created by pub v0.1.2-3.
+# Package: pub
+# Version: 1.0.0
+# Executable: bar
+# Script: bar
+# Note: café
+''';
+
+const _foreignBinStub = '''
+#!/usr/bin/env sh
+echo before-marker
+# This file was created by pub v0.1.2-3.
+# Package: pub
+# Executable: bar
+# Script: bar
+echo not-pub
+''';
+
+const _malformedPubBinStub = '''
+# This file was created by pub v0.1.2-3.
+# Package: pub
+# Package: other
+# Version: 1.0.0
+# Executable: bar
+# Script: bar
+''';
+
+const _crossFamilyBinStub = '''
+#!/usr/bin/env sh
+rem This file was created by pub v0.1.2-3.
+rem Package: pub
+rem Version: 1.0.0
+rem Executable: bar
+rem Script: bar
+''';
 
 void main() {
   test('does not overwrite an existing binstub', () async {
@@ -71,12 +111,87 @@ void main() {
     ]).create();
 
     await d.dir(cachePath, [
-      d.dir('bin', [d.file(binStubName('bar'), '# Package: pub')]),
+      d.dir('bin', [d.file(binStubName('bar'), _inactivePubBinStub)]),
+    ]).create();
+    File(
+      p.join(d.sandbox, cachePath, 'bin', binStubName('bar')),
+    ).writeAsStringSync(_inactivePubBinStub, encoding: const SystemEncoding());
+
+    await runPub(
+      args: ['global', 'activate', '-spath', '../bar'],
+      output: contains('Installed executable bar.'),
+    );
+
+    await d.dir(cachePath, [
+      d.dir('bin', [d.file(binStubName('bar'), contains('bar:bar'))]),
+    ]).validate();
+  });
+
+  test('preserves a foreign file containing binstub properties', () async {
+    await d.dir('bar', [
+      d.pubspec({
+        'name': 'bar',
+        'executables': {'bar': 'bar'},
+      }),
+      d.dir('bin', [d.file('bar.dart', "main() => print('ok');")]),
+    ]).create();
+
+    await d.dir(cachePath, [
+      d.dir('bin', [d.file(binStubName('bar'), _crossFamilyBinStub)]),
+    ]).create();
+
+    await runPub(
+      args: ['global', 'activate', '-spath', '../bar'],
+      error: contains(
+        'Executable bar already exists and was not installed by pub.',
+      ),
+    );
+
+    await d.dir(cachePath, [
+      d.dir('bin', [d.file(binStubName('bar'), _crossFamilyBinStub)]),
+    ]).validate();
+  });
+
+  test('overwrites a malformed pub binstub', () async {
+    await d.dir('bar', [
+      d.pubspec({
+        'name': 'bar',
+        'executables': {'bar': 'bar'},
+      }),
+      d.dir('bin', [d.file('bar.dart', "main() => print('ok');")]),
+    ]).create();
+
+    await d.dir(cachePath, [
+      d.dir('bin', [d.file(binStubName('bar'), _malformedPubBinStub)]),
     ]).create();
 
     await runPub(
       args: ['global', 'activate', '-spath', '../bar'],
       output: contains('Installed executable bar.'),
+    );
+
+    await d.dir(cachePath, [
+      d.dir('bin', [d.file(binStubName('bar'), contains('bar:bar'))]),
+    ]).validate();
+  });
+
+  test('overwrites a foreign file with --overwrite', () async {
+    await d.dir('bar', [
+      d.pubspec({
+        'name': 'bar',
+        'executables': {'bar': 'bar'},
+      }),
+      d.dir('bin', [d.file('bar.dart', "main() => print('ok');")]),
+    ]).create();
+
+    await d.dir(cachePath, [
+      d.dir('bin', [d.file(binStubName('bar'), _foreignBinStub)]),
+    ]).create();
+
+    await runPub(
+      args: ['global', 'activate', '-spath', '../bar', '--overwrite'],
+      output: contains('Installed executable bar.'),
+      error: contains('Replaced bar, which was not installed by pub.'),
     );
 
     await d.dir(cachePath, [
