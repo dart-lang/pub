@@ -412,7 +412,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     // PackageGraph, as it requires loading and reading all the pubspec.yaml
     // files.
     final entrypoint = Entrypoint(
-      rootOrCurrent,
+      workspaceRootDir,
       SystemCache(rootDir: pubCacheDir),
     );
 
