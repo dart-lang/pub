@@ -106,49 +106,70 @@ abstract class Validator {
   }) async {
     final pkgDescriptor = validationPackage ?? defaultValidationPackage;
     final pkgName = pkgDescriptor.split('@').first;
-    final hostedUrl =
-        validationHostedUrl?.toString() ?? defaultValidationHostedUrl;
 
-    var installTarget = pkgDescriptor;
-    if (hostedUrl != defaultValidationHostedUrl &&
-        !pkgDescriptor.contains('{') &&
-        pkgDescriptor.contains('@')) {
-      final parts = pkgDescriptor.split('@');
-      installTarget = '${parts[0]}@{hosted: $hostedUrl, version: ${parts[1]}}';
-    }
-
-    // Install the validation package via `dart install`.
-    try {
-      final installResult = await runProcess(platform.resolvedExecutable, [
-        'install',
-        installTarget,
-      ]);
-      if (installResult.exitCode != 0) {
-        log.fine('dart install $installTarget: ${installResult.stderr}');
-      }
-    } catch (e) {
-      log.fine('Failed to run dart install $installTarget: $e');
-    }
-
-    final executable = _installedExecutablePath(pkgName);
+    final pubspec = entrypoint.workPackage.pubspec;
+    final isLocalDep =
+        pubspec.dependencies.containsKey(pkgName) ||
+        pubspec.devDependencies.containsKey(pkgName) ||
+        pubspec.dependencyOverrides.containsKey(pkgName);
 
     StringProcessResult result;
-    try {
-      result = await runProcess(executable, [
+    if (isLocalDep) {
+      // Run the local version resolved in the workspace.
+      result = await runProcess(platform.resolvedExecutable, [
+        'run',
+        '$pkgName:$pkgName',
         '-C',
         entrypoint.workPackage.dir,
         '--package-size',
         packageSize.toString(),
         '--json',
       ]);
-    } catch (_) {
-      result = await runProcess(pkgName, [
-        '-C',
-        entrypoint.workPackage.dir,
-        '--package-size',
-        packageSize.toString(),
-        '--json',
-      ]);
+    } else {
+      final hostedUrl =
+          validationHostedUrl?.toString() ?? defaultValidationHostedUrl;
+
+      var installTarget = pkgDescriptor;
+      if (hostedUrl != defaultValidationHostedUrl &&
+          !pkgDescriptor.contains('{') &&
+          pkgDescriptor.contains('@')) {
+        final parts = pkgDescriptor.split('@');
+        installTarget =
+            '${parts[0]}@{hosted: $hostedUrl, version: ${parts[1]}}';
+      }
+
+      // Install the validation package via `dart install`.
+      try {
+        final installResult = await runProcess(platform.resolvedExecutable, [
+          'install',
+          installTarget,
+        ]);
+        if (installResult.exitCode != 0) {
+          log.fine('dart install $installTarget: ${installResult.stderr}');
+        }
+      } catch (e) {
+        log.fine('Failed to run dart install $installTarget: $e');
+      }
+
+      final executable = _installedExecutablePath(pkgName);
+
+      try {
+        result = await runProcess(executable, [
+          '-C',
+          entrypoint.workPackage.dir,
+          '--package-size',
+          packageSize.toString(),
+          '--json',
+        ]);
+      } catch (_) {
+        result = await runProcess(pkgName, [
+          '-C',
+          entrypoint.workPackage.dir,
+          '--package-size',
+          packageSize.toString(),
+          '--json',
+        ]);
+      }
     }
 
     try {
