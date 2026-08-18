@@ -460,7 +460,7 @@ Future<T> spinner<T>(
   String message,
   Future<T> Function() callback, {
   bool condition = true,
-  Duration delay = const Duration(milliseconds: 250),
+  Duration delay = const Duration(milliseconds: 150),
 }) {
   if (condition) {
     _stopProgress();

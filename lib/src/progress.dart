@@ -38,7 +38,11 @@ final class Progress {
   ///
   /// If [delay] is passed, the progress animation is only displayed if the
   /// operation takes longer than [delay].
-  Progress(this._message, {bool fine = false, Duration delay = Duration.zero}) {
+  Progress(
+    this._message, {
+    bool fine = false,
+    Duration delay = const Duration(milliseconds: 150),
+  }) {
     _stopwatch.start();
 
     final level = fine ? log.Level.fine : log.Level.message;
@@ -56,7 +60,7 @@ final class Progress {
       return;
     }
 
-    _timer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+    _timer = Timer.periodic(const Duration(milliseconds: 50), (_) {
       if (_stopwatch.elapsed < delay) return;
       if (!_hasStarted) {
         stdout.write('$_message... ');
