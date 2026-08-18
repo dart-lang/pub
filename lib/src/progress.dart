@@ -9,6 +9,22 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'utils.dart';
 
+/// The default grace period before a spinner is shown for the first time.
+const defaultGracePeriod = Duration(milliseconds: 500);
+
+/// Stopwatch tracking time since program start or since last non-spinner
+/// output.
+final graceStopwatch = Stopwatch()..start();
+
+/// Whether a spinner/progress message has been displayed since the last reset.
+bool hasShownProgress = false;
+
+/// Resets the shared grace period timer.
+void resetGracePeriod() {
+  graceStopwatch.reset();
+  hasShownProgress = false;
+}
+
 /// A live-updating progress indicator for long-running log entries.
 final class Progress {
   /// The timer used to write "..." during a progress log.
@@ -38,11 +54,7 @@ final class Progress {
   ///
   /// If [delay] is passed, the progress animation is only displayed if the
   /// operation takes longer than [delay].
-  Progress(
-    this._message, {
-    bool fine = false,
-    Duration delay = const Duration(milliseconds: 150),
-  }) {
+  Progress(this._message, {bool fine = false, Duration? delay}) {
     _stopwatch.start();
 
     final level = fine ? log.Level.fine : log.Level.message;
@@ -60,18 +72,22 @@ final class Progress {
       return;
     }
 
+    final effectiveDelay = delay ?? Duration.zero;
+
     _timer = Timer.periodic(const Duration(milliseconds: 50), (_) {
-      if (_stopwatch.elapsed < delay) return;
+      if (_stopwatch.elapsed < effectiveDelay) return;
       if (!_hasStarted) {
         stdout.write('$_message... ');
         _hasStarted = true;
+        hasShownProgress = true;
       }
       _update();
     });
 
-    if (delay == Duration.zero) {
+    if (effectiveDelay == Duration.zero) {
       stdout.write('$_message... ');
       _hasStarted = true;
+      hasShownProgress = true;
     }
   }
 

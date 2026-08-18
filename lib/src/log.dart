@@ -460,12 +460,21 @@ Future<T> spinner<T>(
   String message,
   Future<T> Function() callback, {
   bool condition = true,
-  Duration delay = const Duration(milliseconds: 150),
+  Duration? delay,
 }) {
   if (condition) {
     _stopProgress();
 
-    final progress = Progress(message, delay: delay);
+    final effectiveDelay =
+        delay ??
+        (hasShownProgress
+            ? Duration.zero
+            : defaultGracePeriod - graceStopwatch.elapsed);
+
+    final progress = Progress(
+      message,
+      delay: effectiveDelay < Duration.zero ? Duration.zero : effectiveDelay,
+    );
     _animatedProgress = progress;
     return callback().whenComplete(progress.stopAndClear);
   }
@@ -593,6 +602,7 @@ void _logToStream(IOSink sink, _Entry entry, {required bool showLabel}) {
 
 void _printToStream(StringSink sink, _Entry entry, {required bool showLabel}) {
   _stopProgress();
+  resetGracePeriod();
 
   var firstLine = true;
   for (var line in entry.lines) {

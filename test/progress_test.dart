@@ -167,4 +167,23 @@ void main() {
       }
     }, stdout: () => mockStdout);
   });
+
+  test(
+    'subsequent spinner starts immediately once progress was shown',
+    () async {
+      final mockStdout = _MockStdout();
+      await IOOverrides.runZoned(() async {
+        forceColors = ForceColorOption.always;
+        try {
+          hasShownProgress = true;
+          final progress = Progress('Downloading packages');
+          expect(mockStdout.buffer.toString(), 'Downloading packages... ');
+          await progress.stopAndClear();
+        } finally {
+          forceColors = ForceColorOption.auto;
+          resetGracePeriod();
+        }
+      }, stdout: () => mockStdout);
+    },
+  );
 }
