@@ -32,15 +32,10 @@ final class Progress {
   ///
   /// If [fine] is passed, this will log progress messages on [log.Level.fine]
   /// as opposed to [log.Level.message].
-  ///
-  /// If [clearWhenDone] is `true`, the progress message will be erased once
-  /// done. When output is not going to a terminal, [clearWhenDone] logs on
-  /// [log.Level.fine] so that non-interactive output is not polluted with
-  /// temporary progress lines.
-  Progress(this._message, {bool fine = false, bool clearWhenDone = false}) {
+  Progress(this._message, {bool fine = false}) {
     _stopwatch.start();
 
-    final level = (fine || clearWhenDone) ? log.Level.fine : log.Level.message;
+    final level = fine ? log.Level.fine : log.Level.message;
 
     // The animation is only shown when it would be meaningful to a human.
     // That means we're writing a visible message to a TTY at normal log levels

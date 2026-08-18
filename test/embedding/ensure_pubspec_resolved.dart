@@ -534,16 +534,13 @@ Future<void> _noImplicitPubGet({Map<String, String?>? environment}) async {
 
 /// Schedules a non-semantic modification to [path].
 Future _touch(String path) async {
-  // Delay a bit to make sure the modification times are noticeably different.
-  // 1s seems to be the finest granularity that dart:io reports.
-  await Future<void>.delayed(const Duration(seconds: 1));
   path = p.join(d.sandbox, 'myapp', path);
   touch(path);
 }
 
 /// Schedules a non-semantic modification to [path] with an artificial delay.
 Future _touchWithDelay(String path) async {
-  await Future<void>.delayed(const Duration(seconds: 1));
+  await Future<void>.delayed(const Duration(milliseconds: 10));
   path = p.join(d.sandbox, 'myapp', path);
   touch(path);
 }

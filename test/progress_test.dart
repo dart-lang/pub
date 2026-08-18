@@ -131,13 +131,4 @@ void main() {
       expect(mockStdout.buffer.toString(), 'Resolving dependencies... \n');
     }, stdout: () => mockStdout);
   });
-
-  test('clearWhenDone suppresses non-terminal stdout output', () async {
-    final mockStdout = _MockStdout();
-    await IOOverrides.runZoned(() async {
-      final progress = Progress('Resolving dependencies', clearWhenDone: true);
-      await progress.stopAndClear();
-      expect(mockStdout.buffer.toString(), isEmpty);
-    }, stdout: () => mockStdout);
-  });
 }
