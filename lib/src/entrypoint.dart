@@ -612,7 +612,8 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
     SolveResult result;
 
     try {
-      result = await log.progress('Resolving dependencies$suffix', () async {
+      final progressFn = summaryOnly ? log.spinner : log.progress;
+      result = await progressFn('Resolving dependencies$suffix', () async {
         // TODO(https://github.com/dart-lang/pub/issues/4127): Check this for
         // all workspace pubspecs.
         _checkSdkConstraint(workspaceRoot.pubspecPath, workspaceRoot.pubspec);
@@ -640,7 +641,10 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
 
     // We have to download files also with --dry-run to ensure we know the
     // archive hashes for downloaded files.
-    final newLockFile = await result.downloadCachedPackages(cache);
+    final newLockFile = await result.downloadCachedPackages(
+      cache,
+      spinner: summaryOnly,
+    );
     final report = SolveReport(
       type,
       workspaceRoot.presentationDir,
@@ -757,7 +761,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     List<String> additionalSources = const [],
     String? nativeAssets,
   }) async {
-    await log.progress('Building package executable', () async {
+    await log.spinner('Building package executable', () async {
       ensureDir(p.dirname(pathOfSnapshot(executable)));
       return await _precompileExecutable(
         executable,
