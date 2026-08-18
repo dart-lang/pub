@@ -28,11 +28,17 @@ final class Progress {
   /// The length of the most recently-printed [_time] string.
   var _timeLength = 0;
 
+  /// Whether the initial start message has been printed.
+  var _hasStarted = false;
+
   /// Creates a new progress indicator.
   ///
   /// If [fine] is passed, this will log progress messages on [log.Level.fine]
   /// as opposed to [log.Level.message].
-  Progress(this._message, {bool fine = false}) {
+  ///
+  /// If [delay] is passed, the progress animation is only displayed if the
+  /// operation takes longer than [delay].
+  Progress(this._message, {bool fine = false, Duration delay = Duration.zero}) {
     _stopwatch.start();
 
     final level = fine ? log.Level.fine : log.Level.message;
@@ -51,10 +57,18 @@ final class Progress {
     }
 
     _timer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      if (_stopwatch.elapsed < delay) return;
+      if (!_hasStarted) {
+        stdout.write('$_message... ');
+        _hasStarted = true;
+      }
       _update();
     });
 
-    stdout.write('$_message... ');
+    if (delay == Duration.zero) {
+      stdout.write('$_message... ');
+      _hasStarted = true;
+    }
   }
 
   /// Stops the progress indicator and prints the final elapsed time.
@@ -71,8 +85,10 @@ final class Progress {
     if (_timer == null) return;
     _timer!.cancel();
     _timer = null;
-    _update();
-    stdout.writeln();
+    if (_hasStarted) {
+      _update();
+      stdout.writeln();
+    }
   }
 
   /// Erases the progress message from the terminal and stops the progress
@@ -83,12 +99,14 @@ final class Progress {
     if (_timer != null) {
       _timer!.cancel();
       _timer = null;
-      if (canUseAnsiCodes) {
-        stdout.write('\r\x1b[2K');
-      } else {
-        stdout.write(
-          '\r${' ' * (_message.length + '... '.length + _timeLength)}\r',
-        );
+      if (_hasStarted) {
+        if (canUseAnsiCodes) {
+          stdout.write('\r\x1b[2K');
+        } else {
+          stdout.write(
+            '\r${' ' * (_message.length + '... '.length + _timeLength)}\r',
+          );
+        }
       }
     }
 
@@ -107,12 +125,14 @@ final class Progress {
 
     // Erase the time indicator so that we don't leave a misleading
     // half-complete time indicator on the console.
-    if (canUseAnsiCodes) {
-      stdout.write('\x1b[0K');
-    } else {
-      stdout.write('\b' * _timeLength);
+    if (_hasStarted) {
+      if (canUseAnsiCodes) {
+        stdout.write('\x1b[0K');
+      } else {
+        stdout.write('\b' * _timeLength);
+      }
+      stdout.writeln();
     }
-    stdout.writeln();
     _timeLength = 0;
     _timer!.cancel();
     _timer = null;

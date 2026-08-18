@@ -131,4 +131,40 @@ void main() {
       expect(mockStdout.buffer.toString(), 'Resolving dependencies... \n');
     }, stdout: () => mockStdout);
   });
+
+  test('delayed progress writes nothing if stopped before delay', () async {
+    final mockStdout = _MockStdout();
+    await IOOverrides.runZoned(() async {
+      final progress = Progress(
+        'Resolving dependencies',
+        delay: const Duration(milliseconds: 200),
+      );
+      expect(mockStdout.buffer.toString(), isEmpty);
+      await progress.stopAndClear();
+      expect(mockStdout.buffer.toString(), isEmpty);
+    }, stdout: () => mockStdout);
+  });
+
+  test('delayed progress writes and clears if stopped after delay', () async {
+    final mockStdout = _MockStdout();
+    await IOOverrides.runZoned(() async {
+      forceColors = ForceColorOption.always;
+      try {
+        final progress = Progress(
+          'Resolving dependencies',
+          delay: const Duration(milliseconds: 50),
+        );
+        expect(mockStdout.buffer.toString(), isEmpty);
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+        expect(mockStdout.buffer.toString(), 'Resolving dependencies... ');
+        await progress.stopAndClear();
+        expect(
+          mockStdout.buffer.toString(),
+          'Resolving dependencies... \r\x1b[2K',
+        );
+      } finally {
+        forceColors = ForceColorOption.auto;
+      }
+    }, stdout: () => mockStdout);
+  });
 }
