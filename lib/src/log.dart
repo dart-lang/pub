@@ -464,7 +464,7 @@ Future<T> spinner<T>(
   if (condition) {
     _stopProgress();
 
-    final progress = Progress(message);
+    final progress = Progress(message, clearWhenDone: true);
     _animatedProgress = progress;
     return callback().whenComplete(progress.stopAndClear);
   }

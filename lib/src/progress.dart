@@ -10,7 +10,7 @@ import 'log.dart' as log;
 import 'utils.dart';
 
 /// A live-updating progress indicator for long-running log entries.
-class Progress {
+final class Progress {
   /// The timer used to write "..." during a progress log.
   Timer? _timer;
 
@@ -32,10 +32,15 @@ class Progress {
   ///
   /// If [fine] is passed, this will log progress messages on [log.Level.fine]
   /// as opposed to [log.Level.message].
-  Progress(this._message, {bool fine = false}) {
+  ///
+  /// If [clearWhenDone] is `true`, the progress message will be erased once
+  /// done. When output is not going to a terminal, [clearWhenDone] logs on
+  /// [log.Level.fine] so that non-interactive output is not polluted with
+  /// temporary progress lines.
+  Progress(this._message, {bool fine = false, bool clearWhenDone = false}) {
     _stopwatch.start();
 
-    final level = fine ? log.Level.fine : log.Level.message;
+    final level = (fine || clearWhenDone) ? log.Level.fine : log.Level.message;
 
     // The animation is only shown when it would be meaningful to a human.
     // That means we're writing a visible message to a TTY at normal log levels
@@ -57,7 +62,7 @@ class Progress {
     stdout.write('$_message... ');
   }
 
-  /// Stops the progress indicator.
+  /// Stops the progress indicator and prints the final elapsed time.
   void stop() {
     _stopwatch.stop();
 
@@ -75,24 +80,27 @@ class Progress {
     stdout.writeln();
   }
 
-  /// Erases the progress message and stops the progress indicator.
+  /// Erases the progress message from the terminal and stops the progress
+  /// indicator.
   Future<void> stopAndClear() async {
     _stopwatch.stop();
 
     if (_timer != null) {
-      stdout.write('\b' * (_message.length + '... '.length + _timeLength));
+      _timer!.cancel();
+      _timer = null;
+      if (canUseAnsiCodes) {
+        stdout.write('\r\x1b[2K');
+      } else {
+        stdout.write(
+          '\r${' ' * (_message.length + '... '.length + _timeLength)}\r',
+        );
+      }
     }
 
     // Always log the final time as [log.fine] because for the most part normal
     // users don't care about the precise time information beyond what's shown
     // in the animation.
     log.fine('$_message finished $_time.');
-
-    // If we were animating, print one final update to show the user the final
-    // time.
-    if (_timer == null) return;
-    _timer!.cancel();
-    _timer = null;
   }
 
   /// Stop animating the progress indicator.
@@ -104,7 +112,12 @@ class Progress {
 
     // Erase the time indicator so that we don't leave a misleading
     // half-complete time indicator on the console.
-    stdout.writeln('\b' * _timeLength);
+    if (canUseAnsiCodes) {
+      stdout.write('\x1b[0K');
+    } else {
+      stdout.write('\b' * _timeLength);
+    }
+    stdout.writeln();
     _timeLength = 0;
     _timer!.cancel();
     _timer = null;
