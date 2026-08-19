@@ -12,6 +12,7 @@ import 'src/entrypoint.dart';
 import 'src/exceptions.dart';
 import 'src/http.dart';
 import 'src/io.dart';
+import 'src/progress.dart';
 import 'src/pub_embeddable_command.dart';
 import 'src/source/git.dart';
 import 'src/system_cache.dart';
@@ -22,6 +23,7 @@ export 'src/executable.dart'
         CommandResolutionIssue,
         DartExecutableWithPackageConfig,
         getExecutableForCommand;
+export 'src/progress.dart' show ProgressGracePeriod;
 
 /// Returns a [Command] for pub functionality that can be used by an embedding
 /// CommandRunner.
@@ -31,6 +33,7 @@ export 'src/executable.dart'
 Command<int> pubCommand({
   required bool Function() isVerbose,
   String category = '',
+  ProgressGracePeriod? progressGracePeriod,
   f.FileSystem? fileSystem,
   Map<String, String>? environment,
   String? platformVersion,
@@ -50,6 +53,7 @@ Command<int> pubCommand({
     stderr: stderr,
     httpClient: httpClient,
   ),
+  progressGracePeriod: progressGracePeriod,
   fileSystem: fileSystem,
   environment: environment,
   platformVersion: platformVersion,
@@ -77,6 +81,7 @@ Future<void> ensurePubspecResolved(
   bool isOffline = false,
   bool summaryOnly = true,
   bool onlyOutputWhenTerminal = true,
+  ProgressGracePeriod? progressGracePeriod,
   f.FileSystem? fileSystem,
   Map<String, String>? environment,
   String? platformVersion,
@@ -103,6 +108,7 @@ Future<void> ensurePubspecResolved(
         globalHttpClient.close();
       }
     },
+    progressGracePeriod: progressGracePeriod,
     fileSystem: fileSystem,
     environment: environment,
     platformVersion: platformVersion,

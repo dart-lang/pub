@@ -465,16 +465,9 @@ Future<T> spinner<T>(
   if (condition) {
     _stopProgress();
 
-    final effectiveDelay =
-        delay ??
-        (hasShownProgress
-            ? Duration.zero
-            : defaultGracePeriod - graceStopwatch.elapsed);
+    final effectiveDelay = delay ?? currentProgressGracePeriod.remainingDelay;
 
-    final progress = Progress(
-      message,
-      delay: effectiveDelay < Duration.zero ? Duration.zero : effectiveDelay,
-    );
+    final progress = Progress(message, delay: effectiveDelay);
     _animatedProgress = progress;
     return callback().whenComplete(progress.stopAndClear);
   }

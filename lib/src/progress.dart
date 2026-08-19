@@ -9,21 +9,80 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'utils.dart';
 
+/// Tracks the shared grace period for progress spinners across multiple
+/// operations.
+final class ProgressGracePeriod {
+  /// The default grace period before a spinner is shown for the first time.
+  final Duration defaultGracePeriod;
+
+  /// Stopwatch tracking time since program start or since last non-spinner
+  /// output.
+  final Stopwatch stopwatch;
+
+  /// Whether a spinner/progress message has been displayed since the last reset.
+  bool hasShownProgress;
+
+  ProgressGracePeriod({
+    this.defaultGracePeriod = const Duration(milliseconds: 500),
+    Stopwatch? stopwatch,
+    this.hasShownProgress = false,
+  }) : stopwatch = stopwatch ?? (Stopwatch()..start());
+
+  /// Resets the grace period timer and progress flag.
+  void reset() {
+    stopwatch.reset();
+    hasShownProgress = false;
+  }
+
+  /// Calculates the effective delay before a spinner should appear.
+  Duration get remainingDelay {
+    if (hasShownProgress) return Duration.zero;
+    final remaining = defaultGracePeriod - stopwatch.elapsed;
+    return remaining < Duration.zero ? Duration.zero : remaining;
+  }
+
+  /// Marks that progress has been shown.
+  void markProgressShown() {
+    hasShownProgress = true;
+  }
+}
+
+final _defaultProgressGracePeriod = ProgressGracePeriod();
+
+final _progressGracePeriodKey = Object();
+
+/// The [ProgressGracePeriod] used by the current [Zone].
+ProgressGracePeriod get currentProgressGracePeriod =>
+    Zone.current[_progressGracePeriodKey] as ProgressGracePeriod? ??
+    _defaultProgressGracePeriod;
+
 /// The default grace period before a spinner is shown for the first time.
-const defaultGracePeriod = Duration(milliseconds: 500);
+Duration get defaultGracePeriod =>
+    currentProgressGracePeriod.defaultGracePeriod;
 
 /// Stopwatch tracking time since program start or since last non-spinner
 /// output.
-final graceStopwatch = Stopwatch()..start();
+Stopwatch get graceStopwatch => currentProgressGracePeriod.stopwatch;
 
 /// Whether a spinner/progress message has been displayed since the last reset.
-bool hasShownProgress = false;
+bool get hasShownProgress => currentProgressGracePeriod.hasShownProgress;
+set hasShownProgress(bool value) =>
+    currentProgressGracePeriod.hasShownProgress = value;
 
 /// Resets the shared grace period timer.
 void resetGracePeriod() {
-  graceStopwatch.reset();
-  hasShownProgress = false;
+  currentProgressGracePeriod.reset();
 }
+
+/// Runs [callback] in a [Zone] with [progressGracePeriod] as the active grace
+/// period.
+R withProgressGracePeriod<R>(
+  R Function() callback, {
+  required ProgressGracePeriod progressGracePeriod,
+}) => runZoned(
+  callback,
+  zoneValues: {_progressGracePeriodKey: progressGracePeriod},
+);
 
 /// A live-updating progress indicator for long-running log entries.
 final class Progress {
@@ -79,7 +138,7 @@ final class Progress {
       if (!_hasStarted) {
         stdout.write('$_message... ');
         _hasStarted = true;
-        hasShownProgress = true;
+        currentProgressGracePeriod.markProgressShown();
       }
       _update();
     });
@@ -87,7 +146,7 @@ final class Progress {
     if (effectiveDelay == Duration.zero) {
       stdout.write('$_message... ');
       _hasStarted = true;
-      hasShownProgress = true;
+      currentProgressGracePeriod.markProgressShown();
     }
   }
 

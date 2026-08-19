@@ -186,4 +186,24 @@ void main() {
       }, stdout: () => mockStdout);
     },
   );
+
+  test('withProgressGracePeriod shares progress state across zone', () async {
+    final mockStdout = _MockStdout();
+    final customGrace = ProgressGracePeriod();
+    await IOOverrides.runZoned(() async {
+      forceColors = ForceColorOption.always;
+      try {
+        await withProgressGracePeriod(() async {
+          expect(currentProgressGracePeriod, same(customGrace));
+          expect(currentProgressGracePeriod.hasShownProgress, isFalse);
+          final progress = Progress('Resolving');
+          expect(currentProgressGracePeriod.hasShownProgress, isTrue);
+          expect(customGrace.hasShownProgress, isTrue);
+          await progress.stopAndClear();
+        }, progressGracePeriod: customGrace);
+      } finally {
+        forceColors = ForceColorOption.auto;
+      }
+    }, stdout: () => mockStdout);
+  });
 }

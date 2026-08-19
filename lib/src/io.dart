@@ -34,6 +34,7 @@ import 'http.dart';
 import 'log.dart' as log;
 import 'path.dart';
 import 'platform_info.dart';
+import 'progress.dart';
 import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;
@@ -1423,6 +1424,7 @@ R withOverrides<R>(
   f.FileSystem? fileSystem,
   Map<String, String>? environment,
   String? platformVersion,
+  ProgressGracePeriod? progressGracePeriod,
   Stream<List<int>>? stdin,
   StreamSink<List<int>>? stdout,
   StreamSink<List<int>>? stderr,
@@ -1432,6 +1434,7 @@ R withOverrides<R>(
   if (fileSystem == null &&
       environment == null &&
       platformVersion == null &&
+      progressGracePeriod == null &&
       stdin == null &&
       stdout == null &&
       stderr == null &&
@@ -1454,7 +1457,11 @@ R withOverrides<R>(
       return withPlatform(
         () {
           return withHttpClient(() {
-            return withPathContext(fn, pathContext: pathContext);
+            return withProgressGracePeriod(
+              () => withPathContext(fn, pathContext: pathContext),
+              progressGracePeriod:
+                  progressGracePeriod ?? currentProgressGracePeriod,
+            );
           }, client: client);
         },
         platform: PlatformInfo.override(
