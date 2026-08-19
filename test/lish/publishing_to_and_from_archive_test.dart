@@ -71,4 +71,104 @@ void main() {
     expect(File(d.path('archive.tar.gz')).existsSync(), isTrue);
     await runPub(args: ['cache', 'preload', p.join('..', 'archive.tar.gz')]);
   });
+
+  test('Can publish from archive with attestation bundle', () async {
+    final server = await servePackages();
+    await d
+        .validPackage(
+          pubspecExtras: {
+            'repository': 'https://github.com/dart-lang/test_pkg',
+          },
+        )
+        .create();
+    await d.credentialsFile(server, 'access-token').create();
+    await runPub(
+      args: ['lish', '--to-archive', p.join('..', 'archive.tar.gz')],
+    );
+
+    final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+    File(bundlePath).writeAsStringSync('{"mediaType": "sigstore"}');
+
+    server.expect('GET', '/create', (request) {
+      return Response.ok(
+        jsonEncode({
+          'success': {
+            'message': 'Package test_pkg 1.0.0 with attestation uploaded!',
+          },
+        }),
+      );
+    });
+
+    final pub = await startPublish(
+      server,
+      args: [
+        '--from-archive',
+        'archive.tar.gz',
+        '--with-attestation',
+        bundlePath,
+      ],
+      workingDirectory: d.sandbox,
+    );
+
+    expect(pub.stdout, emitsThrough('Publishing from archive: archive.tar.gz'));
+    await confirmPublish(pub);
+
+    handleUploadForm(server);
+    server.handle('/upload', (request) async {
+      await request.read().drain<void>();
+      return Response.found(Uri.parse(server.url).resolve('/create'));
+    });
+
+    expect(pub.stdout, emitsThrough(startsWith('Uploading...')));
+    expect(
+      pub.stdout,
+      emits(
+        'Message from server: '
+        'Package test_pkg 1.0.0 with attestation uploaded!',
+      ),
+    );
+    await pub.shouldExit(SUCCESS);
+  });
+
+  test(
+    'Fails when publishing with attestation without github repo in pubspec',
+    () async {
+      await d.validPackage().create();
+      await runPub(
+        args: ['lish', '--to-archive', p.join('..', 'archive.tar.gz')],
+      );
+
+      final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+      File(bundlePath).writeAsStringSync('{}');
+
+      await runPub(
+        args: [
+          'lish',
+          '--from-archive',
+          p.join(d.sandbox, 'archive.tar.gz'),
+          '--with-attestation',
+          bundlePath,
+        ],
+        error: contains(
+          'A GitHub repository must be specified in the "repository" field',
+        ),
+        exitCode: DATA,
+        workingDirectory: d.sandbox,
+      );
+    },
+  );
+
+  test(
+    'Fails when --with-attestation is used without --from-archive',
+    () async {
+      await d.validPackage().create();
+      await runPub(
+        args: ['lish', '--with-attestation', 'bundle.json'],
+        error: contains(
+          '`--with-attestation` can only be used with `--from-archive`.',
+        ),
+        exitCode: USAGE,
+      );
+    },
+  );
 }
