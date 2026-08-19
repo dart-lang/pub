@@ -162,13 +162,13 @@ $contentHashesDocumentationUrl
 
     if (_quiet) {
       if (_dryRun) {
-        log.fine('Would get dependencies$suffix.');
+        log.message('Would get dependencies$suffix.');
       } else if (_enforceLockfile) {
         if (changes == 0) {
-          log.fine('Got dependencies$suffix.');
+          log.message('Got dependencies$suffix.');
         }
       } else {
-        log.fine('Got dependencies$suffix.');
+        log.message('Got dependencies$suffix.');
       }
     } else {
       if (_dryRun) {
