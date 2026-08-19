@@ -151,12 +151,37 @@ class PartialSolution {
   ///
   /// Throws a [StateError] if [term] isn't satisfied by `this`.
   Assignment satisfier(Term term) {
-    final prefix = PartialSolution(_rootRefs);
-    for (var assignment in _assignments) {
-      if (assignment.package.name != term.package.name) continue;
+    term = Term(canonicalize(term.package), term.isPositive);
+    final targetName = term.package.name;
+    Term? positive;
+    Map<PackageRef, Term>? negative;
 
-      prefix._register(assignment);
-      if (prefix.satisfies(term)) return assignment;
+    for (var assignment in _assignments) {
+      if (assignment.package.name != targetName) continue;
+
+      if (positive != null) {
+        positive = positive.intersect(assignment);
+      } else {
+        final ref = assignment.package.toRef();
+        final oldNeg = negative?[ref];
+        final intersected =
+            oldNeg == null ? assignment : assignment.intersect(oldNeg)!;
+        if (intersected.isPositive) {
+          negative = null;
+          positive = intersected;
+        } else {
+          (negative ??= {})[ref] = intersected;
+        }
+      }
+
+      if (positive != null) {
+        if (positive.relation(term) == SetRelation.subset) return assignment;
+      } else if (negative != null) {
+        final negTerm = negative[term.package.toRef()];
+        if (negTerm != null && negTerm.relation(term) == SetRelation.subset) {
+          return assignment;
+        }
+      }
     }
 
     throw StateError('[BUG] $term is not satisfied.');
