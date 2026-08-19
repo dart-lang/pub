@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:async/async.dart';
 import 'package:collection/collection.dart';
@@ -74,6 +75,8 @@ class PackageLister {
   /// Whether we've returned incompatibilities for [_locked].
   var _listedLockedVersion = false;
 
+  final _countCache = <VersionConstraint, int>{};
+
   /// The versions of [_ref] that have been downloaded and cached, or `null` if
   /// they haven't been downloaded yet.
   List<PackageId>? get cachedVersions => _cachedVersions;
@@ -138,10 +141,12 @@ class PackageLister {
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
     if (_locked != null && constraint.allows(_locked.version)) return 1;
+    final cached = _countCache[constraint];
+    if (cached != null) return cached;
     try {
-      return (await _versions)
-          .where((id) => constraint.allows(id.version))
-          .length;
+      final count = _countMatchingVersions(await _versions, constraint);
+      _countCache[constraint] = count;
+      return count;
     } on PackageNotFoundException {
       // If it fails for any reason, just treat that as no versions. This will
       // sort this reference higher so that we can traverse into it and report
@@ -161,35 +166,58 @@ class PackageLister {
     if (locked != null && constraint.allows(locked.version)) return locked;
 
     final versions = await _versions;
+    if (versions.isEmpty) return null;
 
-    // If [constraint] has a minimum (or a maximum in downgrade mode), we can
-    // bail early once we're past it.
-    var isPastLimit = (Version _) => false;
-    if (constraint is VersionRange) {
-      if (_isDowngrade) {
-        final max = constraint.max;
-        if (max != null) isPastLimit = (version) => version > max;
-      } else {
-        final min = constraint.min;
-        if (min != null) isPastLimit = (version) => version < min;
+    if (_isDowngrade) {
+      var startIdx = 0;
+      if (constraint is VersionRange && constraint.min != null) {
+        startIdx = _lowerBound(versions, constraint.min!);
       }
-    }
+      PackageId? bestPrerelease;
+      for (var i = startIdx; i < versions.length; i++) {
+        final id = versions[i];
+        if (constraint is VersionRange &&
+            constraint.max != null &&
+            id.version > constraint.max!) {
+          break;
+        }
 
-    // Return the most preferable version that matches [constraint]: the latest
-    // non-prerelease version if one exists, or the latest prerelease version
-    // otherwise.
-    PackageId? bestPrerelease;
-    for (var id in _isDowngrade ? versions : versions.reversed) {
-      if (isPastLimit(id.version)) break;
-
-      if (!constraint.allows(id.version)) continue;
-      if (!id.version.isPreRelease) {
-        return id;
+        if (!constraint.allows(id.version)) continue;
+        if (!id.version.isPreRelease) {
+          return id;
+        }
+        bestPrerelease ??= id;
       }
-      bestPrerelease ??= id;
-    }
+      return bestPrerelease;
+    } else {
+      var startIdx = versions.length - 1;
+      if (constraint is VersionRange && constraint.max != null) {
+        final idx = _lowerBound(versions, constraint.max!);
+        if (idx < versions.length &&
+            constraint.includeMax &&
+            versions[idx].version == constraint.max) {
+          startIdx = idx;
+        } else {
+          startIdx = math.min(idx, versions.length - 1);
+        }
+      }
+      PackageId? bestPrerelease;
+      for (var i = startIdx; i >= 0; i--) {
+        final id = versions[i];
+        if (constraint is VersionRange &&
+            constraint.min != null &&
+            id.version < constraint.min!) {
+          break;
+        }
 
-    return bestPrerelease;
+        if (!constraint.allows(id.version)) continue;
+        if (!id.version.isPreRelease) {
+          return id;
+        }
+        bestPrerelease ??= id;
+      }
+      return bestPrerelease;
+    }
   }
 
   /// Returns incompatibilities that encapsulate [id]'s dependencies, or that
@@ -478,5 +506,56 @@ class PackageLister {
         constraint.effectiveConstraint.allows(
           sdkOverrides[sdk.identifier] ?? sdk.version!,
         );
+  }
+
+  int _countMatchingVersions(
+    List<PackageId> versions,
+    VersionConstraint constraint,
+  ) {
+    if (constraint.isEmpty) return 0;
+    if (constraint.isAny) return versions.length;
+
+    if (constraint is VersionRange) {
+      final min = constraint.min;
+      var start = min == null ? 0 : _lowerBound(versions, min);
+      if (min != null &&
+          !constraint.includeMin &&
+          start < versions.length &&
+          versions[start].version == min) {
+        start++;
+      }
+
+      final max = constraint.max;
+      var end = max == null ? versions.length : _lowerBound(versions, max);
+      if (max != null &&
+          constraint.includeMax &&
+          end < versions.length &&
+          versions[end].version == max) {
+        end++;
+      }
+      while (end > 0 && !constraint.allows(versions[end - 1].version)) {
+        end--;
+      }
+
+      return math.max(0, end - start);
+    }
+
+    if (constraint is VersionUnion) {
+      return constraint.ranges.fold(
+        0,
+        (count, range) => count + _countMatchingVersions(versions, range),
+      );
+    }
+
+    return versions.where((id) => constraint.allows(id.version)).length;
+  }
+
+  int _lowerBound(List<PackageId> versions, Version version) {
+    if (versions.isEmpty) return 0;
+    return lowerBound(
+      versions,
+      PackageId(_ref.name, version, versions.first.description),
+      compare: (id1, id2) => id1.version.compareTo(id2.version),
+    );
   }
 }
