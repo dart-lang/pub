@@ -9,17 +9,18 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'utils.dart';
 
-/// Tracks the shared grace period for progress spinners across multiple
+/// Tracks the shared grace period for transient progress across multiple
 /// operations.
 final class ProgressGracePeriod {
-  /// The default grace period before a spinner is shown for the first time.
+  /// The default grace period before transient progress is shown for the first
+  /// time.
   final Duration defaultGracePeriod;
 
-  /// Stopwatch tracking time since program start or since last non-spinner
+  /// Stopwatch tracking time since program start or since last non-progress
   /// output.
   final Stopwatch stopwatch;
 
-  /// Whether a spinner/progress message has been displayed since the last reset.
+  /// Whether a progress message has been displayed since the last reset.
   bool hasShownProgress;
 
   ProgressGracePeriod({
@@ -34,7 +35,7 @@ final class ProgressGracePeriod {
     hasShownProgress = false;
   }
 
-  /// Calculates the effective delay before a spinner should appear.
+  /// Calculates the effective delay before transient progress should appear.
   Duration get remainingDelay {
     if (hasShownProgress) return Duration.zero;
     final remaining = defaultGracePeriod - stopwatch.elapsed;
@@ -56,15 +57,7 @@ ProgressGracePeriod get currentProgressGracePeriod =>
     Zone.current[_progressGracePeriodKey] as ProgressGracePeriod? ??
     _defaultProgressGracePeriod;
 
-/// The default grace period before a spinner is shown for the first time.
-Duration get defaultGracePeriod =>
-    currentProgressGracePeriod.defaultGracePeriod;
-
-/// Stopwatch tracking time since program start or since last non-spinner
-/// output.
-Stopwatch get graceStopwatch => currentProgressGracePeriod.stopwatch;
-
-/// Whether a spinner/progress message has been displayed since the last reset.
+/// Whether a progress message has been displayed since the last reset.
 bool get hasShownProgress => currentProgressGracePeriod.hasShownProgress;
 set hasShownProgress(bool value) =>
     currentProgressGracePeriod.hasShownProgress = value;
