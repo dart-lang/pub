@@ -443,33 +443,37 @@ Future<T> errorsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
 /// Prints [message] then displays an updated elapsed time until the future
 /// returned by [callback] completes.
 ///
+/// If [transient] is true, the progress message is erased from the terminal
+/// once [callback] completes, and by default it is only shown after the shared
+/// grace period (e.g. 500ms).
+///
+/// If [transient] is false (the default), the progress message remains in
+/// the terminal output when [callback] completes.
+///
 /// If anything else is logged during this (including another call to
 /// [progress]) that cancels the progress animation, although the total time
 /// will still be printed once it finishes. If [fine] is passed, the progress
 /// information will only be visible at [Level.fine].
-Future<T> progress<T>(String message, Future<T> Function() callback) {
-  _stopProgress();
-
-  final progress = Progress(message);
-  _animatedProgress = progress;
-  return callback().whenComplete(progress.stop);
-}
-
-/// Like [progress] but erases the message once done.
-Future<T> spinner<T>(
+Future<T> progress<T>(
   String message,
   Future<T> Function() callback, {
-  bool condition = true,
+  bool transient = false,
   Duration? delay,
+  bool condition = true,
+  bool fine = false,
 }) {
   if (condition) {
     _stopProgress();
 
-    final effectiveDelay = delay ?? currentProgressGracePeriod.remainingDelay;
+    final effectiveDelay =
+        delay ??
+        (transient ? currentProgressGracePeriod.remainingDelay : Duration.zero);
 
-    final progress = Progress(message, delay: effectiveDelay);
+    final progress = Progress(message, fine: fine, delay: effectiveDelay);
     _animatedProgress = progress;
-    return callback().whenComplete(progress.stopAndClear);
+    return callback().whenComplete(
+      transient ? progress.stopAndClear : progress.stop,
+    );
   }
   return callback();
 }

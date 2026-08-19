@@ -158,23 +158,28 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     late bool hasUpgradableResolution;
     late bool hasResolvableResolution;
 
-    await log.spinner('Resolving', () async {
-      final upgradablePackagesResult = await _tryResolve(
-        upgradableWorkspace,
-        cache,
-        lockFile: entrypoint.lockFile,
-      );
-      hasUpgradableResolution = upgradablePackagesResult != null;
-      upgradablePackages = upgradablePackagesResult ?? [];
+    await log.progress(
+      'Resolving',
+      () async {
+        final upgradablePackagesResult = await _tryResolve(
+          upgradableWorkspace,
+          cache,
+          lockFile: entrypoint.lockFile,
+        );
+        hasUpgradableResolution = upgradablePackagesResult != null;
+        upgradablePackages = upgradablePackagesResult ?? [];
 
-      final resolvablePackagesResult = await _tryResolve(
-        resolvableWorkspace,
-        cache,
-        lockFile: entrypoint.lockFile,
-      );
-      hasResolvableResolution = resolvablePackagesResult != null;
-      resolvablePackages = resolvablePackagesResult ?? [];
-    }, condition: _shouldShowSpinner);
+        final resolvablePackagesResult = await _tryResolve(
+          resolvableWorkspace,
+          cache,
+          lockFile: entrypoint.lockFile,
+        );
+        hasResolvableResolution = resolvablePackagesResult != null;
+        resolvablePackages = resolvablePackagesResult ?? [];
+      },
+      condition: _shouldShowSpinner,
+      transient: true,
+    );
 
     // This list will be empty if there is no lock file.
     final currentPackages = entrypoint.lockFile.packages.values;

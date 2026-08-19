@@ -62,10 +62,9 @@ class SolveResult {
   /// returned.
   Future<LockFile> downloadCachedPackages(
     SystemCache cache, {
-    bool spinner = false,
+    bool transient = false,
   }) async {
-    final progressFn = spinner ? log.spinner : log.progress;
-    final resolvedPackageIds = await progressFn<List<PackageId>>(
+    final resolvedPackageIds = await log.progress<List<PackageId>>(
       'Downloading packages',
       () async {
         return await Future.wait(
@@ -77,6 +76,7 @@ class SolveResult {
           }),
         );
       },
+      transient: transient,
     );
     // Invariant: the content-hashes in PUB_CACHE matches those provided by the
     // server.

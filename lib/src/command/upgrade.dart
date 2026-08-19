@@ -422,16 +422,21 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     Entrypoint e, {
     Iterable<ConstraintAndCause>? additionalConstraints,
   }) async {
-    final solveResult = await log.spinner('Resolving dependencies', () async {
-      return await resolveVersions(
-        SolveType.upgrade,
-        cache,
-        e.workspaceRoot.transformWorkspace(
-          (package) => stripVersionBounds(package.pubspec),
-        ),
-        additionalConstraints: additionalConstraints,
-      );
-    }, condition: _shouldShowSpinner);
+    final solveResult = await log.progress(
+      'Resolving dependencies',
+      () async {
+        return await resolveVersions(
+          SolveType.upgrade,
+          cache,
+          e.workspaceRoot.transformWorkspace(
+            (package) => stripVersionBounds(package.pubspec),
+          ),
+          additionalConstraints: additionalConstraints,
+        );
+      },
+      condition: _shouldShowSpinner,
+      transient: true,
+    );
     return {for (final package in solveResult.packages) package.name: package};
   }
 
