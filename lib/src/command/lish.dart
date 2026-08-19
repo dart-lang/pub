@@ -81,6 +81,7 @@ class LishCommand extends PubCommand {
 
   late final String? _fromArchive = argResults.option('from-archive');
   late final String? _toArchive = argResults.option('to-archive');
+  late final String? _withAttestation = argResults.option('with-attestation');
 
   LishCommand() {
     argParser.addFlag(
@@ -129,6 +130,14 @@ class LishCommand extends PubCommand {
       valueHelp: '[archive.tar.gz]',
       hide: true,
     );
+    argParser.addOption(
+      'with-attestation',
+      help:
+          'The path to a Sigstore attestation bundle JSON file to upload '
+          'with the package archive.',
+      valueHelp: '[attestation.sigstore.json]',
+      hide: true,
+    );
 
     argParser.addOption(
       'directory',
@@ -146,8 +155,9 @@ class LishCommand extends PubCommand {
   Future<void> _publishUsingClient(
     List<int> packageBytes,
     http.Client client,
-    Uri host,
-  ) async {
+    Uri host, {
+    Uint8List? attestationBytes,
+  }) async {
     Uri? cloudStorageUrl;
 
     try {
@@ -196,7 +206,32 @@ class LishCommand extends PubCommand {
                 filename: 'package.tar.gz',
               ),
             );
-            return await client.fetch(request);
+            final response = await client.fetch(request);
+
+            if (attestationBytes != null) {
+              final baseKey = fields['key'] as String?;
+              final attestationFields = Map<String, String>.from(
+                request.fields,
+              );
+              if (baseKey != null) {
+                attestationFields['key'] = '$baseKey.sigstore.json';
+              }
+              attestationFields.remove('success_action_redirect');
+              final attRequest =
+                  http.MultipartRequest('POST', cloudStorageUrl!)
+                    ..fields.addAll(attestationFields)
+                    ..files.add(
+                      http.MultipartFile.fromBytes(
+                        'file',
+                        attestationBytes,
+                        filename: 'attestation.sigstore.json',
+                      ),
+                    )
+                    ..followRedirects = false;
+              await client.fetch(attRequest);
+            }
+
+            return response;
           },
         );
 
@@ -244,7 +279,11 @@ class LishCommand extends PubCommand {
     }
   }
 
-  Future<void> _publish(List<int> packageBytes, Uri host) async {
+  Future<void> _publish(
+    List<int> packageBytes,
+    Uri host, {
+    Uint8List? attestationBytes,
+  }) async {
     try {
       final officialPubServers = {
         'https://pub.dev',
@@ -272,12 +311,22 @@ class LishCommand extends PubCommand {
         // This allows us to use `dart pub token add` to inject a token for use
         // with the official servers.
         await oauth2.withClient((client) {
-          return _publishUsingClient(packageBytes, client, host);
+          return _publishUsingClient(
+            packageBytes,
+            client,
+            host,
+            attestationBytes: attestationBytes,
+          );
         });
       } else {
         // For third party servers using bearer authentication client
         await withAuthenticatedClient(cache, host, (client) {
-          return _publishUsingClient(packageBytes, client, host);
+          return _publishUsingClient(
+            packageBytes,
+            client,
+            host,
+            attestationBytes: attestationBytes,
+          );
         });
       }
     } on PubHttpResponseException catch (error) {
@@ -317,6 +366,12 @@ the \$PUB_HOSTED_URL environment variable.''');
 
     if (_fromArchive != null && reproducible) {
       usageException('Cannot use both --from-archive and --reproducible.');
+    }
+
+    if (_withAttestation != null && _fromArchive == null) {
+      usageException(
+        '`--with-attestation` can only be used with `--from-archive`.',
+      );
     }
 
     if (argResults.wasParsed('ignore-warnings') && !dryRun) {
@@ -434,12 +489,29 @@ the \$PUB_HOSTED_URL environment variable.''');
       );
     }
     final host = computeHost(pubspec);
+    Uint8List? attestationBytes;
+    if (_withAttestation != null) {
+      final repository = pubspec.fields['repository']?.toString();
+      if (repository == null || !repository.contains('github.com')) {
+        dataError(
+          'A GitHub repository must be specified in the "repository" field of '
+          'pubspec.yaml when publishing with an attestation.',
+        );
+      }
+      try {
+        attestationBytes = readBinaryFile(_withAttestation);
+      } on FileSystemException catch (e) {
+        dataError('Failed reading attestation file "$_withAttestation": $e');
+      }
+    }
+
     log.message('Publishing ${pubspec.name} ${pubspec.version} to $host.');
     return _Publication(
       packageBytes: packageBytes,
       warningCount: 0,
       hintCount: 0,
       pubspec: pubspec,
+      attestationBytes: attestationBytes,
     );
   }
 
@@ -524,7 +596,11 @@ the \$PUB_HOSTED_URL environment variable.''');
       final host = computeHost(publication.pubspec);
       await _confirmUpload(publication, host);
 
-      await _publish(publication.packageBytes, host);
+      await _publish(
+        publication.packageBytes,
+        host,
+        attestationBytes: publication.attestationBytes,
+      );
     } else {
       if (dryRun) {
         log.message('Would have written to $_toArchive.');
@@ -557,6 +633,7 @@ class _Publication {
   int hintCount;
 
   Pubspec pubspec;
+  Uint8List? attestationBytes;
 
   String get warningsCountMessage {
     final hintText =
@@ -570,5 +647,6 @@ class _Publication {
     required this.warningCount,
     required this.hintCount,
     required this.pubspec,
+    this.attestationBytes,
   });
 }
