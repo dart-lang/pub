@@ -392,11 +392,24 @@ class VersionSolver {
       return candidate.name;
     }
 
-    /// Prefer packages with as few remaining versions as possible, so that if a
-    /// conflict is necessary it's forced quickly.
-    final package = await minByAsync(unsatisfied, (PackageRange package) async {
-      return await _packageLister(package).countVersions(package.constraint);
-    });
+    // Prefer packages with as few remaining versions as possible, so that if a
+    // conflict is necessary it's forced quickly.
+    PackageRange? bestPackage;
+    var bestCount = 1000000000;
+    for (final candidate in unsatisfied) {
+      final count = await _packageLister(
+        candidate,
+      ).countVersions(candidate.constraint);
+      if (count < bestCount) {
+        bestCount = count;
+        bestPackage = candidate;
+        // If a package has 0 matching versions, a conflict is inevitable and
+        // this is the minimum possible count. Break early to force the conflict
+        // immediately without checking remaining candidates.
+        if (count == 0) break;
+      }
+    }
+    final package = bestPackage;
     if (package == null) {
       return null; // when unsatisfied.isEmpty
     }
