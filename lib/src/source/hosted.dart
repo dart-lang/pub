@@ -29,6 +29,7 @@ import '../path.dart';
 import '../platform_info.dart';
 import '../pubspec.dart';
 import '../rate_limited_scheduler.dart';
+import '../sigstore/verifier.dart';
 import '../source.dart';
 import '../system_cache.dart';
 import '../utils.dart';
@@ -1529,7 +1530,7 @@ class HostedSource extends CachedSource {
       );
     }
 
-    late final Uint8List contentHash;
+    Uint8List? contentHash;
     final archiveUrl = versionInfo.archiveUrl;
     log.io('Get package from $archiveUrl.');
     log.fine('Downloading ${log.bold(id.name)} ${id.version}...');
@@ -1565,7 +1566,7 @@ See $contentHashesDocumentationUrl.
 ''');
         }
         contentHash = Uint8List.fromList(actualHash.bytes);
-        writeHash(id, cache, contentHash);
+        writeHash(id, cache, contentHash!);
       }
 
       // It is important that we do not compare against id.description.sha256,
@@ -1606,6 +1607,47 @@ See $contentHashesDocumentationUrl.
             // and cancelling a http stream makes it not reusable. There are
             // ways around this, and we might revisit this later.
             await createFileFromStream(stream, archivePath);
+
+            // Fetch and verify Sigstore attestation if available
+            final attestationUri = Uri.parse(description.url).resolve(
+              'api/packages/${id.name}/versions/${id.version}/attestation',
+            );
+            try {
+              final attRequest = http.Request('GET', attestationUri);
+              final attResponse = await client.fetch(attRequest);
+              if (attResponse.statusCode == 200) {
+                final attJson =
+                    jsonDecode(attResponse.body) as Map<String, dynamic>;
+                final bundle = SigstoreBundle.fromJson(attJson);
+                final archiveBytes = readBinaryFile(archivePath);
+                final verifier = PubAttestationVerifier();
+                final result = verifier.verify(
+                  packageName: id.name,
+                  packageVersion: id.version,
+                  archiveBytes: archiveBytes,
+                  bundle: bundle,
+                );
+                if (!result.isValid) {
+                  throw PackageIntegrityException('''
+Downloaded archive for ${id.name}-${id.version} failed Sigstore attestation verification:
+${result.errors.map((e) => '  * $e').join('\n')}
+
+This indicates a problem on the package repository: `${description.url}`.
+''');
+                }
+                log.fine(
+                  'Verified Sigstore attestation for ${id.name}-${id.version} '
+                  'from repository ${result.repository}.',
+                );
+              }
+            } on PackageIntegrityException {
+              rethrow;
+            } catch (e) {
+              log.fine(
+                'No attestation found or error fetching attestation for '
+                '${id.name}-${id.version}: $e',
+              );
+            }
           });
         });
       } on Exception catch (error, stackTrace) {
@@ -1617,7 +1659,7 @@ See $contentHashesDocumentationUrl.
       } on FormatException catch (e) {
         dataError('Failed to extract `$archivePath`: ${e.message}.');
       }
-      return contentHash;
+      return contentHash!;
     });
   }
 
