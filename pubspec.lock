@@ -325,10 +325,10 @@ packages:
     dependency: "direct main"
     description:
       name: sigstore
-      sha256: "04c0dda858b534915faa82a9a877e94169c9b9d4546bba5a83f940c78b32736f"
+      sha256: "26e426af370085013c79a018d60bfa7f0aae079c273d3e8b1b478340d154a163"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.0"
+    version: "0.1.1"
   source_map_stack_trace:
     dependency: transitive
     description:

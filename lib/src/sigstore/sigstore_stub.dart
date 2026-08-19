@@ -30,6 +30,9 @@ class SigstoreClient {
     SigstoreBundle bundle,
     SigstoreVerificationPolicy policy,
   ) => throw UnsupportedError('Sigstore is not supported on this platform.');
+
+  String refreshTrustedRoot(String mirrorUrl, String cacheDir) =>
+      throw UnsupportedError('Sigstore is not supported on this platform.');
 }
 
 class SigstoreVerificationPolicy {

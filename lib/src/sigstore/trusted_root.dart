@@ -3,11 +3,16 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:sigstore/sigstore.dart';
 
 import '../exceptions.dart';
 import '../io.dart';
 import '../platform_info.dart';
 import '../system_cache.dart';
+
+const sigstoreTufMirror = 'https://tuf-repo-cdn.sigstore.dev';
 
 /// Loads the Sigstore `trusted_root.json` root of trust.
 ///
@@ -59,4 +64,28 @@ Map<String, dynamic>? loadTrustedRoot({
   } on FormatException catch (e) {
     throw DataException('Failed to parse Sigstore trusted_root.json: $e');
   }
+}
+
+/// Refreshes the Sigstore TUF trusted root using full TUF verification
+/// (threshold signatures, anti-rollback, timestamp, snapshot, targets)
+/// and writes verified metadata to [cacheDir].
+///
+/// Also caches the verified `trusted_root.json` at [cachePath] if provided.
+Future<String> refreshTrustedRoot({
+  required String cacheDir,
+  String? cachePath,
+  String mirrorUrl = sigstoreTufMirror,
+}) async {
+  final client = SigstoreClient.create();
+  final dir = Directory(cacheDir);
+  if (!dir.existsSync()) {
+    dir.createSync(recursive: true);
+  }
+  final trustedRootJson = client.refreshTrustedRoot(mirrorUrl, cacheDir);
+  if (cachePath != null) {
+    final file = File(cachePath);
+    file.parent.createSync(recursive: true);
+    file.writeAsStringSync(trustedRootJson);
+  }
+  return trustedRootJson;
 }
