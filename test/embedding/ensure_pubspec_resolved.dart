@@ -379,10 +379,16 @@ void testEnsurePubspecResolved() {
         await d.dir(appPath, [
           d.appPubspec(dependencies: {'foo': '1.0.0'}),
         ]).create();
-        // Ensure we get a new mtime across files on all platforms
-        await _touchWithDelay('pubspec.yaml');
-        await _touchWithDelay('pubspec.lock');
-        await _touchWithDelay('.dart_tool/package_config.json');
+        final now = DateTime.now();
+        File(
+          p.join(d.sandbox, 'myapp', 'pubspec.yaml'),
+        ).setLastModifiedSync(now.subtract(const Duration(seconds: 2)));
+        File(
+          p.join(d.sandbox, 'myapp', 'pubspec.lock'),
+        ).setLastModifiedSync(now.subtract(const Duration(seconds: 1)));
+        File(
+          p.join(d.sandbox, 'myapp', '.dart_tool', 'package_config.json'),
+        ).setLastModifiedSync(now);
 
         await _noImplicitPubGet();
       });
@@ -534,13 +540,24 @@ Future<void> _noImplicitPubGet({Map<String, String?>? environment}) async {
 
 /// Schedules a non-semantic modification to [path].
 Future _touch(String path) async {
-  path = p.join(d.sandbox, 'myapp', path);
-  touch(path);
-}
+  final now = DateTime.now();
+  final target = File(p.join(d.sandbox, 'myapp', path));
+  final lockFile = File(p.join(d.sandbox, 'myapp', 'pubspec.lock'));
+  final pubspecFile = File(p.join(d.sandbox, 'myapp', 'pubspec.yaml'));
+  final packageConfigFile = File(
+    p.join(d.sandbox, 'myapp', '.dart_tool', 'package_config.json'),
+  );
 
-/// Schedules a non-semantic modification to [path] with an artificial delay.
-Future _touchWithDelay(String path) async {
-  await Future<void>.delayed(const Duration(milliseconds: 10));
-  path = p.join(d.sandbox, 'myapp', path);
-  touch(path);
+  if (lockFile.existsSync()) {
+    lockFile.setLastModifiedSync(now.subtract(const Duration(seconds: 5)));
+  }
+  if (pubspecFile.existsSync()) {
+    pubspecFile.setLastModifiedSync(now.subtract(const Duration(seconds: 5)));
+  }
+  if (packageConfigFile.existsSync()) {
+    packageConfigFile.setLastModifiedSync(
+      now.subtract(const Duration(seconds: 5)),
+    );
+  }
+  target.setLastModifiedSync(now);
 }

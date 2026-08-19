@@ -301,33 +301,31 @@ main() {
       );
     },
   );
-  test(
-    '`embedding run` outputs info when successful and has a terminal',
-    () async {
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-          'dependencies': {'foo': '^1.0.0'},
-        }),
-        d.dir('bin', [d.file('myapp.dart', 'main() {print(42);}')]),
-      ]).create();
+  test('`embedding run` does not leave resolution output when successful and '
+      'has a terminal', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'foo': '^1.0.0'},
+      }),
+      d.dir('bin', [d.file('myapp.dart', 'main() {print(42);}')]),
+    ]).create();
 
-      final server = await servePackages();
-      server.serve('foo', '1.0.0');
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
-      final buffer = StringBuffer();
-      await runEmbeddingToBuffer(
-        ['run', 'myapp'],
-        buffer,
-        workingDirectory: d.path(appPath),
-        environment: {EnvironmentKeys.forceTerminalOutput: '1'},
-      );
-      expect(
-        buffer.toString(),
-        allOf(contains('Resolving dependencies'), contains('42')),
-      );
-    },
-  );
+    final buffer = StringBuffer();
+    await runEmbeddingToBuffer(
+      ['run', 'myapp'],
+      buffer,
+      workingDirectory: d.path(appPath),
+      environment: {EnvironmentKeys.forceTerminalOutput: '1'},
+    );
+    expect(
+      buffer.toString(),
+      allOf(isNot(contains('Resolving dependencies')), contains('42')),
+    );
+  });
 
   test('`embedding run` does not recompile executables '
       'from packages depending on sdk packages', () async {

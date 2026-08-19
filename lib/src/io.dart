@@ -1442,112 +1442,150 @@ R withOverrides<R>(
     return fn();
   }
 
-  fileSystem ??= const f.LocalFileSystem();
-  environment ??= platform.environment;
-  platformVersion ??= platform.version;
-  stdin ??= io.stdin;
-  stdout ??= io.stdout;
-  stderr ??= io.stderr;
-  final client = httpClient ?? http.Client();
+  final pathContext = fileSystem?.path ?? p;
 
-  final pathContext = fileSystem.path;
+  R runPlatformAndHttp() {
+    return withPlatform(
+      () {
+        return withHttpClient(() {
+          return withProgressGracePeriod(
+            () => withPathContext(fn, pathContext: pathContext),
+            progressGracePeriod:
+                progressGracePeriod ?? currentProgressGracePeriod,
+          );
+        }, client: httpClient ?? globalHttpClient);
+      },
+      platform: PlatformInfo.override(
+        environment: environment ?? platform.environment,
+        version: platformVersion ?? platform.version,
+        pathSeparator: pathContext.separator,
+      ),
+    );
+  }
+
+  if (fileSystem == null && stdin == null && stdout == null && stderr == null) {
+    return runPlatformAndHttp();
+  }
 
   return IOOverrides.runWithIOOverrides(
-    () {
-      return withPlatform(
-        () {
-          return withHttpClient(() {
-            return withProgressGracePeriod(
-              () => withPathContext(fn, pathContext: pathContext),
-              progressGracePeriod:
-                  progressGracePeriod ?? currentProgressGracePeriod,
-            );
-          }, client: client);
-        },
-        platform: PlatformInfo.override(
-          environment: environment,
-          version: platformVersion,
-          pathSeparator: pathContext.separator,
-        ),
-      );
-    },
+    runPlatformAndHttp,
     _IOOverrides(
       fileSystem: fileSystem,
-      stdin: stdin is Stdin ? stdin : StdinStream(stdin),
-      stdout: stdout is Stdout ? stdout : StdoutSink(stdout),
-      stderr: stderr is Stdout ? stderr : StdoutSink(stderr),
+      stdin:
+          stdin == null ? null : (stdin is Stdin ? stdin : StdinStream(stdin)),
+      stdout:
+          stdout == null
+              ? null
+              : (stdout is Stdout ? stdout : StdoutSink(stdout)),
+      stderr:
+          stderr == null
+              ? null
+              : (stderr is Stdout ? stderr : StdoutSink(stderr)),
     ),
   );
 }
 
 /// An [IOOverrides] that uses a [f.FileSystem] for all operations.
 final class _IOOverrides extends IOOverrides {
-  final f.FileSystem fileSystem;
+  final f.FileSystem? fileSystem;
+  final Stdin? _stdin;
+  final Stdout? _stdout;
+  final Stdout? _stderr;
+
+  _IOOverrides({this.fileSystem, Stdin? stdin, Stdout? stdout, Stdout? stderr})
+    : _stdin = stdin,
+      _stdout = stdout,
+      _stderr = stderr;
 
   @override
-  final Stdin stdin;
+  Stdin get stdin => _stdin ?? super.stdin;
 
   @override
-  final Stdout stdout;
+  Stdout get stdout => _stdout ?? super.stdout;
 
   @override
-  final Stdout stderr;
-
-  _IOOverrides({
-    required this.fileSystem,
-    required this.stdin,
-    required this.stdout,
-    required this.stderr,
-  });
+  Stdout get stderr => _stderr ?? super.stderr;
 
   @override
-  File createFile(String path) => fileSystem.file(path);
+  File createFile(String path) =>
+      fileSystem != null ? fileSystem!.file(path) : super.createFile(path);
 
   @override
-  Directory createDirectory(String path) => fileSystem.directory(path);
+  Directory createDirectory(String path) =>
+      fileSystem != null
+          ? fileSystem!.directory(path)
+          : super.createDirectory(path);
 
   @override
-  Link createLink(String path) => fileSystem.link(path);
+  Link createLink(String path) =>
+      fileSystem != null ? fileSystem!.link(path) : super.createLink(path);
 
   @override
-  Future<FileStat> stat(String path) => fileSystem.stat(path);
+  Future<FileStat> stat(String path) =>
+      fileSystem != null ? fileSystem!.stat(path) : super.stat(path);
 
   @override
-  FileStat statSync(String path) => fileSystem.statSync(path);
+  FileStat statSync(String path) =>
+      fileSystem != null ? fileSystem!.statSync(path) : super.statSync(path);
 
   @override
   Future<bool> fseIdentical(String path1, String path2) =>
-      fileSystem.identical(path1, path2);
+      fileSystem != null
+          ? fileSystem!.identical(path1, path2)
+          : super.fseIdentical(path1, path2);
 
   @override
   bool fseIdenticalSync(String path1, String path2) =>
-      fileSystem.identicalSync(path1, path2);
+      fileSystem != null
+          ? fileSystem!.identicalSync(path1, path2)
+          : super.fseIdenticalSync(path1, path2);
 
   @override
   Future<FileSystemEntityType> fseGetType(String path, bool followLinks) =>
-      fileSystem.type(path, followLinks: followLinks);
+      fileSystem != null
+          ? fileSystem!.type(path, followLinks: followLinks)
+          : super.fseGetType(path, followLinks);
 
   @override
   FileSystemEntityType fseGetTypeSync(String path, bool followLinks) =>
-      fileSystem.typeSync(path, followLinks: followLinks);
+      fileSystem != null
+          ? fileSystem!.typeSync(path, followLinks: followLinks)
+          : super.fseGetTypeSync(path, followLinks);
 
   @override
-  Directory getCurrentDirectory() => fileSystem.currentDirectory;
+  Directory getCurrentDirectory() =>
+      fileSystem != null
+          ? fileSystem!.currentDirectory
+          : super.getCurrentDirectory();
 
   @override
   void setCurrentDirectory(String path) {
-    fileSystem.currentDirectory = path;
+    if (fileSystem != null) {
+      fileSystem!.currentDirectory = path;
+    } else {
+      super.setCurrentDirectory(path);
+    }
   }
 
   @override
-  Directory getSystemTempDirectory() => fileSystem.systemTempDirectory;
+  Directory getSystemTempDirectory() =>
+      fileSystem != null
+          ? fileSystem!.systemTempDirectory
+          : super.getSystemTempDirectory();
 
   @override
-  bool fsWatchIsSupported() => fileSystem.isWatchSupported;
+  bool fsWatchIsSupported() =>
+      fileSystem != null
+          ? fileSystem!.isWatchSupported
+          : super.fsWatchIsSupported();
 
   @override
   Stream<FileSystemEvent> fsWatch(String path, int events, bool recursive) =>
-      fileSystem.directory(path).watch(events: events, recursive: recursive);
+      fileSystem != null
+          ? fileSystem!
+              .directory(path)
+              .watch(events: events, recursive: recursive)
+          : super.fsWatch(path, events, recursive);
 }
 
 /// The [f.FileSystem] used by the current [io.IOOverrides].
@@ -1557,7 +1595,7 @@ final class _IOOverrides extends IOOverrides {
 f.FileSystem get currentFileSystem {
   final current = io.IOOverrides.current;
   if (current is _IOOverrides) {
-    return current.fileSystem;
+    return current.fileSystem ?? const f.LocalFileSystem();
   }
   return const f.LocalFileSystem();
 }
