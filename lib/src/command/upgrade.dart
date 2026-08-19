@@ -16,6 +16,7 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
+import '../sigstore/verifier.dart';
 import '../solver.dart';
 import '../solver/version_solver.dart';
 import '../utils.dart';
@@ -232,6 +233,9 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   }
 
   Future<void> _runUpgrade(Entrypoint e, {bool onlySummary = false}) async {
+    if (!isOffline && !_dryRun) {
+      await _updateSigstoreTrustedRoot();
+    }
     await e.acquireDependencies(
       SolveType.upgrade,
       unlock: await _packagesToUpgrade(e),
@@ -242,6 +246,18 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     );
 
     _showOfflineWarning();
+  }
+
+  Future<void> _updateSigstoreTrustedRoot() async {
+    try {
+      await refreshTrustedRoot(
+        cacheDir: cache.sigstoreTufCacheDir,
+        cachePath: cache.sigstoreTrustedRootPath,
+      );
+      log.fine('Refreshed Sigstore trusted root from TUF repository.');
+    } catch (e) {
+      log.fine('Could not refresh Sigstore trusted root from TUF mirror: $e');
+    }
   }
 
   List<Entrypoint> get _entrypointsToUpgrade => [

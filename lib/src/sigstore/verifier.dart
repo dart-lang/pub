@@ -11,6 +11,7 @@ import 'sigstore.dart';
 
 export 'lockfile_policy.dart';
 export 'sigstore.dart';
+export 'trusted_root.dart';
 
 /// Result of verifying a package attestation bundle.
 class AttestationVerificationResult {
@@ -40,12 +41,12 @@ class PubAttestationVerifier {
   final bool _offline;
 
   PubAttestationVerifier({
-    // ignore: avoid_unused_constructor_parameters
     SystemCache? cache,
     String? overrideTrustedRootPath,
     String? overrideTrustedRootJson,
     bool offline = true,
-  }) : _trustedRootPath = overrideTrustedRootPath,
+  }) : _trustedRootPath =
+           overrideTrustedRootPath ?? cache?.sigstoreTrustedRootPath,
        _overrideTrustedRootJson = overrideTrustedRootJson,
        _offline = offline;
 
