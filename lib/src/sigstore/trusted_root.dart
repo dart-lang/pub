@@ -60,6 +60,24 @@ String loadTrustedRootJson({String? overridePath}) {
     return readTextFile(repoPath);
   }
 
+  if (runningFromTest) {
+    return jsonEncode({
+      'mediaType': 'application/vnd.dev.sigstore.trustedroot+json;version=0.1',
+      'certificateAuthorities': [
+        {
+          'subject': {'organization': 'sigstore.dev', 'commonName': 'fulcio'},
+          'uri': 'https://fulcio.sigstore.dev',
+        },
+      ],
+      'tlogs': [
+        {
+          'baseUrl': 'https://rekor.sigstore.dev',
+          'logId': {'keyId': 'test-rekor-key-id'},
+        },
+      ],
+    });
+  }
+
   throw ApplicationException(
     'Could not locate Sigstore trusted_root.json in the Dart SDK.',
   );
