@@ -5,9 +5,7 @@
 @TestOn('vm')
 library;
 
-import 'package:pub/src/exceptions.dart';
-import 'package:pub/src/sigstore/lockfile_policy.dart';
-import 'package:pub/src/sigstore/models.dart';
+import 'package:pub/src/sigstore/verifier.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 
@@ -46,7 +44,7 @@ void main() {
         currentProvenance: null,
         previousLockedProvenance: prev,
       ),
-      throwsA(isA<PackageIntegrityException>()),
+      throwsA(isA<PackageProvenanceException>()),
     );
   });
 
@@ -68,7 +66,7 @@ void main() {
         previousLockedProvenance: prev,
         fatalOnRepoMismatch: true,
       ),
-      throwsA(isA<PackageIntegrityException>()),
+      throwsA(isA<PackageProvenanceException>()),
     );
   });
 }

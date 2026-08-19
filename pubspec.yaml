@@ -23,6 +23,11 @@ dependencies:
   pool: ^1.0.0
   pub_semver: ^2.2.0
   shelf: ^1.4.2
+  sigstore:
+    git:
+      url: https://github.com/dart-lang/labs.git
+      ref: add-package-sigstore
+      path: pkgs/sigstore
   source_span: ^1.10.2
   stack_trace: ^1.12.1
   tar: ^2.0.0
@@ -38,3 +43,7 @@ dev_dependencies:
   test: ^1.31.0
   test_descriptor: ^2.0.2
   test_process: ^2.1.1
+
+dependency_overrides:
+  sigstore:
+    path: ../labs/pkgs/sigstore

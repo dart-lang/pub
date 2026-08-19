@@ -289,6 +289,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
+  sigstore:
+    dependency: "direct main"
+    description:
+      path: "../labs/pkgs/sigstore"
+      relative: true
+    source: path
+    version: "0.1.0-dev"
   source_map_stack_trace:
     dependency: transitive
     description:

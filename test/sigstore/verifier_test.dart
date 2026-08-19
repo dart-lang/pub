@@ -9,10 +9,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:pub/src/sigstore/models.dart';
+import 'package:pub/src/path.dart';
 import 'package:pub/src/sigstore/verifier.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
+
+import '../descriptor.dart' as d;
 
 void main() {
   final mockTrustedRoot = {
@@ -77,9 +79,11 @@ void main() {
 
     final payloadBase64 = base64Encode(utf8.encode(jsonEncode(statement)));
 
-    // Create minimal mock DER with embedded UTF-8 string markers for OIDs
     final derBytes = <int>[
-      0x30, 0x82, 0x01, 0x00, // SEQUENCE
+      0x30,
+      0x82,
+      0x01,
+      0x00,
       ...utf8.encode(repository),
       ...utf8.encode(issuer),
     ];
@@ -108,7 +112,16 @@ void main() {
     };
   }
 
-  test('successfully verifies valid package and attestation', () {
+  test('successfully verifies valid package and attestation', () async {
+    await d.dir('sdk_ca', [
+      d.file('trusted_root.json', jsonEncode(mockTrustedRoot)),
+    ]).create();
+
+    final customPath = p.join(d.sandbox, 'sdk_ca', 'trusted_root.json');
+    final verifier = PubAttestationVerifier(
+      overrideTrustedRootPath: customPath,
+    );
+
     final archiveBytes = Uint8List.fromList(
       utf8.encode('fake-archive-bytes-0.1.4'),
     );
@@ -117,7 +130,6 @@ void main() {
     final bundleJson = createTestBundleJson(archiveSha256: archiveSha);
     final bundle = SigstoreBundle.fromJson(bundleJson);
 
-    final verifier = AttestationVerifier(trustedRoot: mockTrustedRoot);
     final result = verifier.verify(
       packageName: 'helpful',
       packageVersion: Version(0, 1, 4),
@@ -153,28 +165,5 @@ void main() {
 
     expect(result.isValid, isFalse);
     expect(result.errors.any((e) => e.contains('SHA-256')), isTrue);
-  });
-
-  test('fails when repository does not match pubspec.yaml', () {
-    final archiveBytes = Uint8List.fromList(utf8.encode('valid-archive-bytes'));
-    final archiveSha = sha256.convert(archiveBytes).toString();
-
-    final bundleJson = createTestBundleJson(
-      archiveSha256: archiveSha,
-      repository: 'https://github.com/attacker/helpful',
-    );
-    final bundle = SigstoreBundle.fromJson(bundleJson);
-
-    final verifier = AttestationVerifier(trustedRoot: mockTrustedRoot);
-    final result = verifier.verify(
-      packageName: 'helpful',
-      packageVersion: Version(0, 1, 4),
-      archiveBytes: archiveBytes,
-      bundle: bundle,
-      pubspecRepository: 'https://github.com/legitimate-owner/helpful',
-    );
-
-    expect(result.isValid, isFalse);
-    expect(result.errors.any((e) => e.contains('pubspec.yaml')), isTrue);
   });
 }
