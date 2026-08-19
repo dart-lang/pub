@@ -479,7 +479,6 @@ $contentHashesDocumentationUrl
             newId.name,
             latestVersion,
             latestStatus.published,
-            [],
           );
         }
       }

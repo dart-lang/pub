@@ -155,14 +155,14 @@ environment:
 
     const knownPolicies = {'cooldown'};
     for (final keyNode in policiesNode.nodes.keys) {
-      if (keyNode is! YamlNode) continue;
-      final value = keyNode.value;
-      if (value is! String || !knownPolicies.contains(value)) {
-        _error(
-          'Invalid policies field "$value". '
-          'Only ${knownPolicies.map((e) => '"$e"').join(', ')} is supported.',
-          keyNode.span,
-        );
+      if (keyNode case YamlNode(value: final String value)) {
+        if (!knownPolicies.contains(value)) {
+          _error(
+            'Invalid policies field "$value". '
+            'Only ${knownPolicies.map((e) => '"$e"').join(', ')} is supported.',
+            keyNode.span,
+          );
+        }
       }
     }
 
@@ -175,37 +175,44 @@ environment:
 
       final minAgeNode = cooldownNode.nodes['min_age'];
       Duration? minAge;
-      if (minAgeNode != null) {
-        final value = minAgeNode.value;
-        if (value is! String) {
+      switch (minAgeNode) {
+        case null:
+          break;
+        case YamlScalar(value: final String value):
+          try {
+            minAge = _parseDuration(value);
+          } on FormatException catch (e) {
+            _error('Invalid "min_age": ${e.message}', minAgeNode.span);
+          }
+        default:
           _error('"min_age" must be a string', minAgeNode.span);
-        }
-        try {
-          minAge = _parseDuration(value);
-        } on FormatException catch (e) {
-          _error('Invalid "min_age": ${e.message}', minAgeNode.span);
-        }
       }
 
       final beforeNode = cooldownNode.nodes['before'];
       DateTime? before;
-      if (beforeNode != null) {
-        final value = beforeNode.value;
-        if (value is! String) {
+      switch (beforeNode) {
+        case null:
+          break;
+        case YamlScalar(value: final String value):
+          if (!RegExp(
+            r'^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?)?Z$',
+          ).hasMatch(value)) {
+            _error(
+              '"before" must be a UTC timestamp in ISO 8601 format '
+              '(e.g. "2026-05-28T09:09:29Z")',
+              beforeNode.span,
+            );
+          }
+          final parsed = DateTime.tryParse(value);
+          if (parsed == null || !parsed.isUtc) {
+            _error(
+              '"before" must be a valid UTC timestamp in ISO 8601 format',
+              beforeNode.span,
+            );
+          }
+          before = parsed;
+        default:
           _error('"before" must be a string', beforeNode.span);
-        }
-        if (!RegExp(r'(?:Z|[+-]\d{2}(?::?\d{2})?)$').hasMatch(value)) {
-          _error(
-            '"before" must contain timezone information '
-            '(e.g. "2026-05-28T09:09:29Z")',
-            beforeNode.span,
-          );
-        }
-        try {
-          before = DateTime.parse(value);
-        } on FormatException catch (e) {
-          _error('Invalid "before": ${e.message}', beforeNode.span);
-        }
       }
 
       if (minAgeNode != null && beforeNode != null) {
@@ -223,39 +230,42 @@ environment:
 
       final excludeNode = cooldownNode.nodes['exclude'];
       final exclude = <String, VersionConstraint>{};
-      if (excludeNode != null) {
-        if (excludeNode is! YamlMap) {
-          _error('"exclude" must be a map', excludeNode.span);
-        }
-        excludeNode.nodes.forEach((key, constraintNode) {
-          final keyNode = key as YamlNode;
-          final packageName = keyNode.value;
-          if (packageName is! String) {
-            _error(
-              'Exclude keys must be package names (strings).',
-              keyNode.span,
+      switch (excludeNode) {
+        case null:
+          break;
+        case YamlMap():
+          excludeNode.nodes.forEach((key, constraintNode) {
+            final keyNode = key as YamlNode;
+            final packageName = keyNode.value;
+            if (packageName is! String) {
+              _error(
+                'Exclude keys must be package names (strings).',
+                keyNode.span,
+              );
+            }
+            if (!packageNameRegExp.hasMatch(packageName)) {
+              _error('Not a valid package name.', keyNode.span);
+            }
+            final constraint = _parseVersionConstraint(
+              constraintNode as YamlNode?,
+              _packageName,
+              _FileType.pubspec,
             );
-          }
-          if (!packageNameRegExp.hasMatch(packageName)) {
-            _error('Not a valid package name.', keyNode.span);
-          }
-          final constraint = _parseVersionConstraint(
-            constraintNode as YamlNode?,
-            _packageName,
-            _FileType.pubspec,
-          );
-          exclude[packageName] = constraint;
-        });
+            exclude[packageName] = constraint;
+          });
+        default:
+          _error('"exclude" must be a map', excludeNode.span);
       }
 
       final stabilityNode = cooldownNode.nodes['stability'];
       var stability = false;
-      if (stabilityNode != null) {
-        final value = stabilityNode.value;
-        if (value is! bool) {
+      switch (stabilityNode) {
+        case null:
+          break;
+        case YamlScalar(value: final bool value):
+          stability = value;
+        default:
           _error('"stability" must be a boolean', stabilityNode.span);
-        }
-        stability = value;
       }
 
       if (stabilityNode != null && beforeNode != null) {
@@ -265,12 +275,15 @@ environment:
         );
       }
 
-      cooldown = CooldownPolicy(
-        minAge: minAge,
-        before: before,
-        exclude: exclude,
-        stability: stability,
-      );
+      if (minAge != null) {
+        cooldown = CooldownPolicy.minAge(
+          minAge: minAge,
+          exclude: exclude,
+          stability: stability,
+        );
+      } else {
+        cooldown = CooldownPolicy.before(before: before!, exclude: exclude);
+      }
     }
 
     return Policies(cooldown: cooldown, span: policiesNode.span);
@@ -1031,54 +1044,92 @@ enum Resolution {
   none,
 }
 
-class Policies {
+/// Represents workspace policies specified under the `policies` key in
+/// `pubspec.yaml`.
+final class Policies {
+  /// The cooldown policy configuration, if defined.
   final CooldownPolicy? cooldown;
+
+  /// The source span where the policy was declared in `pubspec.yaml`.
   final SourceSpan span;
+
   Policies({this.cooldown, required this.span});
 }
 
-class CooldownPolicy {
+/// A policy that restricts dependency versions based on publication age or an
+/// absolute cutoff timestamp.
+///
+/// A [CooldownPolicy] is either configured with a relative minimum age via
+/// [CooldownPolicy.minAge] or an absolute UTC cutoff date via
+/// [CooldownPolicy.before].
+final class CooldownPolicy {
+  /// The minimum age a package release must have before it can be resolved.
+  ///
+  /// Exactly one of [minAge] and [before] is non-null.
   final Duration? minAge;
+
+  /// The cutoff UTC timestamp after which package releases cannot be resolved.
+  ///
+  /// Exactly one of [minAge] and [before] is non-null.
   final DateTime? before;
+
+  /// A map from package names to version constraints that are exempt from the
+  /// cooldown policy.
   final Map<String, VersionConstraint> exclude;
+
+  /// Whether to block releases that were followed by another release within the
+  /// cooldown window (indicating an unstable release).
   final bool stability;
-  CooldownPolicy({
-    this.minAge,
-    this.before,
+
+  /// Creates a cooldown policy requiring package releases to be at least
+  /// [minAge] old.
+  ///
+  /// Packages matching [exclude] constraints are exempt from this policy.
+  /// If [stability] is `true`, versions that were quickly superseded by newer
+  /// releases within [minAge] will also be blocked.
+  CooldownPolicy.minAge({
+    required Duration this.minAge,
     required this.exclude,
     this.stability = false,
-  }) : assert(
-         (minAge == null) != (before == null),
-         'Exactly one of minAge or before must be specified',
-       ),
-       assert(before == null || !stability, 'stability requires minAge');
+  }) : before = null;
 
-  /// Returns `true` if the package version is blocked by this policy.
+  /// Creates a cooldown policy blocking package releases published after
+  /// [before].
+  ///
+  /// Packages matching [exclude] constraints are exempt from this policy.
+  CooldownPolicy.before({required DateTime this.before, required this.exclude})
+    : minAge = null,
+      stability = false;
+
+  /// Returns `true` if the given package [version] is blocked by this policy.
+  ///
+  /// [packageName] is the name of the package.
+  /// [version] is the version being evaluated.
+  /// [published] is the publication date of the version, or `null` if unknown.
+  /// [statusMap] contains status information (including publication dates) for
+  /// all known versions of the package, used for evaluating stability rules.
+  ///
+  /// Packages exempt under [exclude] for the given [version] are never blocked.
+  /// Versions without a [published] date are considered blocked unless
+  /// excluded.
   bool isBlocked(
     String packageName,
     Version version,
-    DateTime? published,
-    List<(Version, DateTime?)> allVersions,
-  ) {
+    DateTime? published, [
+    Map<Version, PackageStatus> statusMap = const {},
+  ]) {
     final constraint = exclude[packageName];
     if (constraint != null && constraint.allows(version)) return false;
     if (published == null) return true;
 
-    final minAge = this.minAge;
-    if (minAge != null) {
+    if (minAge case final minAge?) {
       final age = DateTime.now().difference(published);
       if (age < minAge) return true;
-    }
 
-    final before = this.before;
-    if (before != null) {
-      if (published.isAfter(before)) return true;
-    }
-
-    if (stability) {
-      final minAge = this.minAge;
-      if (minAge != null) {
-        for (final (v, pubDate) in allVersions) {
+      if (stability) {
+        for (final entry in statusMap.entries) {
+          final v = entry.key;
+          final pubDate = entry.value.published;
           if (v > version) {
             if (pubDate != null) {
               final diff = pubDate.difference(published);
@@ -1107,7 +1158,10 @@ class CooldownPolicy {
           }
         }
       }
+    } else if (before case final before?) {
+      if (published.isAfter(before)) return true;
     }
+
     return false;
   }
 }

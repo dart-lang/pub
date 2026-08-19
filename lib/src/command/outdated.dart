@@ -283,7 +283,6 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
             latest.name,
             latest.version,
             status.published,
-            [],
           );
         }
       }

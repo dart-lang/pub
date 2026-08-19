@@ -215,37 +215,39 @@ class PackageLister {
     if (_knownInvalidVersions.allows(id.version)) return const [];
 
     final policiesWrapper = _policies;
-    final policy = policiesWrapper?.cooldown;
 
-    final allVersions = <(Version, DateTime?)>[];
     final statusMap = <Version, PackageStatus>{};
-    if (policy != null &&
-        !id.isRoot &&
-        id.description is ResolvedHostedDescription) {
+    if ((id.description, policiesWrapper?.cooldown) case (
+      ResolvedHostedDescription(),
+      final CooldownPolicy policy,
+    ) when !id.isRoot) {
       final versions = await _versions;
       for (final v in versions) {
-        final desc = v.description;
-        if (desc is ResolvedHostedDescription) {
+        if (v.description case ResolvedHostedDescription()) {
           final status = await v.toRef().source.status(
             v.toRef(),
             v.version,
             _systemCache,
           );
-          allVersions.add((v.version, status.published));
           statusMap[v.version] = status;
         }
       }
 
+      // Check whether ALL versions of this package violate the cooldown policy.
+      // If so, emit a single general incompatibility for
+      // `PackageRange(id.toRef(), VersionConstraint.any)` right away. This
+      // allows the version solver to fail fast and produce an actionable
+      // suggestion (such as suggesting excluding the package from the cooldown
+      // policy) rather than exploring every version individually.
       var allForbidden = true;
       for (final v in versions) {
-        final desc = v.description;
-        if (desc is ResolvedHostedDescription) {
+        if (v.description case ResolvedHostedDescription()) {
           final status = statusMap[v.version]!;
           if (!policy.isBlocked(
             id.name,
             v.version,
             status.published,
-            allVersions,
+            statusMap,
           )) {
             allForbidden = false;
             break;
@@ -295,56 +297,55 @@ class PackageLister {
       }
     }
 
-    final description = id.description;
-    if (description is ResolvedHostedDescription) {
-      final policy = _policies?.cooldown;
-      if (policy != null) {
-        final status = await id.toRef().source.status(
-          id.toRef(),
-          id.version,
-          _systemCache,
-        );
-        final published = status.published;
-        if (policy.isBlocked(id.name, id.version, published, allVersions)) {
-          _knownInvalidVersions = _knownInvalidVersions.union(id.version);
-          String reasonPrefix;
-          if (published != null) {
-            final minAge = policy.minAge;
-            final before = policy.before;
-            if (minAge != null) {
-              final age = DateTime.now().difference(published);
-              final blockedByAge = age < minAge;
-              reasonPrefix =
-                  blockedByAge
-                      ? 'version ${id.version} of ${id.name} is too new '
-                          '(released less than '
-                          '${minAge.inDays} days ago)\n'
-                      : 'version ${id.version} of ${id.name} is unstable '
-                          '(newer release within '
-                          '${minAge.inDays} days)\n';
-            } else if (before != null) {
-              reasonPrefix =
-                  'version ${id.version} of ${id.name} is too new '
-                  '(released after $before)\n';
-            } else {
-              reasonPrefix = 'version ${id.version} of ${id.name} is blocked\n';
-            }
-          } else {
+    if ((id.description, policiesWrapper?.cooldown) case (
+      ResolvedHostedDescription(),
+      final CooldownPolicy policy,
+    )) {
+      final status = await id.toRef().source.status(
+        id.toRef(),
+        id.version,
+        _systemCache,
+      );
+      final published = status.published;
+      if (policy.isBlocked(id.name, id.version, published, statusMap)) {
+        _knownInvalidVersions = _knownInvalidVersions.union(id.version);
+        String reasonPrefix;
+        if (published != null) {
+          final minAge = policy.minAge;
+          final before = policy.before;
+          if (minAge != null) {
+            final age = DateTime.now().difference(published);
+            final blockedByAge = age < minAge;
             reasonPrefix =
-                'version ${id.version} of ${id.name} lacks publication date '
-                'required by policy\n';
+                blockedByAge
+                    ? 'version ${id.version} of ${id.name} is too new '
+                        '(released less than '
+                        '${minAge.inDays} days ago)\n'
+                    : 'version ${id.version} of ${id.name} is unstable '
+                        '(newer release within '
+                        '${minAge.inDays} days)\n';
+          } else if (before != null) {
+            reasonPrefix =
+                'version ${id.version} of ${id.name} is too new '
+                '(released after $before)\n';
+          } else {
+            reasonPrefix = 'version ${id.version} of ${id.name} is blocked\n';
           }
-          final reason =
-              '$reasonPrefix'
-              'Cooldown policy defined at '
-              '${policiesWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml'}:'
-              '${policiesWrapper.span.start.line + 1}';
-          return [
-            Incompatibility([
-              Term(id.toRange(), true),
-            ], PackageVersionForbiddenCause(reason: reason)),
-          ];
+        } else {
+          reasonPrefix =
+              'version ${id.version} of ${id.name} lacks publication date '
+              'required by policy\n';
         }
+        final reason =
+            '$reasonPrefix'
+            'Cooldown policy defined at '
+            '${policiesWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml'}:'
+            '${policiesWrapper.span.start.line + 1}';
+        return [
+          Incompatibility([
+            Term(id.toRange(), true),
+          ], PackageVersionForbiddenCause(reason: reason)),
+        ];
       }
     }
 

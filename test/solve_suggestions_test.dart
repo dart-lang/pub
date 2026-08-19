@@ -383,57 +383,50 @@ void main() {
     },
   );
 
-  test(
-    'suggests manual edit for multi-package downgrade',
-    () async {
-      final server = await servePackages();
-      server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
-      server.serve('bar', '1.0.0');
-      server.serve('bar', '2.0.0');
+  test('suggests manual edit for multi-package downgrade', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
+    server.serve('bar', '1.0.0');
+    server.serve('bar', '2.0.0');
 
-      await d.dir(appPath, [
-        d.libPubspec(
-          'myApp',
-          '1.0.0',
-          extras: {
-            'workspace': ['pkgs/a', 'pkgs/b'],
-          },
-          sdk: '^3.5.0',
-        ),
-        d.dir('pkgs', [
-          d.dir('a', [
-            d.libPubspec(
-              'a',
-              '1.0.0',
-              deps: {'foo': '^1.0.0', 'bar': '^2.0.0'},
-              resolutionWorkspace: true,
-            ),
-          ]),
-          d.dir('b', [
-            d.libPubspec(
-              'b',
-              '1.0.0',
-              deps: {'bar': '^2.0.0'},
-              resolutionWorkspace: true,
-            ),
-          ]),
-        ]),
-      ]).create();
-
-      await pubGet(
-        error: allOf([
-          contains('* Try manually updating your constraints on bar:'),
-          contains(
-            '  In pkgs/a/pubspec.yaml: set dependencies -> bar to ^1.0.0',
-          ),
-          contains(
-            '  In pkgs/b/pubspec.yaml: set dependencies -> bar to ^1.0.0',
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myApp',
+        '1.0.0',
+        extras: {
+          'workspace': ['pkgs/a', 'pkgs/b'],
+        },
+        sdk: '^3.5.0',
+      ),
+      d.dir('pkgs', [
+        d.dir('a', [
+          d.libPubspec(
+            'a',
+            '1.0.0',
+            deps: {'foo': '^1.0.0', 'bar': '^2.0.0'},
+            resolutionWorkspace: true,
           ),
         ]),
-        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      );
-    },
-  );
+        d.dir('b', [
+          d.libPubspec(
+            'b',
+            '1.0.0',
+            deps: {'bar': '^2.0.0'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+
+    await pubGet(
+      error: allOf([
+        contains('* Try manually updating your constraints on bar:'),
+        contains('  In pkgs/a/pubspec.yaml: set dependencies -> bar to ^1.0.0'),
+        contains('  In pkgs/b/pubspec.yaml: set dependencies -> bar to ^1.0.0'),
+      ]),
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+    );
+  });
 }
 
 const releasesMockResponse = '''

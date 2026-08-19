@@ -555,7 +555,7 @@ void main() {
     );
   });
 
-  test('fails when before lacks timezone', () async {
+  test('fails when before lacks UTC indicator Z', () async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
@@ -569,7 +569,45 @@ void main() {
     await runPub(
       args: ['get'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
-      error: contains('"before" must contain timezone information'),
+      error: contains('"before" must be a UTC timestamp in ISO 8601 format'),
+      exitCode: 65,
+    );
+  });
+
+  test('fails when before uses non-UTC timezone offset', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
+        'policies': {
+          'cooldown': {'before': '2026-05-28T12:00:00+02:00'},
+        },
+      }),
+    ]).create();
+
+    await runPub(
+      args: ['get'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+      error: contains('"before" must be a UTC timestamp in ISO 8601 format'),
+      exitCode: 65,
+    );
+  });
+
+  test('fails when before is not a valid date string', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '^3.14.0'},
+        'policies': {
+          'cooldown': {'before': 'not-a-date'},
+        },
+      }),
+    ]).create();
+
+    await runPub(
+      args: ['get'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+      error: contains('"before" must be a UTC timestamp in ISO 8601 format'),
       exitCode: 65,
     );
   });

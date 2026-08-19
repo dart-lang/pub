@@ -63,6 +63,18 @@ Future<String?> suggestResolutionAlternatives(
       for (final term in externalIncompatibility.terms) {
         final name = term.package.name;
 
+        if (cause is PackageVersionForbiddenCause &&
+            cause.reason != null &&
+            cause.reason!.contains('cooldown policy')) {
+          suggestions.add(
+            _ResolutionSuggestion(
+              '* Consider excluding "$name" from the cooldown policy in '
+              'your pubspec.yaml.',
+              priority: 1,
+            ),
+          );
+        }
+
         if (!visited.add(name)) {
           continue;
         }
