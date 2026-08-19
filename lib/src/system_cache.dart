@@ -53,6 +53,8 @@ class SystemCache {
   String get sigstoreTrustedRootPath =>
       p.join(rootDir, 'sigstore', 'trusted_root.json');
 
+  /// The path to the Sigstore TUF metadata cache directory.
+  String get sigstoreTufCacheDir => p.join(rootDir, 'sigstore', 'tuf');
   static String defaultDir =
       (() {
         final envCache = platform.environment['PUB_CACHE'];
