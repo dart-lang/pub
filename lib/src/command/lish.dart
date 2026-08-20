@@ -187,16 +187,6 @@ class LishCommand extends PubCommand {
               request.fields[key as String] = value;
             });
 
-            request.followRedirects = false;
-            request.files.add(
-              http.MultipartFile.fromBytes(
-                'file',
-                packageBytes,
-                filename: 'package.tar.gz',
-              ),
-            );
-            final response = await client.fetch(request);
-
             if (attestationBytes != null) {
               final baseKey = fields['key'] as String?;
               final attestationFields = Map<String, String>.from(
@@ -220,6 +210,15 @@ class LishCommand extends PubCommand {
               await client.fetch(attRequest);
             }
 
+            request.followRedirects = false;
+            request.files.add(
+              http.MultipartFile.fromBytes(
+                'file',
+                packageBytes,
+                filename: 'package.tar.gz',
+              ),
+            );
+            final response = await client.fetch(request);
             return response;
           },
         );
@@ -351,6 +350,8 @@ the \$PUB_HOSTED_URL environment variable.''');
 
     if (_toArchive != null && force) {
       usageException('Cannot use both --to-archive and --force.');
+    }
+
     if (_withAttestation != null && _fromArchive == null) {
       usageException(
         '`--with-attestation` can only be used with `--from-archive`.',
