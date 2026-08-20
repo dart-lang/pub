@@ -198,16 +198,6 @@ class LishCommand extends PubCommand {
               request.fields[key as String] = value;
             });
 
-            request.followRedirects = false;
-            request.files.add(
-              http.MultipartFile.fromBytes(
-                'file',
-                packageBytes,
-                filename: 'package.tar.gz',
-              ),
-            );
-            final response = await client.fetch(request);
-
             if (attestationBytes != null) {
               final baseKey = fields['key'] as String?;
               final attestationFields = Map<String, String>.from(
@@ -231,6 +221,15 @@ class LishCommand extends PubCommand {
               await client.fetch(attRequest);
             }
 
+            request.followRedirects = false;
+            request.files.add(
+              http.MultipartFile.fromBytes(
+                'file',
+                packageBytes,
+                filename: 'package.tar.gz',
+              ),
+            );
+            final response = await client.fetch(request);
             return response;
           },
         );
