@@ -48,13 +48,44 @@ void main() {
     );
   });
 
-  test('detects repository switch when configured as fatal', () {
+  test('detects repository switch and emits warning by default', () {
     final prev = ProvenanceInfo(
       repository: 'https://github.com/mosuem/helpful',
       ref: 'refs/tags/v0.1.3',
     );
     final current = ProvenanceInfo(
-      repository: 'https://github.com/attacker/helpful',
+      repository: 'https://github.com/newowner/helpful',
+      ref: 'refs/tags/v0.1.4',
+    );
+
+    final warnings = <String>[];
+    ProvenancePolicy.enforcePolicy(
+      packageName: 'helpful',
+      version: Version(0, 1, 4),
+      currentProvenance: current,
+      previousLockedProvenance: prev,
+      onWarning: warnings.add,
+    );
+
+    expect(warnings, hasLength(1));
+    expect(warnings.first, contains('provenance repository changed'));
+  });
+
+  test('allows installing unsigned package when no previous lock exists', () {
+    expect(
+      () => ProvenancePolicy.enforcePolicy(
+        packageName: 'helpful',
+        version: Version(0, 1, 4),
+        currentProvenance: null,
+        previousLockedProvenance: null,
+      ),
+      returnsNormally,
+    );
+  });
+
+  test('allows upgrading from unsigned to signed package', () {
+    final current = ProvenanceInfo(
+      repository: 'https://github.com/mosuem/helpful',
       ref: 'refs/tags/v0.1.4',
     );
 
@@ -63,10 +94,9 @@ void main() {
         packageName: 'helpful',
         version: Version(0, 1, 4),
         currentProvenance: current,
-        previousLockedProvenance: prev,
-        fatalOnRepoMismatch: true,
+        previousLockedProvenance: null,
       ),
-      throwsA(isA<PackageProvenanceException>()),
+      returnsNormally,
     );
   });
 }
