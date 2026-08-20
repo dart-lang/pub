@@ -464,25 +464,52 @@ class HostedSource extends CachedSource {
     final url = _listVersionsUrl(ref);
     log.io('Get versions from $url.');
 
-    final String bodyText;
+    final cachedEtag = _cachedVersionListingETag(ref, cache);
+    final String? bodyText;
     final dynamic body;
     final List<HostedVersionInfo> result;
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/http/issues/424.
-      bodyText = await withAuthenticatedClient(cache, Uri.parse(hostedUrl), (
-        client,
-      ) async {
-        return await retryForHttp(
-          'fetching versions for "$packageName" from "$url"',
-          () async {
-            final request = http.Request('GET', url);
-            request.attachPubApiHeaders();
-            final response = await client.fetch(request);
-            return response.body;
-          },
-        );
-      });
+      final (responseBody, responseEtag, is304) = await withAuthenticatedClient(
+        cache,
+        Uri.parse(hostedUrl),
+        (client) async {
+          return await retryForHttp(
+            'fetching versions for "$packageName" from "$url"',
+            () async {
+              final request = http.Request('GET', url);
+              request.attachPubApiHeaders();
+              if (cachedEtag != null) {
+                request.headers[HttpHeaders.ifNoneMatchHeader] = cachedEtag;
+              }
+              final response = await client.fetch(request);
+              if (response.statusCode == HttpStatus.notModified) {
+                return (null, null, true);
+              }
+              return (
+                response.body,
+                response.headers[HttpHeaders.etagHeader],
+                false,
+              );
+            },
+          );
+        },
+      );
+
+      if (is304) {
+        final cached = await _cachedVersionListingResponse(ref, cache);
+        if (cached != null) {
+          log.io('Version listing for "$packageName" is not modified (304).');
+          return cached;
+        }
+        // If the cache was missing/corrupted despite having an ETag, refetch
+        // unconditionally.
+        tryDeleteEntry(_versionListingCachePath(ref, cache));
+        return await _fetchVersionsNoPrefetching(ref, cache);
+      }
+
+      bodyText = responseBody!;
       final decoded = jsonDecode(bodyText);
       if (decoded is! Map<String, dynamic>) {
         throw const FormatException('version listing must be a mapping');
@@ -494,16 +521,21 @@ class HostedSource extends CachedSource {
         url,
         cache,
       );
+
+      // Cache the response on disk.
+      // Don't cache overly big responses.
+      if (bodyText.length < 1000 * 1024) {
+        await _cacheVersionListingResponse(
+          body,
+          ref,
+          cache,
+          etag: responseEtag,
+        );
+      }
+      return result;
     } on Exception catch (error, stackTrace) {
       _throwFriendlyError(error, stackTrace, packageName, hostedUrl);
     }
-
-    // Cache the response on disk.
-    // Don't cache overly big responses.
-    if (bodyText.length < 1000 * 1024) {
-      await _cacheVersionListingResponse(body, ref, cache);
-    }
-    return result;
   }
 
   Future<List<HostedVersionInfo>> fetchVersions(
@@ -904,12 +936,32 @@ class HostedSource extends CachedSource {
     }
   }
 
+  /// Returns the cached ETag for [ref] if one is stored in `.cache/<pkg>-versions.json`.
+  String? _cachedVersionListingETag(PackageRef ref, SystemCache cache) {
+    final cachePath = _versionListingCachePath(ref, cache);
+    final stat = io.File(cachePath).statSync();
+    if (stat.type == io.FileSystemEntityType.file) {
+      try {
+        final cachedDoc = jsonDecode(readTextFile(cachePath));
+        if (cachedDoc is Map && cachedDoc['_etag'] is String) {
+          return cachedDoc['_etag'] as String;
+        }
+      } on io.IOException {
+        // Ignore read errors.
+      } on FormatException {
+        // Ignore format errors.
+      }
+    }
+    return null;
+  }
+
   /// Saves the (decoded) response from package-listing of [ref].
   Future<void> _cacheVersionListingResponse(
     Map<String, dynamic> body,
     PackageRef ref,
-    SystemCache cache,
-  ) async {
+    SystemCache cache, {
+    String? etag,
+  }) async {
     final path = _versionListingCachePath(ref, cache);
     try {
       ensureDir(p.dirname(path));
@@ -918,6 +970,7 @@ class HostedSource extends CachedSource {
         jsonEncode(<String, dynamic>{
           ...body,
           '_fetchedAt': DateTime.now().toIso8601String(),
+          if (etag != null) '_etag': etag,
         }),
       );
       // Delete the entry in the in-memory cache to maintain the invariant that
