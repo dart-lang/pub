@@ -808,7 +808,7 @@ class GitSource extends CachedSource {
         version = Version.parse(match[1]!);
       } on FormatException catch (e) {
         throw StateError(
-          'Matched part ${Version.parse(match[1]!)} did not match version $e.',
+          'Matched part "${match[1]}" did not match version: $e.',
         );
       }
       result.add((version: version, commitId: parts[1]));
@@ -1206,8 +1206,8 @@ void validateTagPattern(String tagPattern) {
 /// [tagPatternVersionMarker].
 RegExp compileTagPattern(String tagPattern) {
   final parts = tagPattern.split(tagPatternVersionMarker);
-  final before = parts[0];
-  final after = parts[1];
+  final before = RegExp.escape(parts[0]);
+  final after = RegExp.escape(parts[1]);
 
   return RegExp(
     r'^'
