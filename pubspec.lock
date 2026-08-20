@@ -292,9 +292,11 @@ packages:
   sigstore:
     dependency: "direct main"
     description:
-      path: "../labs/pkgs/sigstore"
-      relative: true
-    source: path
+      path: "pkgs/sigstore"
+      ref: add-package-sigstore
+      resolved-ref: "519c07b150065b2f0b90a376ac09913c309beb30"
+      url: "https://github.com/dart-lang/labs.git"
+    source: git
     version: "0.1.0-dev"
   source_map_stack_trace:
     dependency: transitive
