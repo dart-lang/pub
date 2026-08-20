@@ -22,6 +22,7 @@ import 'assignment.dart';
 import 'failure.dart';
 import 'incompatibility.dart';
 import 'incompatibility_cause.dart';
+import 'incompatibility_index.dart';
 import 'package_lister.dart';
 import 'partial_solution.dart';
 import 'reformat_ranges.dart';
@@ -40,11 +41,9 @@ import 'type.dart';
 /// See https://github.com/dart-lang/pub/tree/master/doc/solver.md for details
 /// on how this solver works.
 class VersionSolver {
-  /// All known incompatibilities, indexed by package name.
-  ///
-  /// Each incompatibility is indexed by each package it refers to, and so may
-  /// appear in multiple values.
-  final _incompatibilities = <String, List<Incompatibility>>{};
+  /// All known incompatibilities, indexed by package name and optimized for
+  /// fast unit propagation.
+  final _incompatibilities = IncompatibilityIndex();
 
   /// The partial solution that contains package versions we've selected and
   /// assignments we've derived from those versions and [_incompatibilities].
@@ -158,11 +157,9 @@ class VersionSolver {
       final package = changed.first;
       changed.remove(package);
 
-      // Iterate in reverse because conflict resolution tends to produce more
-      // general incompatibilities as time goes on. If we look at those first,
-      // we can derive stronger assignments sooner and more eagerly find
-      // conflicts.
-      for (var incompatibility in _incompatibilities[package]!.reversed) {
+      _incompatibilities.forEachCandidate(package, _solution, (
+        incompatibility,
+      ) {
         final result = _propagateIncompatibility(incompatibility);
         if (result == #conflict) {
           // If [incompatibility] is satisfied by [_solution], we use
@@ -177,11 +174,12 @@ class VersionSolver {
           // newly-propagated assignment.
           changed.clear();
           changed.add(_propagateIncompatibility(rootCause) as String);
-          break;
+          return false;
         } else if (result is String) {
           changed.add(result);
         }
-      }
+        return true;
+      });
     }
   }
 
@@ -246,7 +244,7 @@ class VersionSolver {
   /// [conflict resolution]:
   /// https://github.com/dart-lang/pub/tree/master/doc/solver.md#conflict-resolution
   ///
-  /// Adds the new incompatibility to [_incompatibilities] and returns it.
+  /// Adds the new incompatibility and returns it.
   Incompatibility _resolveConflict(Incompatibility incompatibility) {
     _log("${log.red(log.bold("conflict"))}: $incompatibility");
 
@@ -463,12 +461,7 @@ class VersionSolver {
   /// Adds [incompatibility] to [_incompatibilities].
   void _addIncompatibility(Incompatibility incompatibility) {
     _log('fact: $incompatibility');
-
-    for (var term in incompatibility.terms) {
-      _incompatibilities
-          .putIfAbsent(term.package.name, () => [])
-          .add(incompatibility);
-    }
+    _incompatibilities.add(incompatibility);
   }
 
   /// Returns whether [constraint] allows all versions except one.

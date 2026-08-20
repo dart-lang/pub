@@ -21,6 +21,7 @@
   * [Implicit Mutual Exclusivity](#implicit-mutual-exclusivity)
   * [Lazy Formulas](#lazy-formulas)
   * [No Unfounded Set Detection](#no-unfounded-set-detection)
+  * [Binary Clause Specialization](#binary-clause-specialization)
 
 # Overview
 
@@ -293,9 +294,11 @@ continue unit propagation.
 While we could iterate over every incompatibility over and over until we can't
 find any more derivations, this isn't efficient when many of them represent
 dependencies of packages that are currently irrelevant. Instead, we index them
-by the names of the packages they refer to and only iterate over those that
-refer to the most recently-decided package or new derivations that have been
-added during the current propagation session.
+by the names of the packages they refer to and only iterate over candidate
+incompatibilities. For binary incompatibilities (which make up most
+dependencies), we can immediately skip clauses where neither term is
+satisfied by the partial solution, since an unsatisfied binary clause can
+produce neither a derivation nor a conflict.
 
 The unit propagation algorithm takes a package name and works as follows:
 
@@ -1231,3 +1234,18 @@ This adds a lot of complexity to the algorithm which turns out to be unnecessary
 for version solving. Pubgrub avoids selecting package versions in unfounded sets
 by only choosing versions for packages that are known to have outstanding
 dependencies.
+
+## Binary Clause Specialization
+
+General CDCL SAT solvers typically rely on 2-watched literal (2WL) indexing schemes
+to avoid traversing non-unit clauses during unit propagation. In version solving,
+most formulas are binary clauses representing dependencies
+between two packages (such as `foo ^1.0.0 → bar ^2.0.0`, represented as
+`{foo ^1.0.0, not bar ^2.0.0}`).
+
+Because binary clauses contain only two terms, Pubgrub specializes binary clause
+evaluation: when a package's assignment changes, binary clauses where neither
+term is satisfied by the partial solution are skipped immediately without
+inspecting or maintaining dynamic watch pointers. This provides the fast-skip
+benefits of 2-watched literals with minimal data structure overhead.
+
