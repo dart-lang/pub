@@ -187,17 +187,11 @@ class LishCommand extends PubCommand {
               request.fields[key as String] = value;
             });
 
-            request.followRedirects = false;
-            request.files.add(
-              http.MultipartFile.fromBytes(
-                'file',
-                packageBytes,
-                filename: 'package.tar.gz',
-              ),
-            );
-            final response = await client.fetch(request);
-
             if (attestationBytes != null) {
+              // Upload the Sigstore attestation bundle alongside the package
+              // archive using the same signed Cloud Storage upload credentials.
+              // We store it at `<baseKey>.sigstore.json` so the backend can
+              // correlate it with the package archive during finalization.
               final baseKey = fields['key'] as String?;
               final attestationFields = Map<String, String>.from(
                 request.fields,
@@ -205,6 +199,10 @@ class LishCommand extends PubCommand {
               if (baseKey != null) {
                 attestationFields['key'] = '$baseKey.sigstore.json';
               }
+              // Remove `success_action_redirect` so Cloud Storage does not
+              // issue a 303 redirect to the finalization URL prematurely. Only
+              // the subsequent package archive upload triggers the finalization
+              // redirect.
               attestationFields.remove('success_action_redirect');
               final attRequest =
                   http.MultipartRequest('POST', cloudStorageUrl!)
@@ -220,6 +218,15 @@ class LishCommand extends PubCommand {
               await client.fetch(attRequest);
             }
 
+            request.followRedirects = false;
+            request.files.add(
+              http.MultipartFile.fromBytes(
+                'file',
+                packageBytes,
+                filename: 'package.tar.gz',
+              ),
+            );
+            final response = await client.fetch(request);
             return response;
           },
         );
@@ -351,6 +358,8 @@ the \$PUB_HOSTED_URL environment variable.''');
 
     if (_toArchive != null && force) {
       usageException('Cannot use both --to-archive and --force.');
+    }
+
     if (_withAttestation != null && _fromArchive == null) {
       usageException(
         '`--with-attestation` can only be used with `--from-archive`.',
