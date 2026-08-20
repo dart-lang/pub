@@ -10,8 +10,9 @@ export 'package:sigstore/sigstore.dart';
 class PubAttestationVerifier extends AttestationVerifier {
   PubAttestationVerifier({String? overrideTrustedRootPath})
     : super(
-        trustedRoot: overrideTrustedRootPath != null
-            ? loadTrustedRoot(overridePath: overrideTrustedRootPath)
-            : null,
+        trustedRoot:
+            overrideTrustedRootPath != null
+                ? loadTrustedRoot(overridePath: overrideTrustedRootPath)
+                : null,
       );
 }
