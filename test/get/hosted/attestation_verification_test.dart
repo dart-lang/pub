@@ -114,7 +114,7 @@ void main() {
 
   test('verifies attestation during pub get if served by repository', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0');
+    server.serve('foo', '1.0.0', slsaLevel: 2);
 
     final rootPath = p.join(d.sandbox, 'trusted_root.json');
     File(rootPath).writeAsStringSync(jsonEncode(mockTrustedRoot));
@@ -146,7 +146,7 @@ void main() {
     'pub get fails when attestation does not match package archive',
     () async {
       final server = await servePackages();
-      server.serve('foo', '1.0.0');
+      server.serve('foo', '1.0.0', slsaLevel: 2);
 
       final rootPath = p.join(d.sandbox, 'trusted_root.json');
       File(rootPath).writeAsStringSync(jsonEncode(mockTrustedRoot));
