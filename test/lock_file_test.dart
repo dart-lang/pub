@@ -67,6 +67,27 @@ packages:
         );
       });
 
+      test('parses provenance in package descriptions', () {
+        final lockFile = LockFile.parse('''
+packages:
+  foo:
+    version: 1.2.3
+    source: hosted
+    description:
+      name: foo
+      url: https://foo.com
+      provenance: https://github.com/dart-lang/foo
+''', cache.sources);
+
+        expect(lockFile.packages.length, equals(1));
+        final foo = lockFile.packages['foo']!;
+        expect(foo.name, equals('foo'));
+        expect(
+          (foo.description as ResolvedHostedDescription).provenance,
+          equals('https://github.com/dart-lang/foo'),
+        );
+      });
+
       test('allows an unknown source', () {
         final lockFile = LockFile.parse('''
 packages:
@@ -348,6 +369,39 @@ packages:
               'source': 'hosted',
               'description': {'name': 'bar', 'url': 'https://bar.com'},
               'dependency': 'direct dev',
+            },
+          },
+        }),
+      );
+    });
+
+    test('serialize() includes provenance if present', () {
+      final lockfile = LockFile([
+        PackageId(
+          'foo',
+          Version.parse('1.2.3'),
+          ResolvedHostedDescription(
+            HostedDescription('foo', 'https://foo.com'),
+            sha256: null,
+            provenance: 'https://github.com/dart-lang/foo',
+          ),
+        ),
+      ]);
+
+      expect(
+        loadYaml(lockfile.serialize('', cache)),
+        equals({
+          'sdks': {'dart': 'any'},
+          'packages': {
+            'foo': {
+              'version': '1.2.3',
+              'source': 'hosted',
+              'description': {
+                'name': 'foo',
+                'url': 'https://foo.com',
+                'provenance': 'https://github.com/dart-lang/foo',
+              },
+              'dependency': 'transitive',
             },
           },
         }),
