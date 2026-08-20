@@ -441,12 +441,14 @@ class HostedSource extends CachedSource {
         isRetracted: retracted,
         advisoriesUpdated: advisoriesDate,
       );
+      final slsaLevel = map['slsaLevel'] as int?;
       return HostedVersionInfo(
         pubspec.version,
         pubspec,
         Uri.parse(archiveUrl),
         status,
         parsedContentHash,
+        slsaLevel: slsaLevel,
       );
     }).toList();
   }
@@ -1609,44 +1611,47 @@ See $contentHashesDocumentationUrl.
             await createFileFromStream(stream, archivePath);
 
             // Fetch and verify Sigstore attestation if available
-            final attestationUri = Uri.parse(description.url).resolve(
-              'api/packages/${id.name}/versions/${id.version}/attestation',
-            );
-            try {
-              final attRequest = http.Request('GET', attestationUri);
-              final attResponse = await client.fetch(attRequest);
-              if (attResponse.statusCode == 200) {
-                final attJson =
-                    jsonDecode(attResponse.body) as Map<String, dynamic>;
-                final bundle = SigstoreBundle.fromJson(attJson);
-                final archiveBytes = readBinaryFile(archivePath);
-                final verifier = PubAttestationVerifier();
-                final result = verifier.verify(
-                  packageName: id.name,
-                  packageVersion: id.version,
-                  archiveBytes: archiveBytes,
-                  bundle: bundle,
-                );
-                if (!result.isValid) {
-                  throw PackageIntegrityException('''
+            if (versionInfo.slsaLevel != null) {
+              final attestationUri = Uri.parse(description.url).resolve(
+                'api/packages/${id.name}/versions/${id.version}/attestation',
+              );
+              try {
+                final attRequest = http.Request('GET', attestationUri);
+                final attResponse = await client.fetch(attRequest);
+                if (attResponse.statusCode == 200) {
+                  final attJson =
+                      jsonDecode(attResponse.body) as Map<String, dynamic>;
+                  final bundle = SigstoreBundle.fromJson(attJson);
+                  final archiveBytes = readBinaryFile(archivePath);
+                  final verifier = PubAttestationVerifier();
+                  final result = verifier.verify(
+                    packageName: id.name,
+                    packageVersion: id.version,
+                    archiveBytes: archiveBytes,
+                    bundle: bundle,
+                  );
+                  if (!result.isValid) {
+                    throw PackageIntegrityException('''
 Downloaded archive for ${id.name}-${id.version} failed Sigstore attestation verification:
 ${result.errors.map((e) => '  * $e').join('\n')}
 
 This indicates a problem on the package repository: `${description.url}`.
 ''');
+                  }
+                  log.fine(
+                    'Verified Sigstore attestation for '
+                    '${id.name}-${id.version} '
+                    'from repository ${result.repository}.',
+                  );
                 }
+              } on PackageIntegrityException {
+                rethrow;
+              } catch (e) {
                 log.fine(
-                  'Verified Sigstore attestation for ${id.name}-${id.version} '
-                  'from repository ${result.repository}.',
+                  'No attestation found or error fetching attestation for '
+                  '${id.name}-${id.version}: $e',
                 );
               }
-            } on PackageIntegrityException {
-              rethrow;
-            } catch (e) {
-              log.fine(
-                'No attestation found or error fetching attestation for '
-                '${id.name}-${id.version}: $e',
-              );
             }
           });
         });
@@ -2012,14 +2017,16 @@ class HostedVersionInfo {
   /// The sha256 digest of the archive according to the package-repository.
   final Uint8List? archiveSha256;
   final PackageStatus status;
+  final int? slsaLevel;
 
   HostedVersionInfo(
     this.version,
     this.pubspec,
     this.archiveUrl,
     this.status,
-    this.archiveSha256,
-  );
+    this.archiveSha256, {
+    this.slsaLevel,
+  });
 }
 
 /// Information about a security advisory affecting a package. The information
