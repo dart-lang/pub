@@ -1294,16 +1294,29 @@ ByteStream createTarGz(List<String> contents, {required String baseDir}) {
   ArgumentError.checkNotNull(baseDir, 'baseDir');
   baseDir = p.normalize(p.absolute(baseDir));
 
-  final tarContents = Stream.fromIterable(
-    contents.map((entry) {
-      entry = p.normalize(p.absolute(entry));
-      if (p.equals(baseDir, entry)) {
-        return null;
-      }
-      if (!p.isWithin(baseDir, entry)) {
-        throw ArgumentError('Entry $entry is not inside $baseDir.');
-      }
+  final epoch = _archiveEpoch();
 
+  final normalizedEntries = <String>[];
+  for (final entry in contents) {
+    final normalized = p.normalize(p.absolute(entry));
+    if (p.equals(baseDir, normalized)) {
+      continue;
+    }
+    if (!p.isWithin(baseDir, normalized)) {
+      throw ArgumentError('Entry $entry is not inside $baseDir.');
+    }
+    normalizedEntries.add(normalized);
+  }
+
+  // Sort entries deterministically by normalized POSIX path in the archive.
+  normalizedEntries.sort((a, b) {
+    final relA = p.url.joinAll(p.split(p.relative(a, from: baseDir)));
+    final relB = p.url.joinAll(p.split(p.relative(b, from: baseDir)));
+    return relA.compareTo(relB);
+  });
+
+  final tarContents = Stream.fromIterable(
+    normalizedEntries.map((entry) {
       final relative = p.relative(entry, from: baseDir);
       // On Windows, we can't open some files without normalizing them
       final file = File(p.normalize(entry));
@@ -1324,6 +1337,7 @@ ByteStream createTarGz(List<String> contents, {required String baseDir}) {
             name: name,
             mode: _defaultMode | _executableMask,
             typeFlag: TypeFlag.dir,
+            modified: epoch,
             userName: 'pub',
             groupName: 'pub',
           ),
@@ -1337,14 +1351,14 @@ ByteStream createTarGz(List<String> contents, {required String baseDir}) {
             // file mode
             mode: _defaultMode | (stat.mode & _executableMask),
             size: stat.size,
-            modified: stat.changed,
+            modified: epoch,
             userName: 'pub',
             groupName: 'pub',
           ),
           file.openRead(),
         );
       }
-    }).nonNulls,
+    }),
   );
 
   return ByteStream(
@@ -1352,6 +1366,17 @@ ByteStream createTarGz(List<String> contents, {required String baseDir}) {
         .transform(tarWriterWith(format: OutputFormat.gnuLongName))
         .transform(gzip.encoder),
   );
+}
+
+DateTime _archiveEpoch() {
+  final epochEnv = platform.environment['SOURCE_DATE_EPOCH'];
+  if (epochEnv != null) {
+    final seconds = int.tryParse(epochEnv);
+    if (seconds != null) {
+      return DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true);
+    }
+  }
+  return DateTime.utc(1970);
 }
 
 /// The location for dart-specific configuration.

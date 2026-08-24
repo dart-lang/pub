@@ -45,10 +45,10 @@ class PubAttestationVerifier {
     String? overrideTrustedRootPath,
     String? overrideTrustedRootJson,
     bool offline = true,
-  })  : _trustedRootPath =
-            overrideTrustedRootPath ?? cache?.sigstoreTrustedRootPath,
-        _overrideTrustedRootJson = overrideTrustedRootJson,
-        _offline = offline;
+  }) : _trustedRootPath =
+           overrideTrustedRootPath ?? cache?.sigstoreTrustedRootPath,
+       _overrideTrustedRootJson = overrideTrustedRootJson,
+       _offline = offline;
 
   AttestationVerificationResult verify({
     required String packageName,
@@ -91,8 +91,9 @@ class PubAttestationVerifier {
       final issuer = result.verifiedIssuer();
       String? repo;
       if (identity.startsWith('https://github.com/')) {
-        final parts =
-            identity.substring('https://github.com/'.length).split('/');
+        final parts = identity
+            .substring('https://github.com/'.length)
+            .split('/');
         if (parts.length >= 2) {
           repo = 'https://github.com/${parts[0]}/${parts[1]}';
         }
