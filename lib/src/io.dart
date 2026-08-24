@@ -59,6 +59,11 @@ class EnvironmentKeys {
   /// This variable is mainly for testing, and no forward compatibility
   /// guarantees are given.
   static const forceTerminalOutput = '_PUB_FORCE_TERMINAL_OUTPUT';
+
+  /// Overrides file timestamps when creating archives for reproducible builds.
+  ///
+  /// See https://reproducible-builds.org/specs/source-date-epoch/
+  static const sourceDateEpoch = 'SOURCE_DATE_EPOCH';
   // TODO(sigurdm): Add other environment keys here.
 }
 
@@ -1268,10 +1273,12 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracted .tar.gz to $destination.');
 }
 
-/// Create a .tar.gz archive from a list of entries.
+/// Creates a .tar.gz archive of [contents] relative to [baseDir].
 ///
-/// Each entry is the path to a directory or file. The root of the archive is
-/// considered to be [baseDir], which defaults to the current working directory.
+/// Archives are bit-for-bit deterministic and reproducible: timestamps are
+/// normalized (to Unix epoch 0 or [EnvironmentKeys.sourceDateEpoch] if set),
+/// entries are sorted lexicographically by normalized POSIX path, and file
+/// permissions and GZIP headers are normalized.
 ///
 /// Returns a [ByteStream] that emits the contents of the archive.
 ByteStream createTarGz(List<String> contents, {required String baseDir}) {
@@ -1283,27 +1290,35 @@ ByteStream createTarGz(List<String> contents, {required String baseDir}) {
   ArgumentError.checkNotNull(baseDir, 'baseDir');
   baseDir = p.normalize(p.absolute(baseDir));
 
+  final epoch = _archiveEpoch();
+
+  final normalizedEntries = <(String fullPath, String archivePath)>[];
+  for (final entry in contents) {
+    final normalized = p.normalize(p.absolute(entry));
+    if (p.equals(baseDir, normalized)) {
+      continue;
+    }
+    if (!p.isWithin(baseDir, normalized)) {
+      throw ArgumentError('Entry $entry is not inside $baseDir.');
+    }
+    final relative = p.relative(normalized, from: baseDir);
+    final archivePath = p.url.joinAll(p.split(relative));
+    normalizedEntries.add((normalized, archivePath));
+  }
+
+  // Sort entries deterministically by normalized POSIX path in the archive.
+  normalizedEntries.sort((a, b) => a.$2.compareTo(b.$2));
+
   final tarContents = Stream.fromIterable(
-    contents.map((entry) {
-      entry = p.normalize(p.absolute(entry));
-      if (p.equals(baseDir, entry)) {
-        return null;
-      }
-      if (!p.isWithin(baseDir, entry)) {
-        throw ArgumentError('Entry $entry is not inside $baseDir.');
-      }
-
-      final relative = p.relative(entry, from: baseDir);
+    normalizedEntries.map((entry) {
+      final (fullPath, name) = entry;
       // On Windows, we can't open some files without normalizing them
-      final file = File(p.normalize(entry));
+      final file = File(fullPath);
       final stat = file.statSync();
-
-      // Ensure paths in tar files use forward slashes
-      final name = p.url.joinAll(p.split(relative));
 
       if (stat.type == FileSystemEntityType.link) {
         log.message(
-          '$entry is a link locally, but will be uploaded as a '
+          '$fullPath is a link locally, but will be uploaded as a '
           'duplicate file.',
         );
       }
@@ -1313,6 +1328,7 @@ ByteStream createTarGz(List<String> contents, {required String baseDir}) {
             name: name,
             mode: _defaultMode | _executableMask,
             typeFlag: TypeFlag.dir,
+            modified: epoch,
             userName: 'pub',
             groupName: 'pub',
           ),
@@ -1326,21 +1342,64 @@ ByteStream createTarGz(List<String> contents, {required String baseDir}) {
             // file mode
             mode: _defaultMode | (stat.mode & _executableMask),
             size: stat.size,
-            modified: stat.changed,
+            modified: epoch,
             userName: 'pub',
             groupName: 'pub',
           ),
           file.openRead(),
         );
       }
-    }).nonNulls,
+    }),
   );
 
-  return ByteStream(
-    tarContents
-        .transform(tarWriterWith(format: OutputFormat.gnuLongName))
-        .transform(gzip.encoder),
+  final stream = tarContents
+      .transform(tarWriterWith(format: OutputFormat.gnuLongName))
+      .transform(gzip.encoder)
+      .transform(_normalizeGzipHeader());
+
+  return ByteStream(stream);
+}
+
+/// Normalizes the GZIP header (RFC 1952) so that `.tar.gz` archives are
+/// bit-for-bit identical across operating systems (normalizing MTIME to 0 and
+/// OS byte to 255).
+StreamTransformer<List<int>, List<int>> _normalizeGzipHeader() {
+  var isHeaderHandled = false;
+  final headerBuffer = <int>[];
+  return StreamTransformer.fromHandlers(
+    handleData: (data, sink) {
+      if (isHeaderHandled) {
+        sink.add(data);
+        return;
+      }
+      headerBuffer.addAll(data);
+      if (headerBuffer.length >= 10) {
+        isHeaderHandled = true;
+        if (headerBuffer[0] == 0x1f && headerBuffer[1] == 0x8b) {
+          // RFC 1952: byte 4..7 is MTIME, byte 8 is XFL, byte 9 is OS
+          headerBuffer[4] = 0;
+          headerBuffer[5] = 0;
+          headerBuffer[6] = 0;
+          headerBuffer[7] = 0;
+          headerBuffer[8] = 0;
+          headerBuffer[9] = 255; // 255 = unknown OS (gzip -n)
+        }
+        sink.add(headerBuffer);
+      }
+    },
+    handleDone: (sink) {
+      if (!isHeaderHandled && headerBuffer.isNotEmpty) {
+        sink.add(headerBuffer);
+      }
+      sink.close();
+    },
   );
+}
+
+DateTime _archiveEpoch() {
+  final epochEnv = platform.environment[EnvironmentKeys.sourceDateEpoch];
+  final seconds = int.tryParse(epochEnv ?? '') ?? 0;
+  return DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true);
 }
 
 /// The location for dart-specific configuration.
