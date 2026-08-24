@@ -76,6 +76,9 @@ class LishCommand extends PubCommand {
 
   bool get skipValidation => argResults.flag('skip-validation');
 
+  /// Whether to create a reproducible archive.
+  bool get reproducible => argResults.flag('reproducible');
+
   late final String? _fromArchive = argResults.option('from-archive');
   late final String? _toArchive = argResults.option('to-archive');
 
@@ -98,6 +101,14 @@ class LishCommand extends PubCommand {
       help:
           'Publish without validation and resolution '
           '(this will ignore errors).',
+    );
+    argParser.addFlag(
+      'reproducible',
+      negatable: false,
+      help:
+          'Create a reproducible archive with deterministic entry ordering '
+          'and normalized timestamps.',
+      hide: true,
     );
     argParser.addOption(
       'server',
@@ -304,6 +315,10 @@ the \$PUB_HOSTED_URL environment variable.''');
       usageException('Cannot use both --to-archive and --force.');
     }
 
+    if (_fromArchive != null && reproducible) {
+      usageException('Cannot use both --from-archive and --reproducible.');
+    }
+
     if (argResults.wasParsed('ignore-warnings') && !dryRun) {
       usageException('`--ignore-warnings` can only be used with `--dry-run`.');
     }
@@ -365,6 +380,7 @@ the \$PUB_HOSTED_URL environment variable.''');
         await createTarGz(
           filesAndDirs,
           baseDir: entrypoint.workPackage.dir,
+          reproducible: reproducible,
         ).toBytes();
 
     final size = readableFileSize(packageBytes.length);
