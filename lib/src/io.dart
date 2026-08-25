@@ -691,18 +691,7 @@ void createPackageSymlink(
 ///
 /// The "_PUB_TESTING" variable is automatically set for all the test code's
 /// invocations of pub.
-final bool runningFromTest =
-    platform.environment.containsKey('_PUB_TESTING') && _assertionsEnabled;
-
-final bool _assertionsEnabled = () {
-  try {
-    assert(false);
-    // ignore: avoid_catching_errors
-  } on AssertionError {
-    return true;
-  }
-  return false;
-}();
+final bool runningFromTest = platform.environment.containsKey('_PUB_TESTING');
 
 final bool runningFromFlutter =
     platform.environment.containsKey('PUB_ENVIRONMENT') &&

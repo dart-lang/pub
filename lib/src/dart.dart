@@ -19,7 +19,7 @@ import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
 import 'path.dart';
-import 'platform_info.dart';
+import 'sdk/dart.dart';
 
 class AnalysisContextManager {
   static final sessions = <String, AnalysisContextManager>{};
@@ -36,6 +36,7 @@ class AnalysisContextManager {
     : _session =
           AnalysisContextCollection(
             includedPaths: [packagePath],
+            sdkPath: DartSdk().rootDirectory,
           ).contextFor(packagePath).currentSession;
 
   /// Parse the file with the given [path] into AST.
@@ -116,7 +117,7 @@ Future<void> precompile({
   String? nativeAssets,
 }) async {
   const platformDill = 'lib/_internal/vm_platform_strong.dill';
-  final sdkRoot = p.relative(p.dirname(p.dirname(platform.resolvedExecutable)));
+  final sdkRoot = p.relative(DartSdk().rootDirectory);
   String? tempDir;
   FrontendServerClient? client;
   try {
