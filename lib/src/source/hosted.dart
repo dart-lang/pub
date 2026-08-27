@@ -942,6 +942,18 @@ class HostedSource extends CachedSource {
     }
   }
 
+  /// Matches an RFC 9110 compliant entity-tag (e.g. `"abc123"` or `W/"abc123"`).
+  static final RegExp _etagRegExp = RegExp(r'^(?:W/)?"[\x21\x23-\x7e]*"$');
+
+  /// Returns true if [etag] is a syntactically valid RFC 9110 entity-tag and
+  /// does not exceed reasonable length limits.
+  static bool _isValidETag(String? etag) {
+    if (etag == null) return false;
+    final trimmed = etag.trim();
+    if (trimmed.isEmpty || trimmed.length > 512) return false;
+    return _etagRegExp.hasMatch(trimmed);
+  }
+
   /// Returns the cached ETag for [ref] if one is stored in `.cache/<pkg>-versions.json`.
   String? _cachedVersionListingETag(PackageRef ref, SystemCache cache) {
     final cachePath = _versionListingCachePath(ref, cache);
@@ -949,8 +961,11 @@ class HostedSource extends CachedSource {
     if (stat.type == io.FileSystemEntityType.file) {
       try {
         final cachedDoc = jsonDecode(readTextFile(cachePath));
-        if (cachedDoc is Map && cachedDoc['_etag'] is String) {
-          return cachedDoc['_etag'] as String;
+        if (cachedDoc is Map) {
+          final etag = cachedDoc['_etag'];
+          if (etag is String && _isValidETag(etag)) {
+            return etag.trim();
+          }
         }
       } on io.IOException {
         // Ignore read errors.
@@ -969,6 +984,7 @@ class HostedSource extends CachedSource {
     String? etag,
   }) async {
     final path = _versionListingCachePath(ref, cache);
+    final validEtag = _isValidETag(etag) ? etag!.trim() : null;
     try {
       ensureDir(p.dirname(path));
       await writeTextFileAsync(
@@ -976,7 +992,7 @@ class HostedSource extends CachedSource {
         jsonEncode(<String, dynamic>{
           ...body,
           '_fetchedAt': DateTime.now().toIso8601String(),
-          if (etag != null) '_etag': etag,
+          if (validEtag != null) '_etag': validEtag,
         }),
       );
       // Delete the entry in the in-memory cache to maintain the invariant that

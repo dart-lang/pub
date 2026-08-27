@@ -5,6 +5,7 @@
 @TestOn('vm')
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -155,6 +156,37 @@ void main() {
     // In offline mode, pub should resolve using the cached listing without
     // contacting server.
     await pubGet(args: ['--offline']);
+
+    final lockFile =
+        File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync();
+    expect(lockFile, contains('version: "1.0.0"'));
+  });
+
+  test('ignores invalid or malicious ETags without crashing', () async {
+    final server = await servePackages(serveEtags: true);
+    server.serve('foo', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+    await pubGet();
+
+    final cachePath = p.join(
+      d.sandbox,
+      'cache',
+      'hosted',
+      'localhost%58${server.port}',
+      '.cache',
+      'foo-versions.json',
+    );
+    expect(File(cachePath).existsSync(), isTrue);
+
+    // Inject an invalid ETag with CRLF into the cache file.
+    final cached =
+        jsonDecode(File(cachePath).readAsStringSync()) as Map<String, dynamic>;
+    cached['_etag'] = 'W/"legit"\r\nX-Injected: attack';
+    File(cachePath).writeAsStringSync(jsonEncode(cached));
+
+    // pub upgrade should ignore the invalid ETag, not send it, and not crash.
+    await pubUpgrade();
 
     final lockFile =
         File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync();
