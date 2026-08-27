@@ -14,46 +14,45 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test(
-    'pub sends If-None-Match and handles 304 Not Modified for cached package listings',
-    () async {
-      final server = await servePackages();
-      server.serve('foo', '1.0.0');
+  test('pub sends If-None-Match and handles 304 Not Modified for cached '
+      'package listings', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
-      await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
 
-      // First run fetches from server and caches listing with ETag.
-      await pubGet();
+    // First run fetches from server and caches listing with ETag.
+    await pubGet();
 
-      final cachePath = p.join(
-        d.sandbox,
-        'cache',
-        'hosted',
-        'localhost%58${server.port}',
-        '.cache',
-        'foo-versions.json',
-      );
-      expect(File(cachePath).existsSync(), isTrue);
-      final cacheContent = File(cachePath).readAsStringSync();
-      expect(cacheContent, contains('_etag'));
+    final cachePath = p.join(
+      d.sandbox,
+      'cache',
+      'hosted',
+      'localhost%58${server.port}',
+      '.cache',
+      'foo-versions.json',
+    );
+    expect(File(cachePath).existsSync(), isTrue);
+    final cacheContent = File(cachePath).readAsStringSync();
+    expect(cacheContent, contains('_etag'));
 
-      // Second run with pub upgrade sends If-None-Match.
-      // The server will return 304 Not Modified and pub will resolve successfully.
-      await pubUpgrade();
+    // Second run with pub upgrade sends If-None-Match.
+    // The server will return 304 Not Modified and pub will resolve
+    // successfully.
+    await pubUpgrade();
 
-      final lockFile =
-          File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync();
-      expect(lockFile, contains('version: "1.0.0"'));
+    final lockFile =
+        File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync();
+    expect(lockFile, contains('version: "1.0.0"'));
 
-      // Now serve a new version of foo. The server ETag changes.
-      server.serve('foo', '1.1.0');
+    // Now serve a new version of foo. The server ETag changes.
+    server.serve('foo', '1.1.0');
 
-      // Running pub upgrade should get a 200 OK with the new version.
-      await pubUpgrade();
+    // Running pub upgrade should get a 200 OK with the new version.
+    await pubUpgrade();
 
-      final updatedLockFile =
-          File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync();
-      expect(updatedLockFile, contains('version: "1.1.0"'));
-    },
-  );
+    final updatedLockFile =
+        File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync();
+    expect(updatedLockFile, contains('version: "1.1.0"'));
+  });
 }
