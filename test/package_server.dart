@@ -34,6 +34,10 @@ class PackageServer {
   // Setting this to false will disable automatic calculation of content-hashes.
   bool serveContentHashes = true;
 
+  // Setting this to true will enable automatic ETag generation and 304 Not
+  // Modified.
+  bool serveEtags = false;
+
   /// Whether the [shelf_io.IOServer] should compress the content, if possible.
   /// The default value is `false` (compression disabled).
   /// See [HttpServer.autoCompress] for details.
@@ -122,18 +126,25 @@ class PackageServer {
           'replacedBy': package.discontinuedReplacementText,
       });
 
-      final etag = 'W/"${sha256.convert(utf8.encode(bodyJson))}"';
-      final ifNoneMatch = request.headers['if-none-match'];
-      if (ifNoneMatch == etag) {
-        return shelf.Response.notModified(headers: {'etag': etag});
+      if (server.serveEtags) {
+        final etag = 'W/"${sha256.convert(utf8.encode(bodyJson))}"';
+        final ifNoneMatch = request.headers['if-none-match'];
+        if (ifNoneMatch == etag) {
+          return shelf.Response.notModified(headers: {'etag': etag});
+        }
+
+        return shelf.Response.ok(
+          bodyJson,
+          headers: {
+            HttpHeaders.contentTypeHeader: server.contentType,
+            'etag': etag,
+          },
+        );
       }
 
       return shelf.Response.ok(
         bodyJson,
-        headers: {
-          HttpHeaders.contentTypeHeader: server.contentType,
-          'etag': etag,
-        },
+        headers: {HttpHeaders.contentTypeHeader: server.contentType},
       );
     });
 

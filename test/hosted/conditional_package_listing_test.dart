@@ -16,7 +16,7 @@ import '../test_pub.dart';
 void main() {
   test('pub sends If-None-Match and handles 304 Not Modified for cached '
       'package listings', () async {
-    final server = await servePackages();
+    final server = await servePackages(serveEtags: true);
     server.serve('foo', '1.0.0');
 
     await d.appDir(dependencies: {'foo': '^1.0.0'}).create();

@@ -464,7 +464,13 @@ class HostedSource extends CachedSource {
     final url = _listVersionsUrl(ref);
     log.io('Get versions from $url.');
 
-    final cachedEtag = _cachedVersionListingETag(ref, cache);
+    // Only attach If-None-Match when running on native platforms (dart:io).
+    // In browser environments (e.g. web tests), If-None-Match triggers a CORS
+    // preflight OPTIONS request which package repositories may not support.
+    final cachedEtag =
+        const bool.fromEnvironment('dart.library.io')
+            ? _cachedVersionListingETag(ref, cache)
+            : null;
     final String? bodyText;
     final dynamic body;
     final List<HostedVersionInfo> result;
