@@ -833,9 +833,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// pubspec.lock. We do this extra round of checking to accommodate for cases
   /// where version control or other processes mess up the timestamp order.
   ///
-  /// If the resolution is still valid, the timestamps are updated and this
-  /// returns the package configuration and the root dir. Otherwise this
-  /// returns `null`.
+  /// If the resolution is still valid, the timestamps are updated (unless
+  /// [updateOutOfDateTimestamps] is false) and this returns the package
+  /// configuration and the root dir. Otherwise this returns `null`.
   ///
   /// This check is on the fast-path of `dart run` and should do as little
   /// work as possible. Specifically we avoid parsing any yaml when the
@@ -852,11 +852,23 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// `.dart_tool/package_config.json` is not checked into version control.
   static (PackageConfig, String)? isResolutionUpToDate(
     String dir,
-    SystemCache cache,
-  ) {
+    SystemCache cache, {
+    bool updateOutOfDateTimestamps = true,
+  }) {
     late final wasRelative = p.isRelative(dir);
     String relativeIfNeeded(String path) =>
         wasRelative ? p.relative(path) : path;
+
+    late final rootPackageDir =
+        parentDirs(dir).firstWhereOrNull(
+          (parent) => tryStatFile(p.join(parent, 'pubspec.yaml')) != null,
+        ) ??
+        dir;
+    late final root = Package.load(
+      rootPackageDir,
+      loadPubspec: Pubspec.loadRootWithSources(cache.sources),
+    );
+    late final Package workspaceRoot;
 
     /// Whether the lockfile is out of date with respect to the dependencies'
     /// pubspecs.
@@ -871,6 +883,12 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       /// Returns whether the locked version of [dep] matches the dependency.
       bool isDependencyUpToDate(PackageRange dep) {
         if (dep.name == root.name) return true;
+        // Workspace packages are local source packages and are never listed in
+        // the `packages` section of `pubspec.lock`. They are always considered
+        // up-to-date here.
+        if (workspaceRoot.transitiveWorkspace.any((p) => p.name == dep.name)) {
+          return true;
+        }
 
         final locked = lockFile.packages[dep.name];
         return locked != null && dep.allows(locked);
@@ -968,7 +986,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         // they are not supposed to work.
         final hasExtraMappings =
             !packagePathsMapping.keys.every((packageName) {
-              return packageName == root.name ||
+              return workspaceRoot.transitiveWorkspace.any(
+                    (p) => p.name == packageName,
+                  ) ||
                   lockFile.packages.containsKey(packageName);
             });
         if (hasExtraMappings) {
@@ -990,8 +1010,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           }
 
           final source = lockFileId.source;
-          final lockFilePackagePath = root.path(
-            cache.getDirectory(lockFileId, relativeFrom: root.dir),
+          final lockFilePackagePath = workspaceRoot.path(
+            cache.getDirectory(lockFileId, relativeFrom: workspaceRoot.dir),
           );
 
           // Make sure that the packagePath agrees with the lock file about the
@@ -1024,7 +1044,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           );
           return false;
         }
-        packagePathsMapping[pkg.name] = root.path(
+        packagePathsMapping[pkg.name] = workspaceRoot.path(
           '.dart_tool',
           p.fromUri(pkg.rootUri),
         );
@@ -1046,6 +1066,20 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       // correct. This is important for path dependencies as these can mutate.
       for (final pkg in packageConfig.packages) {
         if (pkg.name == root.name) continue;
+        final workspacePkg = workspaceRoot.transitiveWorkspace.firstWhereOrNull(
+          (p) => p.name == pkg.name,
+        );
+        if (workspacePkg != null) {
+          if (pkg.languageVersion != workspacePkg.pubspec.languageVersion) {
+            log.fine(
+              '${workspacePkg.pubspecPath} has '
+              'changed since the $lockFilePath file was generated.',
+            );
+            return false;
+          }
+          continue;
+        }
+
         final id = lockFile.packages[pkg.name];
         if (id == null) {
           assert(
@@ -1175,12 +1209,19 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       );
       return null;
     }
-    final lockFilePath = p.normalize(p.join(rootDir, 'pubspec.lock'));
     final packageConfig = _loadPackageConfig(packageConfigPath);
     if (p.isWithin(cache.rootDir, packageConfigPath)) {
       // We always consider a global package (inside the cache) up-to-date.
       return (packageConfig, rootDir);
     }
+    workspaceRoot =
+        rootDir == rootPackageDir
+            ? root
+            : Package.load(
+              rootDir,
+              loadPubspec: Pubspec.loadRootWithSources(cache.sources),
+            );
+    final lockFilePath = p.normalize(p.join(rootDir, 'pubspec.lock'));
 
     /// Whether or not the `.dart_tool/package_config.json` file was
     /// generated by a different sdk down to changes in minor versions.
@@ -1236,6 +1277,11 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
     final lockFileModified = lockFileStat.modified;
     var lockfileNewerThanPubspecs = true;
+    // Whether any pubspec is strictly newer than the lockfile.
+    // We only touch the lockfile to make it newer if this is true, avoiding
+    // touching it on equal timestamps to prevent cascading invalidation of
+    // .dart_tool/package_config.json and downstream developer tools.
+    var pubspecStrictlyNewer = false;
 
     // Check that all packages in packageConfig exist and their pubspecs have
     // not been updated since the lockfile was written.
@@ -1261,10 +1307,13 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         return null;
       }
 
-      if (pubspecStat.modified.isAfter(lockFileModified)) {
+      if (!lockFileModified.isAfter(pubspecStat.modified)) {
         log.fine('`$pubspecPath` is newer than `$lockFilePath`');
         lockfileNewerThanPubspecs = false;
-        break;
+        if (pubspecStat.modified.isAfter(lockFileModified)) {
+          pubspecStrictlyNewer = true;
+          break;
+        }
       }
       final pubspecOverridesPath = p.join(
         package.rootUri.path,
@@ -1275,30 +1324,47 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         // This will wrongly require you to reresolve if a
         // `pubspec_overrides.yaml` in a path-dependency is updated. That
         // seems acceptable.
-        if (pubspecOverridesStat.modified.isAfter(lockFileModified)) {
+        if (!lockFileModified.isAfter(pubspecOverridesStat.modified)) {
           log.fine('`$pubspecOverridesPath` is newer than `$lockFilePath`');
           lockfileNewerThanPubspecs = false;
+          if (pubspecOverridesStat.modified.isAfter(lockFileModified)) {
+            pubspecStrictlyNewer = true;
+            break;
+          }
         }
       }
     }
+    if (!updateOutOfDateTimestamps && !lockfileNewerThanPubspecs) {
+      log.fine(
+        'Timestamps are out of order (updateOutOfDateTimestamps: false)',
+      );
+      return null;
+    }
     var touchedLockFile = false;
     late final lockFile = _loadLockFile(lockFilePath, cache);
-    late final root = Package.load(
-      dir,
-      loadPubspec: Pubspec.loadRootWithSources(cache.sources),
-    );
 
     if (!lockfileNewerThanPubspecs) {
       if (isLockFileUpToDate(lockFile, root, lockFilePath: lockFilePath)) {
-        touch(lockFilePath);
-        touchedLockFile = true;
+        if (pubspecStrictlyNewer) {
+          touch(lockFilePath);
+          touchedLockFile = true;
+        }
       } else {
         return null;
       }
     }
 
+    if (!updateOutOfDateTimestamps &&
+        packageConfigStat.modified.isBefore(lockFileModified)) {
+      log.fine(
+        'Timestamps are out of order (updateOutOfDateTimestamps: false)',
+      );
+      return null;
+    }
+
     if (touchedLockFile ||
-        lockFileModified.isAfter(packageConfigStat.modified)) {
+        !lockfileNewerThanPubspecs ||
+        packageConfigStat.modified.isBefore(lockFileModified)) {
       log.fine('`$lockFilePath` is newer than `$packageConfigPath`');
       if (isPackageConfigUpToDate(
         packageConfig,
@@ -1307,7 +1373,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         packageConfigPath: packageConfigPath,
         lockFilePath: lockFilePath,
       )) {
-        touch(packageConfigPath);
+        if (touchedLockFile ||
+            lockFileModified.isAfter(packageConfigStat.modified)) {
+          touch(packageConfigPath);
+        }
       } else {
         return null;
       }

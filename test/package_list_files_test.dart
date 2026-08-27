@@ -497,6 +497,21 @@ void main() {
       });
     });
 
+    test('lists files when the package path contains spaces', () async {
+      await d.dir(appPath, [
+        d.dir('path with spaces', [
+          d.dir('package', [d.appPubspec(), d.file('file.txt', 'contents')]),
+        ]),
+      ]).create();
+
+      createEntrypoint(p.join(appPath, 'path with spaces', 'package'));
+
+      expect(entrypoint!.workspaceRoot.listFiles(), {
+        p.join(root, 'pubspec.yaml'),
+        p.join(root, 'file.txt'),
+      });
+    });
+
     test('ignores files that are gitignored', () async {
       await d.dir(appPath, [
         d.file('.gitignore', '*.txt'),

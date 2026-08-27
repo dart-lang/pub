@@ -81,6 +81,32 @@ void main() {
     },
   );
 
+  test(
+    '`--major-versions` rejects transitive dependency targets with suffixes',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
+      server.serve('bar', '1.0.0');
+
+      await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+      await pubGet(output: contains('+ foo 1.0.0'));
+
+      await pubUpgrade(
+        args: ['--major-versions', 'bar@^2.0.0'],
+        error: allOf(
+          contains(
+            'Dependencies specified in `dart pub upgrade --major-versions '
+            '<dependencies>`',
+          ),
+          contains('be direct'),
+          contains(' - bar'),
+        ),
+        exitCode: exit_codes.USAGE,
+      );
+    },
+  );
+
   test('`--unlock-transitive --major-versions` allows transitive dependencies '
       'be upgraded along with the named packages', () async {
     final server = await servePackages();
@@ -280,6 +306,25 @@ void main() {
         contains('> baz 1.5.0'),
         isNot(contains('baz 2.0.0')),
       ),
+    );
+  });
+
+  test('`dependency@resolvable` honors other target constraints', () async {
+    final server = await servePackages();
+    server.serve('bar', '1.0.0', deps: {'baz': '<2.0.0'});
+    server.serve('baz', '1.0.0');
+
+    await d.appDir(dependencies: {'bar': 'any', 'baz': 'any'}).create();
+
+    await pubGet(output: contains('+ bar 1.0.0'));
+
+    server.serve('bar', '2.0.0', deps: {'baz': '^2.0.0'});
+    server.serve('baz', '1.5.0');
+    server.serve('baz', '2.0.0');
+
+    await pubUpgrade(
+      args: ['bar@1.0.0', 'baz@resolvable'],
+      output: allOf(contains('> baz 1.5.0'), isNot(contains('baz 2.0.0'))),
     );
   });
 
@@ -559,34 +604,161 @@ void main() {
   });
 
   test(
-    '`dependency@latest` cannot be combined with --major-versions',
+    '`dependency@constraint` can be combined with --major-versions',
     () async {
-      await servePackages();
-      await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+      final server = await servePackages();
+      server.serve('bar', '1.0.0');
+
+      await d.appDir(dependencies: {'bar': '^1.0.0'}).create();
+
+      await pubGet();
+
+      server.serve('bar', '2.0.0');
+      server.serve('bar', '3.0.0');
 
       await pubUpgrade(
-        args: ['--major-versions', 'foo@latest'],
-        error: contains(
-          'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
-          '`--major-versions`.',
-        ),
-        exitCode: exit_codes.USAGE,
+        args: ['--major-versions', 'bar@^2.0.0'],
+        output: contains('> bar 2.0.0'),
       );
+
+      await d.appDir(dependencies: {'bar': '^2.0.0'}).validate();
     },
   );
 
-  test('`dependency@version` cannot be combined with --tighten', () async {
-    await servePackages();
-    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+  test(
+    '`dependency@constraint` constrains the final --major-versions solve',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+
+      await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+      await pubGet();
+
+      server.serve('foo', '1.5.0');
+      server.serve('foo', '1.6.0');
+
+      await pubUpgrade(
+        args: ['--major-versions', 'foo@<=1.5.0'],
+        output: allOf(contains('> foo 1.5.0'), isNot(contains('foo 1.6.0'))),
+      );
+
+      await d.dir(appPath, [
+        d.file(
+          'pubspec.lock',
+          allOf(contains('version: "1.5.0"'), isNot(contains('1.6.0'))),
+        ),
+      ]).validate();
+    },
+  );
+
+  test('`dependency@latest` can be combined with --major-versions', () async {
+    final server = await servePackages();
+    server.serve('bar', '1.0.0');
+
+    await d.appDir(dependencies: {'bar': '^1.0.0'}).create();
+
+    await pubGet();
+
+    server.serve('bar', '1.5.0');
+    server.serve('bar', '2.0.0');
+    server.serve('bar', '3.0.0');
 
     await pubUpgrade(
-      args: ['--tighten', 'foo@1.0.0'],
-      error: contains(
-        'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
-        '`--tighten`.',
-      ),
-      exitCode: exit_codes.USAGE,
+      args: ['--major-versions', 'bar@latest'],
+      output: contains('> bar 3.0.0'),
     );
+
+    await d.appDir(dependencies: {'bar': '^3.0.0'}).validate();
+  });
+
+  test(
+    '`dependency@resolvable` can be combined with --major-versions',
+    () async {
+      final server = await servePackages();
+      server.serve('bar', '1.0.0', deps: {'baz': '^1.0.0'});
+      server.serve('baz', '1.0.0');
+      server.serve('qux', '1.0.0', deps: {'baz': '^1.0.0'});
+
+      await d.appDir(dependencies: {'bar': '^1.0.0', 'qux': '^1.0.0'}).create();
+
+      await pubGet();
+
+      server.serve('bar', '2.0.0', deps: {'baz': '^1.0.0'});
+      server.serve('bar', '3.0.0', deps: {'baz': '^2.0.0'});
+      server.serve('baz', '2.0.0');
+
+      await pubUpgrade(
+        args: ['--major-versions', 'bar@resolvable'],
+        output: allOf(contains('> bar 2.0.0'), isNot(contains('bar 3.0.0'))),
+      );
+
+      await d
+          .appDir(dependencies: {'bar': '^2.0.0', 'qux': '^1.0.0'})
+          .validate();
+    },
+  );
+
+  test('`dependency@constraint` can be combined with --tighten', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': 'any'}).create();
+
+    await pubGet();
+
+    server.serve('foo', '1.5.0');
+    server.serve('foo', '2.0.0');
+
+    await pubUpgrade(
+      args: ['--tighten', 'foo@<2.0.0'],
+      output: allOf(contains('> foo 1.5.0'), isNot(contains('foo 2.0.0'))),
+    );
+
+    await d.appDir(dependencies: {'foo': '^1.5.0'}).validate();
+  });
+
+  test('`dependency@latest` can be combined with --tighten', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': '>=1.0.0 <3.0.0'}).create();
+
+    await pubGet();
+
+    server.serve('foo', '1.5.0');
+    server.serve('foo', '2.0.0');
+
+    await pubUpgrade(
+      args: ['--tighten', 'foo@latest'],
+      output: contains('> foo 2.0.0'),
+    );
+
+    await d.appDir(dependencies: {'foo': '^2.0.0'}).validate();
+  });
+
+  test('`dependency@resolvable` can be combined with --tighten', () async {
+    final server = await servePackages();
+    server.serve('bar', '1.0.0', deps: {'baz': '^1.0.0'});
+    server.serve('baz', '1.0.0');
+    server.serve('qux', '1.0.0', deps: {'baz': '^1.0.0'});
+
+    await d
+        .appDir(dependencies: {'bar': '>=1.0.0 <3.0.0', 'qux': '^1.0.0'})
+        .create();
+
+    await pubGet();
+
+    server.serve('bar', '2.0.0', deps: {'baz': '^1.0.0'});
+    server.serve('bar', '3.0.0', deps: {'baz': '^2.0.0'});
+    server.serve('baz', '2.0.0');
+
+    await pubUpgrade(
+      args: ['--tighten', 'bar@resolvable'],
+      output: allOf(contains('> bar 2.0.0'), isNot(contains('bar 3.0.0'))),
+    );
+
+    await d.appDir(dependencies: {'bar': '^2.0.0', 'qux': '^1.0.0'}).validate();
   });
 
   test('dependency target uses @ instead of colon', () async {
@@ -604,7 +776,7 @@ void main() {
         error: allOf(
           contains('Unknown upgrade target `$target`.'),
           contains('Use `<package>`'),
-          contains('`<package>@<version>`'),
+          contains('`<package>@<constraint>`'),
           contains('`<package>@latest`'),
           contains('`<package>@resolvable`.'),
         ),
@@ -617,18 +789,13 @@ void main() {
     await servePackages();
     await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
 
-    for (final target in [
-      'foo@',
-      'foo@Latest',
-      'foo@not-a-version',
-      'foo@^1.0.0',
-    ]) {
+    for (final target in ['foo@', 'foo@Latest', 'foo@not-a-version']) {
       await pubUpgrade(
         args: [target],
         error: allOf(
           contains('Unknown upgrade target `$target`.'),
           contains('Use `<package>`'),
-          contains('`<package>@<version>`'),
+          contains('`<package>@<constraint>`'),
           contains('`<package>@latest`'),
           contains('`<package>@resolvable`.'),
         ),
@@ -646,11 +813,248 @@ void main() {
       error: allOf(
         contains('Could not parse upgrade target `foo@bar@latest`.'),
         contains('Use `<package>`'),
-        contains('`<package>@<version>`'),
+        contains('`<package>@<constraint>`'),
         contains('`<package>@latest`'),
         contains('`<package>@resolvable`.'),
       ),
       exitCode: exit_codes.USAGE,
+    );
+  });
+
+  test('`dependency@constraint` upgrades a transitive dependency '
+      'with a constraint', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'bar': 'any'});
+    server.serve('bar', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+    await pubGet(output: contains('+ foo 1.0.0'));
+
+    server.serve('bar', '1.1.0');
+    server.serve('bar', '1.5.0');
+    server.serve('bar', '2.0.0');
+
+    // Upgrades to 1.5.0 because it's the latest satisfying <2.0.0
+    await pubUpgrade(
+      args: ['bar@<2.0.0'],
+      output: allOf(contains('> bar 1.5.0'), isNot(contains('bar 2.0.0'))),
+    );
+  });
+
+  test('`dependency@constraint` suggests --major-versions when blocked by '
+      'the root constraint', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+    await pubGet(
+      workingDirectory: d.sandbox,
+      args: ['--directory', appPath],
+      output: contains('+ foo 1.0.0'),
+    );
+
+    server.serve('foo', '2.0.0');
+
+    final suggestedArgs = [
+      '--major-versions',
+      '--tighten',
+      '--directory',
+      appPath,
+      'foo@2.0.0',
+    ];
+
+    await pubUpgrade(
+      workingDirectory: d.sandbox,
+      args: ['--tighten', '--directory', appPath, 'foo@2.0.0'],
+      error: allOf(
+        contains('The requested constraint `2.0.0` for `foo`'),
+        contains('current constraint `^1.0.0`'),
+        contains('pubspec.yaml'),
+        contains(['dart', 'pub', 'upgrade', ...suggestedArgs].join(' ')),
+        isNot(contains('version solving failed')),
+      ),
+      exitCode: exit_codes.DATA,
+    );
+
+    await pubUpgrade(
+      workingDirectory: d.sandbox,
+      args: suggestedArgs,
+      output: contains('> foo 2.0.0'),
+    );
+
+    await d.appDir(dependencies: {'foo': '^2.0.0'}).validate();
+  });
+
+  test(
+    '`dependency@constraint` suggestion does not fall through to examples',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+
+      await d.dir(appPath, [
+        d.appPubspec(dependencies: {'foo': '^1.0.0'}),
+        d.dir('example', [
+          d.pubspec({
+            'name': 'myapp_example',
+            'dependencies': {'foo': '^1.0.0'},
+          }),
+        ]),
+      ]).create();
+
+      await pubGet(args: ['--example'], output: contains('+ foo 1.0.0'));
+
+      server.serve('foo', '2.0.0');
+
+      final suggestedArgs = ['--major-versions', '--no-example', 'foo@2.0.0'];
+
+      for (final args in [
+        ['foo@2.0.0'],
+        ['--no-example', 'foo@2.0.0'],
+      ]) {
+        await pubUpgrade(
+          args: args,
+          error: allOf(
+            contains('The requested constraint `2.0.0` for `foo`'),
+            contains(['dart', 'pub', 'upgrade', ...suggestedArgs].join(' ')),
+          ),
+          exitCode: exit_codes.DATA,
+        );
+      }
+
+      await pubUpgrade(args: suggestedArgs, output: contains('> foo 2.0.0'));
+
+      await d.dir(appPath, [
+        d.appPubspec(dependencies: {'foo': '^2.0.0'}),
+        d.dir('example', [
+          d.pubspec({
+            'name': 'myapp_example',
+            'dependencies': {'foo': '^1.0.0'},
+          }),
+        ]),
+      ]).validate();
+    },
+  );
+
+  test(
+    '`dependency@constraint` allows overlap with the root constraint',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+
+      await d.appDir(dependencies: {'foo': '>=1.0.0 <3.0.0'}).create();
+
+      await pubGet(output: contains('+ foo 1.0.0'));
+
+      server.serve('foo', '2.0.0');
+
+      await pubUpgrade(args: ['foo@2.0.0'], output: contains('> foo 2.0.0'));
+    },
+  );
+
+  test('`dependency@constraint` suggests --major-versions when blocked by '
+      'a workspace constraint', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myapp',
+        '1.0.0',
+        sdk: '^3.5.0',
+        extras: {
+          'workspace': ['a'],
+        },
+      ),
+      d.dir('a', [
+        d.libPubspec(
+          'a',
+          '1.0.0',
+          deps: {'foo': '^1.0.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).create();
+
+    await pubGet(
+      workingDirectory: d.sandbox,
+      args: ['--directory', appPath],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: contains('+ foo 1.0.0'),
+    );
+
+    server.serve('foo', '2.0.0');
+
+    final suggestedArgs = [
+      '--major-versions',
+      '--directory',
+      appPath,
+      'foo@2.0.0',
+    ];
+
+    await pubUpgrade(
+      workingDirectory: d.sandbox,
+      args: ['--directory', appPath, 'foo@2.0.0'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      error: allOf(
+        contains('The requested constraint `2.0.0` for `foo`'),
+        contains('current constraint `^1.0.0`'),
+        matches(RegExp(r'a[\\/]pubspec\.yaml')),
+        contains(['dart', 'pub', 'upgrade', ...suggestedArgs].join(' ')),
+      ),
+      exitCode: exit_codes.DATA,
+    );
+
+    await pubUpgrade(
+      workingDirectory: d.sandbox,
+      args: suggestedArgs,
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: contains('> foo 2.0.0'),
+    );
+
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myapp',
+        '1.0.0',
+        sdk: '^3.5.0',
+        extras: {
+          'workspace': ['a'],
+        },
+      ),
+      d.dir('a', [
+        d.libPubspec(
+          'a',
+          '1.0.0',
+          deps: {'foo': '^2.0.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).validate();
+  });
+
+  test('`dependency@constraint` does not suggest --major-versions for '
+      'dependency override conflicts', () async {
+    await servePackages();
+
+    await d
+        .appDir(
+          dependencies: {'foo': 'any'},
+          pubspec: {
+            'dependency_overrides': {'foo': '1.0.0'},
+          },
+        )
+        .create();
+
+    await pubUpgrade(
+      args: ['foo@2.0.0'],
+      error: allOf(
+        contains('The requested constraint `2.0.0` for `foo`'),
+        contains('dependency override constraint `1.0.0`'),
+        contains('Update or remove the dependency override before retrying.'),
+        isNot(contains('--major-versions')),
+      ),
+      exitCode: exit_codes.DATA,
     );
   });
 }

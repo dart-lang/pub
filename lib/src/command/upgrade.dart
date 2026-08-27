@@ -28,7 +28,8 @@ class UpgradeCommand extends PubCommand {
   String get description =>
       "Upgrade the current package's dependencies to latest versions.\n"
       '\n'
-      'Append `@<version>` to a dependency to require a specific version.\n'
+      'Append `@<constraint>` to a dependency to require a version '
+      'constraint.\n'
       '\n'
       'Append `@latest` to a dependency to require the latest available '
       'version.\n'
@@ -38,7 +39,7 @@ class UpgradeCommand extends PubCommand {
       'the dependencies.';
   @override
   String get argumentsDescription =>
-      '[dependencies[@<version>|@latest|@resolvable]...]';
+      '[dependencies[@<constraint>|@latest|@resolvable]...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-upgrade';
 
@@ -182,25 +183,13 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     final hasUpgradeTargetConstraints = _upgradeTargets.any(
       (target) => target.kind != null,
     );
-    if (hasUpgradeTargetConstraints) {
-      if (_upgradeMajorVersions) {
-        usageException(
-          'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
-          '`--major-versions`.',
-        );
-      }
-      if (_tighten) {
-        usageException(
-          'Cannot use `@<version>`, `@latest`, or `@resolvable` with '
-          '`--tighten`.',
-        );
-      }
-    }
+
     if (hasUpgradeTargetConstraints ||
         (argResults.flag('unlock-transitive') && _upgradeTargets.isNotEmpty)) {
       _validateUpgradeTargetEntrypoints(
         validatePlainTargets: argResults.flag('unlock-transitive'),
       );
+      _validateUpgradeTargetConstraintsOverlap();
     }
 
     if (_upgradeMajorVersions) {
@@ -279,27 +268,95 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     }
   }
 
+  void _validateUpgradeTargetConstraintsOverlap() {
+    if (_upgradeMajorVersions) return;
+
+    for (final target in _upgradeTargets) {
+      if (target.kind != _UpgradeTargetKind.constraint) continue;
+      for (final entrypoint in _entrypointsToUpgrade) {
+        _validateUpgradeTargetConstraintOverlap(entrypoint, target);
+      }
+    }
+  }
+
+  void _validateUpgradeTargetConstraintOverlap(
+    Entrypoint e,
+    _UpgradeTarget target,
+  ) {
+    final targetConstraint = target.constraint!;
+    var hasOverride = false;
+    for (final workspacePackage in e.workspaceRoot.transitiveWorkspace) {
+      final override =
+          workspacePackage.pubspec.dependencyOverrides[target.name];
+      if (override == null) continue;
+      hasOverride = true;
+      if (!override.constraint.allowsAny(targetConstraint)) {
+        final pubspecPath =
+            workspacePackage.pubspec.dependencyOverridesFromOverridesFile
+                ? workspacePackage.pubspecOverridesPath
+                : workspacePackage.pubspecPath;
+        dataError(
+          'The requested constraint `$targetConstraint` for `${target.name}` '
+          'does not overlap with the dependency override constraint '
+          '`${override.constraint}` in `$pubspecPath`.\n'
+          'Update or remove the dependency override before retrying.',
+        );
+      }
+    }
+    if (hasOverride) return;
+
+    for (final workspacePackage in e.workspaceRoot.transitiveWorkspace) {
+      final dependency = workspacePackage.dependencies[target.name];
+      final devDependency = workspacePackage.devDependencies[target.name];
+      final declaredConstraint =
+          dependency?.constraint ?? devDependency?.constraint;
+      if (declaredConstraint == null ||
+          declaredConstraint.allowsAny(targetConstraint)) {
+        continue;
+      }
+      dataError(
+        'The requested constraint `$targetConstraint` for `${target.name}` '
+        'does not overlap with the current constraint `$declaredConstraint` '
+        'in `${workspacePackage.pubspecPath}`.\n'
+        'To update the constraint, run '
+        '`${_suggestedMajorVersionsCommand(e, target)}`.',
+      );
+    }
+  }
+
+  String _suggestedMajorVersionsCommand(Entrypoint e, _UpgradeTarget target) {
+    final directoryOption =
+        identical(e, entrypoint) ? directory : e.workspaceRoot.dir;
+    final disableExamples = e.examples.isNotEmpty;
+    return [
+      topLevelProgram,
+      'pub',
+      'upgrade',
+      '--major-versions',
+      if (_tighten) '--tighten',
+      if (argResults.flag('unlock-transitive')) '--unlock-transitive',
+      if (disableExamples) '--no-example',
+      if (directoryOption != '.') ...['--directory', directoryOption],
+      target.argument,
+    ].map(escapeShellArgument).join(' ');
+  }
+
   Future<List<ConstraintAndCause>?> _upgradeTargetConstraints(
     Entrypoint e,
   ) async {
-    final constraintFutures = <Future<ConstraintAndCause>>[];
-    Future<Map<String, PackageId>>? latestResolvablePackages;
+    final constraints = <ConstraintAndCause>[];
+    final resolvableTargets = <_UpgradeTarget>[];
 
-    Future<PackageId> latestResolvable(String package) async {
-      if (_packageRef(e, package) == null) {
-        dataError('Package `$package` is not in the current resolution.');
-      }
-      final packages =
-          await (latestResolvablePackages ??= _computeLatestResolvablePackages(
-            e,
-          ));
-      final latestResolvable = packages[package];
-      if (latestResolvable == null) {
-        dataError(
-          'Package `$package` is not in the latest resolvable resolution.',
-        );
-      }
-      return latestResolvable;
+    ConstraintAndCause constraintAndCause(
+      PackageRange targetRange,
+      VersionConstraint targetConstraint,
+      String argument,
+    ) {
+      return ConstraintAndCause(
+        targetRange,
+        '${targetRange.name} $targetConstraint was requested by '
+        '`$topLevelProgram pub upgrade $argument`.',
+      );
     }
 
     for (final target in _upgradeTargets) {
@@ -308,38 +365,63 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       final ref = _packageRef(e, target.name);
       if (ref == null) continue;
 
-      constraintFutures.add(
-        (() async {
-          late final PackageRange targetRange;
-          late final Version targetVersion;
-          switch (kind) {
-            case _UpgradeTargetKind.latest:
-              final targetPackage = await _latest(e, target.name, ref);
-              targetRange = targetPackage.toRange();
-              targetVersion = targetPackage.version;
-            case _UpgradeTargetKind.resolvable:
-              final targetPackage = await latestResolvable(target.name);
-              targetRange = targetPackage.toRange();
-              targetVersion = targetPackage.version;
-            case _UpgradeTargetKind.version:
-              targetVersion = target.version!;
-              targetRange = ref.withConstraint(targetVersion);
-          }
-          return ConstraintAndCause(
-            targetRange,
-            '${targetRange.name} $targetVersion was requested by '
-            '`$topLevelProgram pub upgrade ${target.argument}`.',
+      switch (kind) {
+        case _UpgradeTargetKind.latest:
+          final targetPackage = await _latest(e, target.name, ref);
+          constraints.add(
+            constraintAndCause(
+              targetPackage.toRange(),
+              targetPackage.version,
+              target.argument,
+            ),
           );
-        })(),
-      );
+        case _UpgradeTargetKind.resolvable:
+          resolvableTargets.add(target);
+        case _UpgradeTargetKind.constraint:
+          final targetConstraint = target.constraint!;
+          constraints.add(
+            constraintAndCause(
+              ref.withConstraint(targetConstraint),
+              targetConstraint,
+              target.argument,
+            ),
+          );
+      }
     }
-    final constraints = await Future.wait(constraintFutures);
+
+    if (resolvableTargets.isNotEmpty) {
+      final packages = await _computeLatestResolvablePackages(
+        e,
+        additionalConstraints:
+            constraints.isEmpty
+                ? null
+                : List<ConstraintAndCause>.of(constraints),
+      );
+      for (final target in resolvableTargets) {
+        final targetPackage = packages[target.name];
+        if (targetPackage == null) {
+          dataError(
+            'Package `${target.name}` is not in the latest resolvable '
+            'resolution.',
+          );
+        }
+        constraints.add(
+          constraintAndCause(
+            targetPackage.toRange(),
+            targetPackage.version,
+            target.argument,
+          ),
+        );
+      }
+    }
+
     return constraints.isEmpty ? null : constraints;
   }
 
   Future<Map<String, PackageId>> _computeLatestResolvablePackages(
-    Entrypoint e,
-  ) async {
+    Entrypoint e, {
+    Iterable<ConstraintAndCause>? additionalConstraints,
+  }) async {
     final solveResult = await log.spinner('Resolving dependencies', () async {
       return await resolveVersions(
         SolveType.upgrade,
@@ -347,6 +429,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         e.workspaceRoot.transformWorkspace(
           (package) => stripVersionBounds(package.pubspec),
         ),
+        additionalConstraints: additionalConstraints,
       );
     }, condition: _shouldShowSpinner);
     return {for (final package in solveResult.packages) package.name: package};
@@ -390,7 +473,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
             oldStyleParts.last == 'resolvable')) {
       usageException(
         'Unknown upgrade target `$argument`. Use `<package>`, '
-        '`<package>@<version>`, `<package>@latest`, or '
+        '`<package>@<constraint>`, `<package>@latest`, or '
         '`<package>@resolvable`.',
       );
     }
@@ -399,7 +482,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     if (parts.length > 2) {
       usageException(
         'Could not parse upgrade target `$argument`. Use `<package>`, '
-        '`<package>@<version>`, `<package>@latest`, or '
+        '`<package>@<constraint>`, `<package>@latest`, or '
         '`<package>@resolvable`.',
       );
     }
@@ -424,13 +507,13 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         return _UpgradeTarget(
           argument,
           package,
-          _UpgradeTargetKind.version,
-          Version.parse(suffix),
+          _UpgradeTargetKind.constraint,
+          VersionConstraint.parse(suffix),
         );
       } on FormatException catch (_) {
         usageException(
           'Unknown upgrade target `$argument`. Use `<package>`, '
-          '`<package>@<version>`, `<package>@latest`, or '
+          '`<package>@<constraint>`, `<package>@latest`, or '
           '`<package>@resolvable`.',
         );
       }
@@ -459,8 +542,10 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         packagesToUpgrade.isEmpty ? directDeps : packagesToUpgrade;
 
     // Check that all package names in upgradeOnly are direct-dependencies
-    final notInDeps = toUpgrade.where((n) => !directDeps.contains(n));
-    if (argResults.rest.any(notInDeps.contains)) {
+    final notInDeps = _upgradeTargets
+        .map((target) => target.name)
+        .where((n) => !directDeps.contains(n));
+    if (notInDeps.isNotEmpty) {
       usageException('''
 Dependencies specified in `$topLevelProgram pub upgrade --major-versions <dependencies>` must
 be direct 'dependencies' or 'dev_dependencies', following packages are not:
@@ -474,7 +559,13 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
 
   Future<void> _runUpgradeMajorVersions() async {
     final toUpgrade = await _directDependenciesToUpgrade();
-    final resolvedPackages = await _computeLatestResolvablePackages(entrypoint);
+    final upgradeTargetConstraints = await _upgradeTargetConstraints(
+      entrypoint,
+    );
+    final resolvedPackages = await _computeLatestResolvablePackages(
+      entrypoint,
+      additionalConstraints: upgradeTargetConstraints,
+    );
     final dependencyOverriddenDeps = <String>[];
     // Changes to be made to `pubspec.yaml` of each package.
     // Mapping from original to changed value.
@@ -523,6 +614,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         entrypoint.workspaceRoot.transformWorkspace((package) {
           return applyChanges(package.pubspec, changes[package] ?? {});
         }),
+        additionalConstraints: upgradeTargetConstraints,
       );
       changes = entrypoint.tighten(
         packagesToUpgrade: await _rootPackagesToUpgrade,
@@ -553,6 +645,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
           dryRun: _dryRun,
           precompile: !_dryRun && _precompile,
           unlock: await _rootPackagesToUpgrade,
+          additionalConstraints: upgradeTargetConstraints,
         );
 
     // If any of the packages to upgrade are dependency overrides, then we
@@ -600,13 +693,13 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
   }
 }
 
-enum _UpgradeTargetKind { latest, resolvable, version }
+enum _UpgradeTargetKind { latest, resolvable, constraint }
 
 class _UpgradeTarget {
   final String argument;
   final String name;
   final _UpgradeTargetKind? kind;
-  final Version? version;
+  final VersionConstraint? constraint;
 
-  _UpgradeTarget(this.argument, this.name, this.kind, [this.version]);
+  _UpgradeTarget(this.argument, this.name, this.kind, [this.constraint]);
 }

@@ -34,7 +34,11 @@ Otherwise exit non-zero.
 
   @override
   Future<void> runProtected() async {
-    final result = Entrypoint.isResolutionUpToDate(directory, cache);
+    final result = Entrypoint.isResolutionUpToDate(
+      directory,
+      cache,
+      updateOutOfDateTimestamps: false,
+    );
     if (result == null) {
       fail('Resolution needs updating. Run `$topLevelProgram pub get`');
     } else {

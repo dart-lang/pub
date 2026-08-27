@@ -14,6 +14,16 @@ import 'term.dart';
 ///
 /// See https://github.com/dart-lang/pub/tree/master/doc/solver.md#partial-solution.
 class PartialSolution {
+  /// The canonical [PackageRef]s of workspace root packages, keyed by package
+  /// name.
+  ///
+  /// A dependency on any member of a workspace is treated as a dependency on
+  /// that workspace's root package, so all solver operations canonicalize
+  /// member references through this map before registering or relating terms.
+  final Map<String, PackageRef> _rootRefs;
+
+  PartialSolution([this._rootRefs = const {}]);
+
   /// The assignments that have been made so far, in the order they were
   /// assigned.
   final _assignments = <Assignment>[];
@@ -69,6 +79,7 @@ class PartialSolution {
 
   /// Adds an assignment of [package] as a derivation.
   void derive(PackageRange package, bool isPositive, Incompatibility cause) {
+    package = canonicalize(package);
     _assign(
       Assignment.derivation(
         package,
@@ -140,27 +151,12 @@ class PartialSolution {
   ///
   /// Throws a [StateError] if [term] isn't satisfied by `this`.
   Assignment satisfier(Term term) {
-    Term? assignedTerm;
+    final prefix = PartialSolution(_rootRefs);
     for (var assignment in _assignments) {
       if (assignment.package.name != term.package.name) continue;
 
-      if (!assignment.package.isRoot &&
-          assignment.package.toRef() != term.package.toRef()) {
-        // not foo from hosted has no bearing on foo from git
-        if (!assignment.isPositive) continue;
-
-        // foo from hosted satisfies not foo from git
-        assert(!term.isPositive);
-        return assignment;
-      }
-
-      assignedTerm =
-          assignedTerm == null
-              ? assignment
-              : assignedTerm.intersect(assignment);
-
-      // As soon as we have enough assignments to satisfy [term], return them.
-      if (assignedTerm!.satisfies(term)) return assignment;
+      prefix._register(assignment);
+      if (prefix.satisfies(term)) return assignment;
     }
 
     throw StateError('[BUG] $term is not satisfied.');
@@ -175,6 +171,7 @@ class PartialSolution {
   /// Returns the relationship between the package versions allowed by all
   /// assignments in `this` and those allowed by [term].
   SetRelation relation(Term term) {
+    term = Term(canonicalize(term.package), term.isPositive);
     final positive = _positive[term.package.name];
     if (positive != null) return positive.relation(term);
 
@@ -184,11 +181,13 @@ class PartialSolution {
     final byRef = _negative[term.package.name];
     if (byRef == null) return SetRelation.overlapping;
 
-    // not foo from git is a superset of foo from hosted
-    // not foo from git overlaps not foo from hosted
     final negative = byRef[term.package.toRef()];
     if (negative == null) return SetRelation.overlapping;
 
     return negative.relation(term);
   }
+
+  /// Returns [package] with its workspace root reference, if it has one.
+  PackageRange canonicalize(PackageRange package) =>
+      _rootRefs[package.name]?.withConstraint(package.constraint) ?? package;
 }

@@ -11,7 +11,7 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         fetch-depth: 0 # Check out everything to be able to tag.
     - uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260
