@@ -14,7 +14,6 @@ import 'dart:core';
 import 'dart:io' hide BytesBuilder;
 import 'dart:isolate';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:async/async.dart';
 import 'package:pub/src/entrypoint.dart';
@@ -1102,27 +1101,10 @@ Stream<List<int>> tarFromDescriptors(Iterable<d.Descriptor> contents) {
   for (final e in contents) {
     addDescriptor(e, '');
   }
-  return _replaceOs(
-    Stream.fromIterable(entries)
-        .transform(tarWriterWith(format: OutputFormat.gnuLongName))
-        .transform(gzip.encoder),
-  );
-}
-
-/// Replaces the entry at index 9 in [stream] with a 0. This replaces the os
-/// entry of a gzip stream, giving us the same stream and this stable testing
-/// on all platforms.
-///
-/// See https://www.rfc-editor.org/rfc/rfc1952 section 2.3 for information
-/// about the OS header.
-Stream<List<int>> _replaceOs(Stream<List<int>> stream) async* {
-  final bytesBuilder = BytesBuilder();
-  await for (final t in stream) {
-    bytesBuilder.add(t);
-  }
-  final result = bytesBuilder.toBytes();
-  result[9] = 0;
-  yield result;
+  return Stream.fromIterable(entries)
+      .transform(tarWriterWith(format: OutputFormat.gnuLongName))
+      .transform(gzip.encoder)
+      .transform(normalizeGzipHeader());
 }
 
 /// Utility for indexing json data structures.

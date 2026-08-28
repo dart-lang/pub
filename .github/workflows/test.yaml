@@ -70,3 +70,58 @@ jobs:
         env:
           SHARD_INDEX: ${{ matrix.shard }}
         run: dart test --preset ci --total-shards=7 --shard-index="${SHARD_INDEX}"
+
+  # Build a reproducible package archive across Linux, macOS, and Windows.
+  build-reproducible-archive:
+    needs: analyze
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        sdk: [dev]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260
+        with:
+          sdk: ${{ matrix.sdk }}
+      - name: Install dependencies
+        run: dart pub get
+      - name: Create reproducible archive
+        env:
+          ARCHIVE_OS: ${{ matrix.os }}
+        shell: bash
+        run: dart bin/pub.dart publish -C tool/sample_reproducible_pkg --to-archive="archive-${ARCHIVE_OS}.tar.gz" --skip-validation
+      - name: Upload archive
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: archive-${{ matrix.os }}
+          path: archive-${{ matrix.os }}.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+  # Verify that archives built on Linux, macOS, and Windows are bit-for-bit identical.
+  verify-cross-os-reproducibility:
+    needs: build-reproducible-archive
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Ubuntu archive
+        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
+        with:
+          name: archive-ubuntu-latest
+          path: archives/archive-ubuntu-latest
+      - name: Download macOS archive
+        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
+        with:
+          name: archive-macos-latest
+          path: archives/archive-macos-latest
+      - name: Download Windows archive
+        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
+        with:
+          name: archive-windows-latest
+          path: archives/archive-windows-latest
+      - name: Verify identical archives
+        run: |
+          sha256sum archives/*/*.tar.gz
+          cmp archives/archive-ubuntu-latest/*.tar.gz archives/archive-macos-latest/*.tar.gz
+          cmp archives/archive-ubuntu-latest/*.tar.gz archives/archive-windows-latest/*.tar.gz
