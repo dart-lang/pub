@@ -8,8 +8,12 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:file/memory.dart';
 import 'package:pub/src/exit_codes.dart';
+import 'package:pub/src/io.dart';
+import 'package:pub/src/package.dart';
 import 'package:pub/src/path.dart';
+import 'package:pub/src/pubspec.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
@@ -167,6 +171,67 @@ void main() {
       packageConfigEntry(name: 'a', path: './pkgs/a'),
       packageConfigEntry(name: 'example', path: './pkgs/a/example'),
     ], generatorVersion: '3.5.0').validate();
+  });
+
+  test('reports dependency conflicts with nested workspace members', () async {
+    final server = await servePackages();
+    server.serve('workspace_dep', '1.0.0');
+    server.serve('shared_dep', '1.0.0');
+    server.serve('shared_dep', '2.0.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        devDeps: {'shared_dep': '^2.0.0'},
+        extras: {
+          'workspace': ['pkgs/app', 'pkgs/inner'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('pkgs', [
+        dir('app', [
+          libPubspec(
+            'app',
+            '1.0.0',
+            deps: {'workspace_dep': 'any'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+        dir('inner', [
+          libPubspec(
+            'inner',
+            '1.0.0',
+            extras: {
+              'workspace': ['workspace_dep'],
+            },
+            resolutionWorkspace: true,
+          ),
+          dir('workspace_dep', [
+            libPubspec(
+              'workspace_dep',
+              '1.0.0',
+              devDeps: {'shared_dep': '^1.0.0'},
+              resolutionWorkspace: true,
+            ),
+          ]),
+        ]),
+      ]),
+    ]).create();
+
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      error: allOf(
+        contains('workspace_dep'),
+        contains('shared_dep ^1.0.0'),
+        contains('shared_dep ^2.0.0'),
+        contains('version solving failed.'),
+        isNot(contains('Null check operator used on a null value')),
+        isNot(contains('!term.isPositive')),
+        isNot(
+          contains('Duplicate name workspace_dep in generated package config'),
+        ),
+      ),
+    );
   });
 
   test('checks constraints between workspace members', () async {
@@ -2089,6 +2154,42 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
       ),
       exitCode: 1,
     );
+  });
+
+  test('globs are resolved when using overridden filesystem', () async {
+    final fs = MemoryFileSystem(
+      style:
+          Platform.isWindows ? FileSystemStyle.windows : FileSystemStyle.posix,
+    );
+    final myappPath = fs.path.absolute('myapp');
+    fs.directory(myappPath).createSync(recursive: true);
+    fs.file(fs.path.join(myappPath, 'pubspec.yaml')).writeAsStringSync('''
+name: myapp
+version: 1.2.3
+workspace:
+  - pkgs/a
+environment:
+  sdk: '^3.11.0'
+''');
+    final pkgAPath = fs.path.join(myappPath, 'pkgs', 'a');
+    fs.directory(pkgAPath).createSync(recursive: true);
+    fs.file(fs.path.join(pkgAPath, 'pubspec.yaml')).writeAsStringSync('''
+name: a
+version: 1.1.1
+resolution: workspace
+environment:
+  sdk: '^3.11.0'
+''');
+
+    await withOverrides(() async {
+      final package = Package.load(
+        myappPath,
+        loadPubspec: Pubspec.loadRootWithSources(
+          (name) => throw UnimplementedError(),
+        ),
+      );
+      expect(package.transitiveWorkspace.map((pkg) => pkg.name), contains('a'));
+    }, fileSystem: fs);
   });
 }
 

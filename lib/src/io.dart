@@ -1543,6 +1543,18 @@ final class _IOOverrides extends IOOverrides {
       fileSystem.directory(path).watch(events: events, recursive: recursive);
 }
 
+/// The [f.FileSystem] used by the current [io.IOOverrides].
+///
+/// If running in a zone with overrides of type [_IOOverrides],
+/// returns the overridden filesystem. Otherwise, returns a [f.LocalFileSystem].
+f.FileSystem get currentFileSystem {
+  final current = io.IOOverrides.current;
+  if (current is _IOOverrides) {
+    return current.fileSystem;
+  }
+  return const f.LocalFileSystem();
+}
+
 /// Wrap a [Stream<List<int>>] as [Stdin].
 final class StdinStream extends StreamView<List<int>> implements Stdin {
   StdinStream(super.stream);
