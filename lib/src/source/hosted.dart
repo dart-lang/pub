@@ -29,6 +29,7 @@ import '../path.dart';
 import '../platform_info.dart';
 import '../pubspec.dart';
 import '../rate_limited_scheduler.dart';
+import '../sigstore/verifier.dart';
 import '../source.dart';
 import '../system_cache.dart';
 import '../utils.dart';
@@ -255,6 +256,10 @@ class HostedSource extends CachedSource {
     if (sha256 != null && sha256 is! String) {
       throw const FormatException('The sha256 should be a string.');
     }
+    final provenance = description['provenance'];
+    if (provenance != null && provenance is! String) {
+      throw const FormatException('The provenance should be a string.');
+    }
     final foundName = description['name'];
     if (foundName is! String) {
       throw const FormatException('The name should be a string.');
@@ -268,6 +273,7 @@ class HostedSource extends CachedSource {
       ResolvedHostedDescription(
         HostedDescription(name, url),
         sha256: _parseContentHash(sha256 as String?),
+        provenance: provenance as String?,
       ),
     );
   }
@@ -440,12 +446,14 @@ class HostedSource extends CachedSource {
         isRetracted: retracted,
         advisoriesUpdated: advisoriesDate,
       );
+      final slsaLevel = map['slsaLevel'] as int?;
       return HostedVersionInfo(
         pubspec.version,
         pubspec,
         Uri.parse(archiveUrl),
         status,
         parsedContentHash,
+        slsaLevel: slsaLevel,
       );
     }).toList();
   }
@@ -1218,8 +1226,12 @@ class HostedSource extends CachedSource {
         contentHash = hashFromCache;
       }
     }
+    final String? provenance;
     if (dirExists(packageDir)) {
       contentHash ??= sha256FromCache(id, cache);
+      provenance =
+          (id.description as ResolvedHostedDescription).provenance ??
+          provenanceFromCache(id, cache);
     } else {
       didUpdate = true;
       if (cache.isOffline) {
@@ -1228,13 +1240,17 @@ class HostedSource extends CachedSource {
           'Try again without --offline.',
         );
       }
-      contentHash = await _downloadAtomically(id, packageDir, cache);
+      final (hash, prov) = await _downloadAtomically(id, packageDir, cache);
+      contentHash = hash;
+      provenance = prov;
     }
     return DownloadPackageResult(
       PackageId(
         id.name,
         id.version,
-        (id.description as ResolvedHostedDescription).withSha256(contentHash),
+        (id.description as ResolvedHostedDescription)
+            .withSha256(contentHash)
+            .withProvenance(provenance),
       ),
       didUpdate: didUpdate,
     );
@@ -1288,6 +1304,41 @@ class HostedSource extends CachedSource {
       log.fine('Bad content-hash in cache: $e, ignoring cache entry');
       return null;
     }
+  }
+
+  /// Parallel to `hosted-hashes` there is a `hosted-provenance` directory with
+  /// a stored provenance repository URL of all downloaded packages.
+  String provenancePath(PackageId id, SystemCache cache) {
+    final description = id.description.description;
+    if (description is! HostedDescription) {
+      throw ArgumentError('Wrong source');
+    }
+    final rootDir = cache.rootDir;
+
+    final serverDir = _urlToDirectory(description.url);
+    return p.join(
+      rootDir,
+      'hosted-provenance',
+      serverDir,
+      '${id.name}-${id.version}.provenance',
+    );
+  }
+
+  /// Loads the provenance repository at `provenancePath(id)`.
+  String? provenanceFromCache(PackageId id, SystemCache cache) {
+    try {
+      final text = readTextFile(provenancePath(id, cache)).trim();
+      return text.isEmpty ? null : text;
+    } on io.IOException {
+      return null;
+    }
+  }
+
+  /// Writes the provenance repository for [id] in the cache.
+  void writeProvenance(PackageId id, SystemCache cache, String provenance) {
+    final path = provenancePath(id, cache);
+    ensureDir(p.dirname(path));
+    writeTextFile(path, provenance);
   }
 
   /// Re-downloads all packages that have been previously downloaded into the
@@ -1476,18 +1527,19 @@ class HostedSource extends CachedSource {
   /// `$server/packages/$package/versions/$version.tar.gz` where server comes
   /// from `id.description`.
   ///
-  /// Returns the content-hash of the downloaded archive.
-  Future<Uint8List> _downloadAtomically(
+  /// Returns the content-hash and verified provenance repository of the
+  /// downloaded archive.
+  Future<(Uint8List, String?)> _downloadAtomically(
     PackageId id,
     String destPath,
     SystemCache cache,
   ) async {
     final tempDir = cache.createTempDir();
     try {
-      final contentHash = await _downloadAndExtract(id, tempDir, cache);
+      final result = await _downloadAndExtract(id, tempDir, cache);
       ensureDir(p.dirname(destPath));
       tryRenameDir(tempDir, destPath);
-      return contentHash;
+      return result;
     } catch (e) {
       deleteEntry(tempDir);
       rethrow;
@@ -1496,8 +1548,9 @@ class HostedSource extends CachedSource {
 
   /// Downloads the archive for [id] and extracts it to [destPath].
   ///
-  /// Returns the content-hash of the downloaded archive.
-  Future<Uint8List> _downloadAndExtract(
+  /// Returns the content-hash and verified provenance repository of the
+  /// downloaded archive.
+  Future<(Uint8List, String?)> _downloadAndExtract(
     PackageId id,
     String destPath,
     SystemCache cache,
@@ -1529,7 +1582,8 @@ class HostedSource extends CachedSource {
       );
     }
 
-    late final Uint8List contentHash;
+    Uint8List? contentHash;
+    String? verifiedProvenance;
     final archiveUrl = versionInfo.archiveUrl;
     log.io('Get package from $archiveUrl.');
     log.fine('Downloading ${log.bold(id.name)} ${id.version}...');
@@ -1565,7 +1619,7 @@ See $contentHashesDocumentationUrl.
 ''');
         }
         contentHash = Uint8List.fromList(actualHash.bytes);
-        writeHash(id, cache, contentHash);
+        writeHash(id, cache, contentHash!);
       }
 
       // It is important that we do not compare against id.description.sha256,
@@ -1606,6 +1660,61 @@ See $contentHashesDocumentationUrl.
             // and cancelling a http stream makes it not reusable. There are
             // ways around this, and we might revisit this later.
             await createFileFromStream(stream, archivePath);
+
+            // Fetch and verify Sigstore attestation if available
+            if (versionInfo.slsaLevel != null) {
+              final attestationUri = Uri.parse(description.url).resolve(
+                'api/packages/${id.name}/versions/${id.version}/attestation',
+              );
+              try {
+                final attRequest = http.Request('GET', attestationUri);
+                final attResponse = await client.fetch(attRequest);
+                if (attResponse.statusCode == 200) {
+                  SigstoreBundle bundle;
+                  try {
+                    bundle = SigstoreBundle.fromJson(attResponse.body);
+                  } catch (e) {
+                    throw PackageIntegrityException('''
+Downloaded attestation for ${id.name}-${id.version} is malformed: $e
+
+This indicates a problem on the package repository: `${description.url}`.
+''');
+                  }
+                  final archiveBytes = readBinaryFile(archivePath);
+                  final verifier = PubAttestationVerifier(cache: cache);
+                  final result = verifier.verify(
+                    packageName: id.name,
+                    packageVersion: id.version,
+                    archiveBytes: archiveBytes,
+                    bundle: bundle,
+                  );
+                  if (!result.isValid) {
+                    throw PackageIntegrityException('''
+Downloaded archive for ${id.name}-${id.version} failed Sigstore attestation verification:
+${result.errors.map((e) => '  * $e').join('\n')}
+
+This indicates a problem on the package repository: `${description.url}`.
+''');
+                  }
+                  verifiedProvenance = result.repository;
+                  if (verifiedProvenance != null) {
+                    writeProvenance(id, cache, verifiedProvenance!);
+                  }
+                  log.fine(
+                    'Verified Sigstore attestation for '
+                    '${id.name}-${id.version} '
+                    'from repository ${result.repository}.',
+                  );
+                }
+              } on PackageIntegrityException {
+                rethrow;
+              } catch (e) {
+                log.fine(
+                  'No attestation found or error fetching attestation for '
+                  '${id.name}-${id.version}: $e',
+                );
+              }
+            }
           });
         });
       } on Exception catch (error, stackTrace) {
@@ -1617,7 +1726,7 @@ See $contentHashesDocumentationUrl.
       } on FormatException catch (e) {
         dataError('Failed to extract `$archivePath`: ${e.message}.');
       }
-      return contentHash;
+      return (contentHash!, verifiedProvenance);
     });
   }
 
@@ -1926,30 +2035,40 @@ class ResolvedHostedDescription extends ResolvedDescription {
   ///   (will be null if the file doesn't exist for corrupt or legacy caches).
   final Uint8List? sha256;
 
+  /// The verified Sigstore provenance repository of the package, or null if
+  /// not signed or unknown.
+  final String? provenance;
+
   ResolvedHostedDescription(
     HostedDescription super.description, {
     required this.sha256,
+    this.provenance,
   });
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {
     final hash = sha256;
+    final prov = provenance;
     return {
       'name': description.packageName,
       'url': description.url,
       if (hash != null) 'sha256': hexEncode(hash),
+      if (prov != null) 'provenance': prov,
     };
   }
 
   @override
   // We do not include the sha256 in the hashCode because of the equality
   // semantics.
-  int get hashCode => description.hashCode;
+  int get hashCode => Object.hash(description, provenance);
 
   @override
   bool operator ==(Object other) {
     return other is ResolvedHostedDescription &&
         other.description == description &&
+        (provenance == null ||
+            other.provenance == null ||
+            provenance == other.provenance) &&
         // A [sha256] of `null` means that we don't know the hash yet.
         // Therefore we have to assume it is equal to any known value.
         (sha256 == null ||
@@ -1958,7 +2077,18 @@ class ResolvedHostedDescription extends ResolvedDescription {
   }
 
   ResolvedHostedDescription withSha256(Uint8List? newSha256) =>
-      ResolvedHostedDescription(description, sha256: newSha256);
+      ResolvedHostedDescription(
+        description,
+        sha256: newSha256,
+        provenance: provenance,
+      );
+
+  ResolvedHostedDescription withProvenance(String? newProvenance) =>
+      ResolvedHostedDescription(
+        description,
+        sha256: sha256,
+        provenance: newProvenance ?? provenance,
+      );
 }
 
 /// Information about a package version retrieved from /api/packages/$package<
@@ -1970,14 +2100,16 @@ class HostedVersionInfo {
   /// The sha256 digest of the archive according to the package-repository.
   final Uint8List? archiveSha256;
   final PackageStatus status;
+  final int? slsaLevel;
 
   HostedVersionInfo(
     this.version,
     this.pubspec,
     this.archiveUrl,
     this.status,
-    this.archiveSha256,
-  );
+    this.archiveSha256, {
+    this.slsaLevel,
+  });
 }
 
 /// Information about a security advisory affecting a package. The information
