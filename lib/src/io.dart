@@ -73,6 +73,15 @@ final _descriptorPool = Pool(32);
 /// The assumed default file mode on Linux and macOS
 const _defaultMode = 420; // 644₈
 
+/// Permission mode for owner-only files (read & write).
+const _ownerOnlyFileMode = 384; // 600₈
+
+/// Permission mode for owner-only directories (read, write & search).
+const _ownerOnlyDirMode = 448; // 700₈
+
+/// Mask for group and other permission bits.
+const _groupAndOtherMask = 63; // 077₈
+
 /// Mask for executable bits in file modes.
 const _executableMask = 0x49; // 001 001 001
 
@@ -264,6 +273,46 @@ void writeTextFile(
   File(file).writeAsStringSync(contents, encoding: encoding);
 }
 
+/// Creates [file] and writes [contents] to it, ensuring that on POSIX systems
+/// the containing directory has owner-only permissions (`0700`) and the file
+/// has owner-only read/write permissions (`0600`).
+///
+/// The file contents will not be logged.
+void writeProtectedTextFile(
+  String file,
+  String contents, {
+  Encoding encoding = utf8,
+}) {
+  final dir = p.dirname(file);
+  ensureDir(dir);
+  chmod(_ownerOnlyDirMode, dir);
+  writeTextFile(file, contents, dontLogContents: true, encoding: encoding);
+  chmod(_ownerOnlyFileMode, file);
+}
+
+/// Checks if [path] (or its parent directory) is accessible by group or others
+/// on POSIX systems, and tightens the permissions to `0600` for the file and
+/// `0700` for the directory if needed.
+void protectExistingFile(String path) {
+  if (platform.isLinux || platform.isMacOS) {
+    try {
+      final stat = tryStatFile(path);
+      if (stat != null && (stat.mode & _groupAndOtherMask) != 0) {
+        chmod(_ownerOnlyFileMode, path);
+      }
+      final dir = p.dirname(path);
+      if (dirExists(dir)) {
+        final dirStat = Directory(dir).statSync();
+        if ((dirStat.mode & _groupAndOtherMask) != 0) {
+          chmod(_ownerOnlyDirMode, dir);
+        }
+      }
+    } on Exception catch (e) {
+      log.fine('Failed to protect existing file "$path": $e');
+    }
+  }
+}
+
 /// Reads the file at [path] and writes [newContent] to it, if it is different
 /// from the existing content.
 ///
@@ -340,8 +389,24 @@ Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
   });
 }
 
-void _chmod(int mode, String file) {
-  runProcessSync('chmod', [mode.toRadixString(8), file]);
+/// Changes the permissions of [path] to [mode] using `chmod`.
+///
+/// On Windows, this is a no-op since Windows uses NTFS ACLs.
+/// Any exceptions or non-zero exit codes are logged at fine level.
+void chmod(int mode, String path) {
+  if (platform.isLinux || platform.isMacOS) {
+    try {
+      final result = runProcessSync('chmod', [mode.toRadixString(8), path]);
+      if (result.exitCode != 0) {
+        log.fine(
+          'chmod ${mode.toRadixString(8)} "$path" exited with '
+          'code ${result.exitCode}: ${result.stderr}',
+        );
+      }
+    } on Exception catch (e) {
+      log.fine('Failed to run chmod on "$path": $e');
+    }
+  }
 }
 
 /// Deletes [file] if it's a symlink.
@@ -1236,7 +1301,7 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
           final mode = _defaultMode | (entry.header.mode & _executableMask);
 
           if (mode != _defaultMode) {
-            _chmod(mode, filePath);
+            chmod(mode, filePath);
           }
         }
         break;

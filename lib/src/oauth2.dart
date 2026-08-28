@@ -185,6 +185,8 @@ Credentials? loadCredentials() {
     final path = _credentialsFile();
     if (path == null || !fileExists(path)) return null;
 
+    protectExistingFile(path);
+
     final credentials = Credentials.fromJson(readTextFile(path));
     if (credentials.isExpired && !credentials.canRefresh) {
       log.error(
@@ -213,8 +215,7 @@ void _saveCredentials(Credentials credentials) {
   _credentials = credentials;
   final credentialsPath = _credentialsFile();
   if (credentialsPath != null) {
-    ensureDir(p.dirname(credentialsPath));
-    writeTextFile(credentialsPath, credentials.toJson(), dontLogContents: true);
+    writeProtectedTextFile(credentialsPath, credentials.toJson());
   }
 }
 
