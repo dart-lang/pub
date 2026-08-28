@@ -1445,15 +1445,22 @@ R withOverrides<R>(
   final pathContext = fileSystem?.path ?? p;
 
   R runPlatformAndHttp() {
+    R runInner() {
+      if (progressGracePeriod != null) {
+        return withProgressGracePeriod(
+          () => withPathContext(fn, pathContext: pathContext),
+          progressGracePeriod: progressGracePeriod,
+        );
+      }
+      return withPathContext(fn, pathContext: pathContext);
+    }
+
     return withPlatform(
       () {
-        return withHttpClient(() {
-          return withProgressGracePeriod(
-            () => withPathContext(fn, pathContext: pathContext),
-            progressGracePeriod:
-                progressGracePeriod ?? currentProgressGracePeriod,
-          );
-        }, client: httpClient ?? globalHttpClient);
+        if (httpClient != null) {
+          return withHttpClient(runInner, client: httpClient);
+        }
+        return runInner();
       },
       platform: PlatformInfo.override(
         environment: environment ?? platform.environment,

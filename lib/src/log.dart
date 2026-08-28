@@ -456,7 +456,7 @@ Future<T> errorsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
 /// information will only be visible at [Level.fine].
 Future<T> progress<T>(
   String message,
-  Future<T> Function() callback, {
+  FutureOr<T> Function() callback, {
   bool transient = false,
   Duration? delay,
   bool condition = true,
@@ -471,9 +471,16 @@ Future<T> progress<T>(
 
     final progress = Progress(message, fine: fine, delay: effectiveDelay);
     _animatedProgress = progress;
-    return Future.sync(
-      callback,
-    ).whenComplete(transient ? progress.stopAndClear : progress.stop);
+    return Future.sync(callback).whenComplete(() {
+      if (identical(_animatedProgress, progress)) {
+        _animatedProgress = null;
+      }
+      if (transient) {
+        progress.stopAndClear();
+      } else {
+        progress.stop();
+      }
+    });
   }
   return Future.sync(callback);
 }

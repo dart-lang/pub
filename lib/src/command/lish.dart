@@ -444,7 +444,7 @@ the \$PUB_HOSTED_URL environment variable.''');
 
     await log.progress(
       'Validating package',
-      () async => await Validator.runAll(
+      () => Validator.runAll(
         entrypoint,
         packageBytes.length,
         host,

@@ -27,13 +27,23 @@ final class ProgressGracePeriod {
   bool get hasShownProgress => _hasShownProgress;
 
   /// Creates a [ProgressGracePeriod] with an optional [defaultGracePeriod].
+  ///
+  /// It is an error if [defaultGracePeriod] is negative.
   ProgressGracePeriod({
     Duration defaultGracePeriod = const Duration(milliseconds: 500),
     Stopwatch? stopwatch,
     bool hasShownProgress = false,
   }) : _defaultGracePeriod = defaultGracePeriod,
        _stopwatch = stopwatch ?? (Stopwatch()..start()),
-       _hasShownProgress = hasShownProgress;
+       _hasShownProgress = hasShownProgress {
+    if (defaultGracePeriod.isNegative) {
+      throw ArgumentError.value(
+        defaultGracePeriod,
+        'defaultGracePeriod',
+        'Must not be negative',
+      );
+    }
+  }
 
   /// Resets the grace period timer and progress flag.
   void reset() {

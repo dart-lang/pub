@@ -66,16 +66,14 @@ class SolveResult {
   }) async {
     final resolvedPackageIds = await log.progress<List<PackageId>>(
       'Downloading packages',
-      () async {
-        return await Future.wait(
-          packages.map((id) async {
-            if (id.source is CachedSource) {
-              return (await cache.downloadPackage(id)).packageId;
-            }
-            return id;
-          }),
-        );
-      },
+      () => Future.wait(
+        packages.map((id) async {
+          if (id.source is CachedSource) {
+            return (await cache.downloadPackage(id)).packageId;
+          }
+          return id;
+        }),
+      ),
       transient: transient,
     );
     // Invariant: the content-hashes in PUB_CACHE matches those provided by the

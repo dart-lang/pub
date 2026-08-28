@@ -242,4 +242,18 @@ void main() {
       }
     }, stdout: () => mockStdout);
   });
+
+  test('ProgressGracePeriod rejects negative defaultGracePeriod', () {
+    expect(
+      () => ProgressGracePeriod(
+        defaultGracePeriod: const Duration(milliseconds: -1),
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('log.progress supports synchronous callbacks', () async {
+    final result = await log.progress('Sync task', () => 42);
+    expect(result, 42);
+  });
 }
