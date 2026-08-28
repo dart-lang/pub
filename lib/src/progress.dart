@@ -9,42 +9,48 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'utils.dart';
 
-/// Tracks the shared grace period for transient progress across multiple
-/// operations.
+/// Tracks elapsed time and progress display state to debounce initial
+/// spinners across a group of related operations.
 final class ProgressGracePeriod {
   /// The default grace period before transient progress is shown for the first
   /// time.
-  final Duration defaultGracePeriod;
+  final Duration _defaultGracePeriod;
 
   /// Stopwatch tracking time since program start or since last non-progress
   /// output.
-  final Stopwatch stopwatch;
+  final Stopwatch _stopwatch;
 
   /// Whether a progress message has been displayed since the last reset.
-  bool hasShownProgress;
+  bool _hasShownProgress;
 
+  /// Whether a progress message has been displayed since the last reset.
+  bool get hasShownProgress => _hasShownProgress;
+
+  /// Creates a [ProgressGracePeriod] with an optional [defaultGracePeriod].
   ProgressGracePeriod({
-    this.defaultGracePeriod = const Duration(milliseconds: 500),
+    Duration defaultGracePeriod = const Duration(milliseconds: 500),
     Stopwatch? stopwatch,
-    this.hasShownProgress = false,
-  }) : stopwatch = stopwatch ?? (Stopwatch()..start());
+    bool hasShownProgress = false,
+  }) : _defaultGracePeriod = defaultGracePeriod,
+       _stopwatch = stopwatch ?? (Stopwatch()..start()),
+       _hasShownProgress = hasShownProgress;
 
   /// Resets the grace period timer and progress flag.
   void reset() {
-    stopwatch.reset();
-    hasShownProgress = false;
+    _stopwatch.reset();
+    _hasShownProgress = false;
   }
 
   /// Calculates the effective delay before transient progress should appear.
   Duration get remainingDelay {
-    if (hasShownProgress) return Duration.zero;
-    final remaining = defaultGracePeriod - stopwatch.elapsed;
+    if (_hasShownProgress) return Duration.zero;
+    final remaining = _defaultGracePeriod - _stopwatch.elapsed;
     return remaining < Duration.zero ? Duration.zero : remaining;
   }
 
   /// Marks that progress has been shown.
   void markProgressShown() {
-    hasShownProgress = true;
+    _hasShownProgress = true;
   }
 }
 
@@ -59,8 +65,13 @@ ProgressGracePeriod get currentProgressGracePeriod =>
 
 /// Whether a progress message has been displayed since the last reset.
 bool get hasShownProgress => currentProgressGracePeriod.hasShownProgress;
-set hasShownProgress(bool value) =>
-    currentProgressGracePeriod.hasShownProgress = value;
+set hasShownProgress(bool value) {
+  if (value) {
+    currentProgressGracePeriod.markProgressShown();
+  } else {
+    currentProgressGracePeriod.reset();
+  }
+}
 
 /// Resets the shared grace period timer.
 void resetGracePeriod() {
@@ -165,7 +176,7 @@ final class Progress {
 
   /// Erases the progress message from the terminal and stops the progress
   /// indicator.
-  Future<void> stopAndClear() async {
+  void stopAndClear() {
     _stopwatch.stop();
 
     if (_timer != null) {
@@ -199,7 +210,7 @@ final class Progress {
     // half-complete time indicator on the console.
     if (_hasStarted) {
       if (canUseAnsiCodes) {
-        stdout.write('\x1b[0K');
+        stdout.write('\b' * _timeLength + '\x1b[0K');
       } else {
         stdout.write('\b' * _timeLength);
       }

@@ -30,6 +30,9 @@ export 'src/progress.dart' show ProgressGracePeriod;
 ///
 /// [isVerbose] should return `true` (after argument resolution) if the
 /// embedding top-level is in verbose mode.
+///
+/// [progressGracePeriod] specifies the shared grace period before initial
+/// spinners are displayed.
 Command<int> pubCommand({
   required bool Function() isVerbose,
   String category = '',
@@ -52,6 +55,7 @@ Command<int> pubCommand({
     stdout: stdout,
     stderr: stderr,
     httpClient: httpClient,
+    progressGracePeriod: progressGracePeriod,
   ),
   progressGracePeriod: progressGracePeriod,
   fileSystem: fileSystem,
@@ -74,6 +78,9 @@ Command<int> pubCommand({
 ///
 /// If [onlyOutputWhenTerminal] is `true` (the default) there will be no
 /// output if no terminal is attached.
+///
+/// [progressGracePeriod] specifies the shared grace period before initial
+/// spinners are displayed.
 ///
 /// Throws a [ResolutionFailedException] if resolution fails.
 Future<void> ensurePubspecResolved(

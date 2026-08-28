@@ -9,6 +9,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/progress.dart';
 import 'package:pub/src/utils.dart';
 import 'package:test/test.dart';
@@ -93,7 +94,7 @@ void main() {
       try {
         final progress = Progress('Resolving dependencies');
         expect(mockStdout.buffer.toString(), 'Resolving dependencies... ');
-        await progress.stopAndClear();
+        progress.stopAndClear();
         expect(
           mockStdout.buffer.toString(),
           'Resolving dependencies... \r\x1b[2K',
@@ -111,7 +112,7 @@ void main() {
       try {
         final progress = Progress('Resolving dependencies');
         expect(mockStdout.buffer.toString(), 'Resolving dependencies... ');
-        await progress.stopAndClear();
+        progress.stopAndClear();
         expect(
           mockStdout.buffer.toString(),
           'Resolving dependencies... \r${' ' * 26}\r',
@@ -140,7 +141,7 @@ void main() {
         delay: const Duration(milliseconds: 200),
       );
       expect(mockStdout.buffer.toString(), isEmpty);
-      await progress.stopAndClear();
+      progress.stopAndClear();
       expect(mockStdout.buffer.toString(), isEmpty);
     }, stdout: () => mockStdout);
   });
@@ -157,7 +158,7 @@ void main() {
         expect(mockStdout.buffer.toString(), isEmpty);
         await Future<void>.delayed(const Duration(milliseconds: 150));
         expect(mockStdout.buffer.toString(), 'Resolving dependencies... ');
-        await progress.stopAndClear();
+        progress.stopAndClear();
         expect(
           mockStdout.buffer.toString(),
           'Resolving dependencies... \r\x1b[2K',
@@ -178,7 +179,7 @@ void main() {
           hasShownProgress = true;
           final progress = Progress('Downloading packages');
           expect(mockStdout.buffer.toString(), 'Downloading packages... ');
-          await progress.stopAndClear();
+          progress.stopAndClear();
         } finally {
           forceColors = ForceColorOption.auto;
           resetGracePeriod();
@@ -199,8 +200,43 @@ void main() {
           final progress = Progress('Resolving');
           expect(currentProgressGracePeriod.hasShownProgress, isTrue);
           expect(customGrace.hasShownProgress, isTrue);
-          await progress.stopAndClear();
+          progress.stopAndClear();
         }, progressGracePeriod: customGrace);
+      } finally {
+        forceColors = ForceColorOption.auto;
+      }
+    }, stdout: () => mockStdout);
+  });
+
+  test('progress cleans up and stops timer on synchronous exception', () async {
+    final mockStdout = _MockStdout();
+    await IOOverrides.runZoned(() async {
+      forceColors = ForceColorOption.always;
+      try {
+        expect(
+          () => log.progress<void>(
+            'Failing task',
+            () => throw StateError('boom'),
+          ),
+          throwsA(isA<StateError>()),
+        );
+      } finally {
+        forceColors = ForceColorOption.auto;
+      }
+    }, stdout: () => mockStdout);
+  });
+
+  test('stopAnimating erases elapsed time before newline', () async {
+    final mockStdout = _MockStdout();
+    await IOOverrides.runZoned(() async {
+      forceColors = ForceColorOption.always;
+      try {
+        final progress = Progress('Animating task', delay: Duration.zero);
+        // Wait long enough for timer to tick and print time indicator
+        await Future<void>.delayed(const Duration(milliseconds: 1100));
+        progress.stopAnimating();
+        final output = mockStdout.buffer.toString();
+        expect(output, contains('\x1b[0K\n'));
       } finally {
         forceColors = ForceColorOption.auto;
       }

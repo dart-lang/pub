@@ -197,6 +197,7 @@ abstract class PubCommand extends Command<int> {
       stdout: _pubEmbeddableCommand?.stdout,
       stderr: _pubEmbeddableCommand?.stderr,
       httpClient: _pubEmbeddableCommand?.httpClient,
+      progressGracePeriod: _pubEmbeddableCommand?.progressGracePeriod,
     );
   }
 

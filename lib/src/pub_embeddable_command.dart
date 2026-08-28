@@ -30,6 +30,7 @@ import 'command/uploader.dart';
 import 'command/workspace.dart';
 import 'log.dart' as log;
 import 'log.dart';
+import 'progress.dart' show ProgressGracePeriod;
 import 'utils.dart';
 
 /// Exposes the `pub` commands as a command to be embedded in another command
@@ -61,6 +62,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   final StreamSink<List<int>>? stdout;
   final StreamSink<List<int>>? stderr;
   final http.Client? httpClient;
+  final ProgressGracePeriod? progressGracePeriod;
 
   PubEmbeddableCommand(
     this.isVerbose,
@@ -72,6 +74,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     this.stdout,
     this.stderr,
     this.httpClient,
+    this.progressGracePeriod,
   }) : super() {
     // This flag was never honored in the embedding but since it was accepted we
     // leave it as a hidden flag to avoid breaking clients that pass it.

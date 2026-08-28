@@ -471,11 +471,11 @@ Future<T> progress<T>(
 
     final progress = Progress(message, fine: fine, delay: effectiveDelay);
     _animatedProgress = progress;
-    return callback().whenComplete(
-      transient ? progress.stopAndClear : progress.stop,
-    );
+    return Future.sync(
+      callback,
+    ).whenComplete(transient ? progress.stopAndClear : progress.stop);
   }
-  return callback();
+  return Future.sync(callback);
 }
 
 /// Stops animating the running progress indicator, if currently running.
