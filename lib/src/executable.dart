@@ -20,6 +20,7 @@ import 'package_config.dart';
 import 'path.dart';
 import 'platform_info.dart';
 import 'sdk.dart';
+import 'sdk/dart.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -110,7 +111,7 @@ Future<int> runExecutable(
   final packageConfigAbsolute = p.absolute(entrypoint.packageConfigPath);
 
   try {
-    return await _runDartProgram(
+    final exitCode = await _runDartProgram(
       executablePath,
       args.toList(),
       packageConfigAbsolute,
@@ -118,6 +119,19 @@ Future<int> runExecutable(
       vmArgs: vmArgs,
       alwaysUseSubprocess: alwaysUseSubprocess,
     );
+    if (useSnapshot && exitCode == 253) {
+      log.fine('Built executable is out of date.');
+      await recompile(executable);
+      return await _runDartProgram(
+        entrypoint.pathOfSnapshot(executable),
+        args.toList(),
+        packageConfigAbsolute,
+        enableAsserts: enableAsserts,
+        vmArgs: vmArgs,
+        alwaysUseSubprocess: alwaysUseSubprocess,
+      );
+    }
+    return exitCode;
   } on IsolateSpawnException catch (error) {
     if (!useSnapshot ||
         !error.message.contains('Invalid kernel binary format version')) {
@@ -127,7 +141,7 @@ Future<int> runExecutable(
     log.fine('Built executable is out of date.');
     await recompile(executable);
     return await _runDartProgram(
-      executablePath,
+      entrypoint.pathOfSnapshot(executable),
       args.toList(),
       packageConfigAbsolute,
       enableAsserts: enableAsserts,
@@ -162,9 +176,15 @@ Future<int> _runDartProgram(
   path = p.absolute(path);
   packageConfig = p.absolute(packageConfig);
 
-  // We use Isolate.spawnUri when there are no extra vm-options.
-  // That provides better signal handling, and possibly faster startup.
-  if ((!alwaysUseSubprocess) && vmArgs.isEmpty) {
+  // We use Isolate.spawnUri when there are no extra vm-options and running
+  // under the Dart VM. Standalone AOT binaries cannot execute kernel dill
+  // snapshots in-process and must spawn the SDK dart executable.
+  final canUseIsolate =
+      (!alwaysUseSubprocess) &&
+      vmArgs.isEmpty &&
+      p.equals(DartSdk().executable, platform.resolvedExecutable);
+
+  if (canUseIsolate) {
     final argList = args.toList();
     return await isolate.runUri(
       p.toUri(path),
@@ -193,14 +213,29 @@ Future<int> _runDartProgram(
     // TODO(sigurdm) To handle signals better we would ideally have `exec`
     // semantics without `fork` for starting the subprocess.
     // https://github.com/dart-lang/sdk/issues/41966.
+    final environment = Map<String, String>.from(platform.environment);
+    if (environment['DART_ROOT'] case final root?) {
+      if (!fileExists(
+        p.join(root, 'bin', platform.isWindows ? 'dart.exe' : 'dart'),
+      )) {
+        environment.remove('DART_ROOT');
+      }
+    }
+
+    final process = await Process.start(
+      DartSdk().executable,
+      [
+        '--packages=$packageConfig',
+        ...vmArgs,
+        if (enableAsserts) '--enable-asserts',
+        p.toUri(path).toString(),
+        ...args,
+      ],
+      mode: ProcessStartMode.inheritStdio,
+      environment: environment,
+    );
+
     final subscription = ProcessSignal.sigint.watch().listen((e) {});
-    final process = await Process.start(platform.resolvedExecutable, [
-      '--packages=$packageConfig',
-      ...vmArgs,
-      if (enableAsserts) '--enable-asserts',
-      p.toUri(path).toString(),
-      ...args,
-    ], mode: ProcessStartMode.inheritStdio);
 
     final exitCode = await process.exitCode;
     await subscription.cancel();

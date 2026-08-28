@@ -30,14 +30,21 @@ class DartSdk extends Sdk {
       return root;
     }
 
+    if (platform.environment['_PUB_TEST_SDK_DIR'] case final dir?) {
+      return dir;
+    }
+
     if (runningFromDartRepo) return p.join(dartRepoRoot, 'sdk');
 
     // The Dart executable is in "/path/to/sdk/bin/dart", so two levels up is
     // "/path/to/sdk".
     final aboveExecutable = p.dirname(p.dirname(platform.resolvedExecutable));
-    assert(fileExists(p.join(aboveExecutable, 'version')));
     return aboveExecutable;
   }();
+
+  /// The path to the `dart` executable.
+  String get executable =>
+      p.join(_rootDirectory, 'bin', platform.isWindows ? 'dart.exe' : 'dart');
 
   /// The loaded `sdk_packages.yaml` file if present.
   static final SdkPackageConfig? _sdkPackages = () {
