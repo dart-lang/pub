@@ -418,11 +418,13 @@ void main() {
       ]),
     ]).create();
 
+    final aPubspec = p.join('pkgs', 'a', 'pubspec.yaml');
+    final bPubspec = p.join('pkgs', 'b', 'pubspec.yaml');
     await pubGet(
       error: allOf([
         contains('* Try manually updating your constraints on bar:'),
-        contains('  In pkgs/a/pubspec.yaml: set dependencies -> bar to ^1.0.0'),
-        contains('  In pkgs/b/pubspec.yaml: set dependencies -> bar to ^1.0.0'),
+        contains('  In $aPubspec: set dependencies -> bar to ^1.0.0'),
+        contains('  In $bPubspec: set dependencies -> bar to ^1.0.0'),
       ]),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
