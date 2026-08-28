@@ -9,7 +9,6 @@ import 'package:pub/src/package_name.dart';
 import 'package:pub/src/solver/incompatibility.dart';
 import 'package:pub/src/solver/incompatibility_cause.dart';
 import 'package:pub/src/solver/incompatibility_index.dart';
-import 'package:pub/src/solver/partial_solution.dart';
 import 'package:pub/src/solver/term.dart';
 import 'package:pub/src/source/root.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -43,105 +42,34 @@ void main() {
 
   group('IncompatibilityIndex', () {
     late IncompatibilityIndex index;
-    late PartialSolution solution;
 
     setUp(() {
       index = IncompatibilityIndex();
-      solution = PartialSolution({});
     });
 
-    test('retrieves unary incompatibilities in reverse order', () {
+    test('returns empty iterable for unknown package', () {
+      expect(index.forPackage('unknown'), isEmpty);
+    });
+
+    test('retrieves incompatibilities in reverse order', () {
       final incomp1 = unary(range('foo', '1.0.0'));
       final incomp2 = unary(range('foo', '2.0.0'));
 
       index.add(incomp1);
       index.add(incomp2);
 
-      final candidates = <Incompatibility>[];
-      index.forEachCandidate('foo', solution, (incomp) {
-        candidates.add(incomp);
-        return true;
-      });
-
-      expect(candidates, equals([incomp2, incomp1]));
+      expect(index.forPackage('foo').toList(), equals([incomp2, incomp1]));
     });
 
-    test('skips binary clause when neither term is satisfied', () {
+    test('indexes binary incompatibilities under both packages', () {
       final incomp = binary(range('foo', '1.0.0'), range('bar', '2.0.0'));
       index.add(incomp);
 
-      final candidatesFoo = <Incompatibility>[];
-      index.forEachCandidate('foo', solution, (incomp) {
-        candidatesFoo.add(incomp);
-        return true;
-      });
-      expect(candidatesFoo, isEmpty);
-
-      final candidatesBar = <Incompatibility>[];
-      index.forEachCandidate('bar', solution, (incomp) {
-        candidatesBar.add(incomp);
-        return true;
-      });
-      expect(candidatesBar, isEmpty);
+      expect(index.forPackage('foo').toList(), equals([incomp]));
+      expect(index.forPackage('bar').toList(), equals([incomp]));
     });
 
-    test('yields binary clause when self term is satisfied', () {
-      final incomp = binary(range('foo', '1.0.0'), range('bar', '2.0.0'));
-      index.add(incomp);
-
-      solution.derive(
-        range('foo', '1.0.0'),
-        true,
-        Incompatibility([], RootIncompatibilityCause()),
-      );
-
-      final candidatesFoo = <Incompatibility>[];
-      index.forEachCandidate('foo', solution, (incomp) {
-        candidatesFoo.add(incomp);
-        return true;
-      });
-      expect(candidatesFoo, equals([incomp]));
-    });
-
-    test('yields binary clause when other term is satisfied', () {
-      final incomp = binary(range('foo', '1.0.0'), range('bar', '2.0.0'));
-      index.add(incomp);
-
-      // Derive 'not bar 2.0.0' which satisfies 'Term(bar 2.0.0, false)'
-      solution.derive(
-        range('bar', '2.0.0'),
-        false,
-        Incompatibility([], RootIncompatibilityCause()),
-      );
-
-      final candidatesFoo = <Incompatibility>[];
-      index.forEachCandidate('foo', solution, (incomp) {
-        candidatesFoo.add(incomp);
-        return true;
-      });
-      expect(candidatesFoo, equals([incomp]));
-    });
-
-    test('skips binary clause when a term is contradicted (disjoint)', () {
-      final incomp = binary(range('foo', '1.0.0'), range('bar', '2.0.0'));
-      index.add(incomp);
-
-      // Derive 'not foo 1.0.0', contradicting 'Term(foo 1.0.0, true)'
-      solution.derive(
-        range('foo', '1.0.0'),
-        false,
-        Incompatibility([], RootIncompatibilityCause()),
-      );
-
-      final candidatesFoo = <Incompatibility>[];
-      index.forEachCandidate('foo', solution, (incomp) {
-        candidatesFoo.add(incomp);
-        return true;
-      });
-      expect(candidatesFoo, isEmpty);
-    });
-
-    test('handles n-ary clauses for all referenced packages', () {
+    test('indexes n-ary incompatibilities under all referenced packages', () {
       final incomp = nary([
         range('foo', '1.0.0'),
         range('bar', '2.0.0'),
@@ -150,28 +78,9 @@ void main() {
       index.add(incomp);
 
       for (final pkg in ['foo', 'bar', 'baz']) {
-        final candidates = <Incompatibility>[];
-        index.forEachCandidate(pkg, solution, (incomp) {
-          candidates.add(incomp);
-          return true;
-        });
-        expect(candidates, equals([incomp]));
+        expect(index.forPackage(pkg).toList(), equals([incomp]));
       }
-    });
-
-    test('stops iteration when callback returns false', () {
-      final incomp1 = unary(range('foo', '1.0.0'));
-      final incomp2 = unary(range('foo', '2.0.0'));
-      index.add(incomp1);
-      index.add(incomp2);
-
-      final candidates = <Incompatibility>[];
-      index.forEachCandidate('foo', solution, (incomp) {
-        candidates.add(incomp);
-        return false; // Stop after first
-      });
-
-      expect(candidates, equals([incomp2]));
+      expect(index.forPackage('qux'), isEmpty);
     });
   });
 }

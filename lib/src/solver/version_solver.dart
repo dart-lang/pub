@@ -157,9 +157,7 @@ class VersionSolver {
       final package = changed.first;
       changed.remove(package);
 
-      _incompatibilities.forEachCandidate(package, _solution, (
-        incompatibility,
-      ) {
+      for (final incompatibility in _incompatibilities.forPackage(package)) {
         final result = _propagateIncompatibility(incompatibility);
         if (result == #conflict) {
           // If [incompatibility] is satisfied by [_solution], we use
@@ -174,12 +172,11 @@ class VersionSolver {
           // newly-propagated assignment.
           changed.clear();
           changed.add(_propagateIncompatibility(rootCause) as String);
-          return false;
+          break;
         } else if (result is String) {
           changed.add(result);
         }
-        return true;
-      });
+      }
     }
   }
 
