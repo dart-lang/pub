@@ -467,10 +467,10 @@ class HostedSource extends CachedSource {
     // Only attach If-None-Match when running on native platforms (dart:io).
     // In browser environments (e.g. web tests), If-None-Match triggers a CORS
     // preflight OPTIONS request which package repositories may not support.
-    final cachedEtag =
+    final (cachedEtag, cachedDoc) =
         const bool.fromEnvironment('dart.library.io')
-            ? _cachedVersionListingETag(ref, cache)
-            : null;
+            ? _cachedVersionListingDoc(ref, cache)
+            : (null, null);
     final String? bodyText;
     final dynamic body;
     final List<HostedVersionInfo> result;
@@ -504,10 +504,20 @@ class HostedSource extends CachedSource {
       );
 
       if (is304) {
-        final cached = await _cachedVersionListingResponse(ref, cache);
-        if (cached != null) {
-          log.io('Version listing for "$packageName" is not modified (304).');
-          return cached;
+        if (cachedDoc != null) {
+          try {
+            final res = _versionInfoFromPackageListing(
+              cachedDoc,
+              ref,
+              Uri.file(_versionListingCachePath(ref, cache)),
+              cache,
+            );
+            cache.hostedCache._responseCache[ref] = (DateTime.now(), res);
+            log.io('Version listing for "$packageName" is not modified (304).');
+            return res;
+          } on FormatException {
+            // Cached document was invalid, fall through to refetch.
+          }
         }
         // If the cache was missing/corrupted despite having an ETag, refetch
         // unconditionally.
@@ -954,26 +964,28 @@ class HostedSource extends CachedSource {
     return _etagRegExp.hasMatch(trimmed);
   }
 
-  /// Returns the cached ETag for [ref] if one is stored in `.cache/<pkg>-versions.json`.
-  String? _cachedVersionListingETag(PackageRef ref, SystemCache cache) {
+  /// Returns the cached ETag and decoded JSON document for [ref] if one is
+  /// stored in `.cache/<pkg>-versions.json`.
+  (String? etag, Map<String, dynamic>? doc) _cachedVersionListingDoc(
+    PackageRef ref,
+    SystemCache cache,
+  ) {
     final cachePath = _versionListingCachePath(ref, cache);
-    final stat = io.File(cachePath).statSync();
-    if (stat.type == io.FileSystemEntityType.file) {
-      try {
-        final cachedDoc = jsonDecode(readTextFile(cachePath));
-        if (cachedDoc is Map) {
-          final etag = cachedDoc['_etag'];
-          if (etag is String && _isValidETag(etag)) {
-            return etag.trim();
-          }
-        }
-      } on io.IOException {
-        // Ignore read errors.
-      } on FormatException {
-        // Ignore format errors.
+    try {
+      final cachedDoc = jsonDecode(readTextFile(cachePath));
+      if (cachedDoc is Map<String, dynamic>) {
+        final etag = cachedDoc['_etag'];
+        final validEtag =
+            etag is String && _isValidETag(etag) ? etag.trim() : null;
+        return (validEtag, cachedDoc);
       }
+    } on io.IOException {
+      // Ignore read errors (e.g. file does not exist).
+    } on FormatException {
+      // Corrupted file on disk. Delete it so subsequent requests don't trip.
+      tryDeleteEntry(cachePath);
     }
-    return null;
+    return (null, null);
   }
 
   /// Saves the (decoded) response from package-listing of [ref].
