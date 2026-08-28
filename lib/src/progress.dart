@@ -127,7 +127,15 @@ final class Progress {
   ///
   /// If [delay] is passed, the progress animation is only displayed if the
   /// operation takes longer than [delay].
-  Progress(this._message, {bool fine = false, Duration? delay}) {
+  ///
+  /// If [transient] is `true`, the progress message will produce no output when
+  /// not running in a terminal (unless verbose logging is active).
+  Progress(
+    this._message, {
+    bool fine = false,
+    Duration? delay,
+    bool transient = false,
+  }) {
     _stopwatch.start();
 
     final level = fine ? log.Level.fine : log.Level.message;
@@ -139,6 +147,9 @@ final class Progress {
         !log.verbosity.isLevelVisible(level) ||
         fine ||
         log.verbosity.isLevelVisible(log.Level.fine)) {
+      if (transient && !log.verbosity.isLevelVisible(log.Level.fine)) {
+        return;
+      }
       // Not animating, so just log the start and wait until the task is
       // completed.
       log.write(level, '$_message...');

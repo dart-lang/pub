@@ -64,8 +64,12 @@ final class _MockStdout implements Stdout {
   @override
   Encoding encoding = utf8;
 
+  final bool _hasTerminal;
+
+  _MockStdout({bool hasTerminal = true}) : _hasTerminal = hasTerminal;
+
   @override
-  bool get hasTerminal => true;
+  bool get hasTerminal => _hasTerminal;
 
   @override
   IOSink get nonBlocking => this;
@@ -256,4 +260,20 @@ void main() {
     final result = await log.progress('Sync task', () => 42);
     expect(result, 42);
   });
+
+  test(
+    'transient progress produces no output when stdout has no terminal',
+    () async {
+      final mockStdout = _MockStdout(hasTerminal: false);
+      await IOOverrides.runZoned(() async {
+        final result = await log.progress(
+          'Transient task',
+          () async => 42,
+          transient: true,
+        );
+        expect(result, 42);
+        expect(mockStdout.buffer.toString(), isEmpty);
+      }, stdout: () => mockStdout);
+    },
+  );
 }

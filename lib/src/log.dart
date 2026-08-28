@@ -469,7 +469,12 @@ Future<T> progress<T>(
         delay ??
         (transient ? currentProgressGracePeriod.remainingDelay : Duration.zero);
 
-    final progress = Progress(message, fine: fine, delay: effectiveDelay);
+    final progress = Progress(
+      message,
+      fine: fine,
+      delay: effectiveDelay,
+      transient: transient,
+    );
     _animatedProgress = progress;
     return Future.sync(callback).whenComplete(() {
       if (identical(_animatedProgress, progress)) {

@@ -7,7 +7,6 @@ import 'dart:async';
 import 'package:file/file.dart' as f;
 import 'package:http/http.dart' as http;
 
-import 'command.dart' show PubCommand, PubTopLevel;
 import 'command.dart';
 import 'command/add.dart';
 import 'command/bump.dart';
@@ -29,7 +28,6 @@ import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'command/workspace.dart';
 import 'log.dart' as log;
-import 'log.dart';
 import 'progress.dart' show ProgressGracePeriod;
 import 'utils.dart';
 
@@ -130,7 +128,8 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   bool get captureStackChains => _isVerbose;
 
   @override
-  Verbosity get verbosity => _isVerbose ? Verbosity.all : Verbosity.normal;
+  log.Verbosity get verbosity =>
+      _isVerbose ? log.Verbosity.all : log.Verbosity.normal;
 
   @override
   bool get trace => _isVerbose;
