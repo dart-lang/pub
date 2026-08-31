@@ -17,6 +17,7 @@ import '../sdk.dart';
 import '../source/root.dart';
 import '../system_cache.dart';
 import '../utils.dart';
+import 'bitmask.dart';
 import 'incompatibility.dart';
 import 'incompatibility_cause.dart';
 import 'term.dart';
@@ -135,13 +136,17 @@ class PackageLister {
        sdkOverrides = sdkOverrides ?? {},
        _rootPackage = package;
 
+  Future<_PackageVersionIndex> get _versionIndex => _versionIndexMemo.runOnce(
+    () async => _PackageVersionIndex(await _versions),
+  );
+  final _versionIndexMemo = AsyncMemoizer<_PackageVersionIndex>();
+
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
     if (_locked != null && constraint.allows(_locked.version)) return 1;
     try {
-      return (await _versions)
-          .where((id) => constraint.allows(id.version))
-          .length;
+      final index = await _versionIndex;
+      return index.maskFor(constraint).count();
     } on PackageNotFoundException {
       // If it fails for any reason, just treat that as no versions. This will
       // sort this reference higher so that we can traverse into it and report
@@ -160,36 +165,25 @@ class PackageLister {
     final locked = _locked;
     if (locked != null && constraint.allows(locked.version)) return locked;
 
-    final versions = await _versions;
+    final index = await _versionIndex;
+    final mask = index.maskFor(constraint);
+    if (mask.isEmpty) return null;
 
-    // If [constraint] has a minimum (or a maximum in downgrade mode), we can
-    // bail early once we're past it.
-    var isPastLimit = (Version _) => false;
-    if (constraint is VersionRange) {
-      if (_isDowngrade) {
-        final max = constraint.max;
-        if (max != null) isPastLimit = (version) => version > max;
-      } else {
-        final min = constraint.min;
-        if (min != null) isPastLimit = (version) => version < min;
-      }
+    if (_isDowngrade) {
+      final nonPrerelease = mask & index.nonPrereleaseMask;
+      final versionIndex =
+          nonPrerelease.isNotEmpty
+              ? nonPrerelease.lowestIndex()
+              : mask.lowestIndex();
+      return versionIndex == -1 ? null : index.versions[versionIndex];
+    } else {
+      final nonPrerelease = mask & index.nonPrereleaseMask;
+      final versionIndex =
+          nonPrerelease.isNotEmpty
+              ? nonPrerelease.highestIndex()
+              : mask.highestIndex();
+      return versionIndex == -1 ? null : index.versions[versionIndex];
     }
-
-    // Return the most preferable version that matches [constraint]: the latest
-    // non-prerelease version if one exists, or the latest prerelease version
-    // otherwise.
-    PackageId? bestPrerelease;
-    for (var id in _isDowngrade ? versions : versions.reversed) {
-      if (isPastLimit(id.version)) break;
-
-      if (!constraint.allows(id.version)) continue;
-      if (!id.version.isPreRelease) {
-        return id;
-      }
-      bestPrerelease ??= id;
-    }
-
-    return bestPrerelease;
   }
 
   /// Returns incompatibilities that encapsulate [id]'s dependencies, or that
@@ -478,5 +472,105 @@ class PackageLister {
         constraint.effectiveConstraint.allows(
           sdkOverrides[sdk.identifier] ?? sdk.version!,
         );
+  }
+}
+
+/// An index over a package's sorted list of [versions] that converts symbolic
+/// [VersionConstraint] instances into discrete [Bitmask] representations.
+///
+/// This enables $O(1)$ version counting, constraint intersections, and version
+/// selection in [PackageLister.countVersions] and [PackageLister.bestVersion].
+class _PackageVersionIndex {
+  /// The sorted list of all available versions for this package.
+  final List<PackageId> versions;
+
+  /// A pre-computed bitmask with all versions set.
+  final Bitmask allVersionsMask;
+
+  /// A pre-computed bitmask with only non-prerelease versions set.
+  ///
+  /// Used by [PackageLister.bestVersion] to quickly prefer non-prerelease
+  /// versions over prerelease versions via bitwise intersection
+  /// (`mask & nonPrereleaseMask`).
+  final Bitmask nonPrereleaseMask;
+
+  _PackageVersionIndex(this.versions)
+    : allVersionsMask = Bitmask.all(versions.length),
+      nonPrereleaseMask = Bitmask.fromPredicate(
+        versions.length,
+        (i) => !versions[i].version.isPreRelease,
+      );
+
+  /// Returns a [Bitmask] where bit $i$ is set if and only if `versions[i]`
+  /// satisfies [constraint].
+  ///
+  /// For [Version] and [VersionRange] constraints, uses binary search over the
+  /// sorted version list to find matching index ranges in $O(\log N)$ time.
+  Bitmask maskFor(VersionConstraint constraint) {
+    if (constraint.isEmpty) return Bitmask.empty(versions.length);
+    if (constraint.isAny) return allVersionsMask;
+
+    if (constraint is Version) {
+      // Find the single version matching the exact target.
+      final targetIndex = _lowerBound(constraint);
+      if (targetIndex < versions.length &&
+          versions[targetIndex].version == constraint) {
+        return Bitmask.single(versions.length, targetIndex);
+      } else {
+        return Bitmask.empty(versions.length);
+      }
+    } else if (constraint is VersionRange) {
+      // Find the contiguous `[minIndex, maxIndex)` slice matching the range
+      // bounds.
+      final min = constraint.min;
+      final max = constraint.max;
+      var minIndex = min == null ? 0 : _lowerBound(min);
+      if (min != null && !constraint.includeMin) {
+        // If the exact minimum is excluded, skip it if present.
+        if (minIndex < versions.length && versions[minIndex].version == min) {
+          minIndex++;
+        }
+      }
+      var maxIndex = max == null ? versions.length : _lowerBound(max);
+      if (max != null && constraint.includeMax) {
+        // If the exact maximum is included, include it if present.
+        if (maxIndex < versions.length && versions[maxIndex].version == max) {
+          maxIndex++;
+        }
+      }
+      return Bitmask.range(versions.length, minIndex, maxIndex);
+    } else if (constraint is VersionUnion) {
+      // Combine masks of each disjoint range with bitwise OR.
+      var mask = Bitmask.empty(versions.length);
+      for (final range in constraint.ranges) {
+        mask = mask | maskFor(range);
+      }
+      return mask;
+    } else {
+      // Fallback for custom or arbitrary constraint implementations.
+      return Bitmask.fromPredicate(
+        versions.length,
+        (i) => constraint.allows(versions[i].version),
+      );
+    }
+  }
+
+  /// Binary search finding the index of the first version in [versions]
+  /// such that `version >= target`.
+  ///
+  /// Returns `versions.length` if all versions are strictly less than [target].
+  int _lowerBound(Version target) {
+    var min = 0;
+    var max = versions.length;
+    while (min < max) {
+      final mid = min + ((max - min) >> 1);
+      final element = versions[mid].version;
+      if (element.compareTo(target) < 0) {
+        min = mid + 1;
+      } else {
+        max = mid;
+      }
+    }
+    return min;
   }
 }
