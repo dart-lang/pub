@@ -17,6 +17,11 @@ import 'utils.dart';
 
 Validator name() => NameValidator();
 
+const _missingPluginEntrypointWarning =
+    'Packages that depend on `analysis_server_plugin` should contain '
+    'a `lib/main.dart` entrypoint.\n'
+    'The analysis server loads plugins from this file.';
+
 void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage().create);
@@ -41,6 +46,19 @@ void main() {
       ]).create();
       await expectValidationDeprecated(name);
     });
+
+    test('is an analysis server plugin with a main library', () async {
+      deleteEntry(p.join(d.sandbox, appPath, 'lib', 'test_pkg.dart'));
+      await d.dir(appPath, [
+        d.libPubspec(
+          'test_pkg',
+          '1.0.0',
+          deps: {'analysis_server_plugin': '^0.3.0'},
+        ),
+        d.dir('lib', [d.file('main.dart', 'final plugin = Object();')]),
+      ]).create();
+      await expectValidationDeprecated(name);
+    });
   });
 
   group('should consider a package invalid if it', () {
@@ -58,5 +76,41 @@ void main() {
       ]).create();
       await expectValidationDeprecated(name, warnings: isNotEmpty);
     });
+
+    test('is an analysis server plugin without a main library', () async {
+      await d.dir(appPath, [
+        d.libPubspec(
+          'test_pkg',
+          '1.0.0',
+          deps: {'analysis_server_plugin': '^0.3.0'},
+        ),
+      ]).create();
+      await expectValidationDeprecated(
+        name,
+        warnings: [_missingPluginEntrypointWarning],
+      );
+    });
+
+    test(
+      'is an analysis server plugin with only a mismatched library',
+      () async {
+        deleteEntry(p.join(d.sandbox, appPath, 'lib', 'test_pkg.dart'));
+        await d.dir(appPath, [
+          d.libPubspec(
+            'test_pkg',
+            '1.0.0',
+            deps: {'analysis_server_plugin': '^0.3.0'},
+          ),
+          d.dir('lib', [d.file('best_pkg.dart', 'int i = 0;')]),
+        ]).create();
+        await expectValidationDeprecated(
+          name,
+          warnings: [
+            _missingPluginEntrypointWarning,
+            allOf(contains('"best_pkg"'), contains('"test_pkg"')),
+          ],
+        );
+      },
+    );
   });
 }
