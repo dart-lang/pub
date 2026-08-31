@@ -914,8 +914,7 @@ class GitSource extends CachedSource {
     required String packageName,
     required String url,
   }) {
-    final rootDir = Directory(repoRoot);
-    if (!rootDir.existsSync()) return;
+    if (!dirExists(repoRoot)) return;
 
     final normalizedRepoRoot = p.normalize(p.absolute(repoRoot));
 
@@ -929,8 +928,7 @@ class GitSource extends CachedSource {
         );
       }
 
-      final link = Link(linkPath);
-      final target = link.targetSync();
+      final target = readLink(linkPath);
       if (p.isAbsolute(target) ||
           target.startsWith('/') ||
           target.startsWith(r'\') ||
@@ -962,7 +960,7 @@ class GitSource extends CachedSource {
           }
         } else {
           final next = p.normalize(p.join(current, segment));
-          if (FileSystemEntity.isLinkSync(next)) {
+          if (linkExists(next)) {
             current = resolveLinkTarget(next, visited: Set.of(visited));
           } else {
             current = next;
@@ -982,12 +980,8 @@ class GitSource extends CachedSource {
       return current;
     }
 
-    for (final entity in rootDir.listSync(
-      recursive: true,
-      followLinks: false,
-    )) {
-      if (entity is! Link) continue;
-      resolveLinkTarget(entity.path, visited: {});
+    for (final linkPath in listSymlinks(repoRoot)) {
+      resolveLinkTarget(linkPath, visited: {});
     }
   }
 
