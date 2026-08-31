@@ -29,7 +29,7 @@ class GlobalDeactivateCommand extends PubCommand {
       usageException('Unexpected $arguments ${toSentence(unexpected)}.');
     }
 
-    if (!globals.deactivate(argResults.rest.first)) {
+    if (!await globals.deactivate(argResults.rest.first)) {
       dataError('No active package ${log.bold(argResults.rest.first)}.');
     }
   }

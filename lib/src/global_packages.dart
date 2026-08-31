@@ -71,12 +71,63 @@ class GlobalPackages {
   /// The directory where binstubs for global package executables are stored.
   String get _binStubDir => p.join(cache.rootDir, 'bin');
 
+  /// Kept beside the cache so cache deletion cannot replace the locked inode.
+  /// The parent directory of the cache must be writable.
+  String get _globalPackagesLockPath {
+    final cacheRoot = canonicalize(cache.rootDir);
+    return p.join(
+      p.dirname(cacheRoot),
+      '${p.basename(cacheRoot)}.global_packages.lock',
+    );
+  }
+
   /// Creates a new global package registry backed by the given directory on
   /// the user's file system.
   ///
   /// The directory may not physically exist yet. If not, this will create it
   /// when needed.
   GlobalPackages(this.cache);
+
+  Future<T> _withGlobalPackagesLock<T>(FutureOr<T> Function() action) async {
+    final lockPath = _globalPackagesLockPath;
+    final lockDirectory = p.dirname(lockPath);
+    final RandomAccessFile lockFile;
+    try {
+      ensureDir(lockDirectory);
+      lockFile = await File(lockPath).open(mode: FileMode.append);
+    } on FileSystemException catch (error, stackTrace) {
+      final reason = error.osError?.message ?? error.message;
+      throw WrappedException(
+        'Unable to open the global package lock at "$lockPath".\n'
+        'The canonical pub cache parent directory "$lockDirectory" must be '
+        'writable.\n'
+        'Move the pub cache under a writable parent or make this directory '
+        'writable.\n'
+        'Reason: $reason',
+        error,
+        stackTrace,
+      );
+    }
+    var isLocked = false;
+    try {
+      try {
+        await lockFile.lock();
+      } on FileSystemException {
+        await log.spinner(
+          'Waiting to acquire the global package mutation lock',
+          () => lockFile.lock(FileLock.blockingExclusive),
+        );
+      }
+      isLocked = true;
+      return await action();
+    } finally {
+      try {
+        if (isLocked) await lockFile.unlock();
+      } finally {
+        await lockFile.close();
+      }
+    }
+  }
 
   /// Caches the package located in the Git repository [repo] and makes it the
   /// active global version.
@@ -96,39 +147,42 @@ class GlobalPackages {
     String? ref,
     String? tagPattern,
   }) async {
-    final name = await cache.git.getPackageNameFromRepo(
-      repo,
-      ref,
-      path,
-      cache,
-      relativeTo: p.current,
-      tagPattern: tagPattern,
-    );
-
-    // TODO(nweiz): Add some special handling for git repos that contain path
-    // dependencies. Their executables shouldn't be cached, and there should
-    // be a mechanism for redoing dependency resolution if a path pubspec has
-    // changed (see also issue 20499).
-    PackageRef packageRef;
-    try {
-      packageRef = cache.git.parseRef(
-        name,
-        {
-          'url': repo,
-          if (path != null) 'path': path,
-          if (ref != null) 'ref': ref,
-        },
-        containingDescription: ResolvedRootDescription.fromDir(p.current),
-        languageVersion: LanguageVersion.fromVersion(sdk.version),
+    await _withGlobalPackagesLock(() async {
+      final name = await cache.git.getPackageNameFromRepo(
+        repo,
+        ref,
+        path,
+        cache,
+        relativeTo: p.current,
+        tagPattern: tagPattern,
       );
-    } on FormatException catch (e) {
-      throw ApplicationException(e.message);
-    }
-    await _installInCache(
-      packageRef.withConstraint(VersionConstraint.any),
-      executables,
-      overwriteBinStubs: overwriteBinStubs,
-    );
+
+      // TODO(nweiz): Add some special handling for git repos that contain path
+      // dependencies. Their executables shouldn't be cached, and there should
+      // be a mechanism for redoing dependency resolution if a path pubspec has
+      // changed (see also issue 20499).
+      PackageRef packageRef;
+      try {
+        packageRef = cache.git.parseRef(
+          name,
+          {
+            'url': repo,
+            if (path != null) 'path': path,
+            if (ref != null) 'ref': ref,
+          },
+          containingDescription: ResolvedRootDescription.fromDir(p.current),
+          languageVersion: LanguageVersion.fromVersion(sdk.version),
+        );
+      } on FormatException catch (e) {
+        throw ApplicationException(e.message);
+      }
+      await _installInCache(
+        packageRef.withConstraint(VersionConstraint.any),
+        executables,
+        overwriteBinStubs: overwriteBinStubs,
+        mutationContext: _BinStubMutationContext.userActivation,
+      );
+    });
   }
 
   Package packageForConstraint(PackageRange dep, String dir) {
@@ -168,10 +222,13 @@ class GlobalPackages {
     required bool overwriteBinStubs,
     String? url,
   }) async {
-    await _installInCache(
-      range,
-      executables,
-      overwriteBinStubs: overwriteBinStubs,
+    await _withGlobalPackagesLock(
+      () => _installInCache(
+        range,
+        executables,
+        overwriteBinStubs: overwriteBinStubs,
+        mutationContext: _BinStubMutationContext.userActivation,
+      ),
     );
   }
 
@@ -205,6 +262,20 @@ Follow progress in https://github.com/dart-lang/sdk/issues/60889.
     String path,
     List<String>? executables, {
     required bool overwriteBinStubs,
+  }) => _withGlobalPackagesLock(
+    () => _activatePath(
+      path,
+      executables,
+      overwriteBinStubs: overwriteBinStubs,
+      mutationContext: _BinStubMutationContext.userActivation,
+    ),
+  );
+
+  Future<void> _activatePath(
+    String path,
+    List<String>? executables, {
+    required bool overwriteBinStubs,
+    required _BinStubMutationContext mutationContext,
   }) async {
     final entrypoint = Entrypoint(path, cache);
 
@@ -247,6 +318,7 @@ Follow progress in https://github.com/dart-lang/sdk/issues/60889.
       activatedPackage,
       executables,
       overwriteBinStubs: overwriteBinStubs,
+      mutationContext: mutationContext,
     );
     log.message('Activated ${_formatPackage(id)}.');
   }
@@ -258,6 +330,7 @@ Follow progress in https://github.com/dart-lang/sdk/issues/60889.
     PackageRange dep,
     List<String>? executables, {
     required bool overwriteBinStubs,
+    required _BinStubMutationContext mutationContext,
     bool silent = false,
   }) async {
     final name = dep.name;
@@ -369,6 +442,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       cache.load(entrypoint.lockFile.packages[dep.name]!),
       executables,
       overwriteBinStubs: overwriteBinStubs,
+      mutationContext: mutationContext,
     );
     if (!silent) log.message('Activated ${_formatPackage(id)}.');
   }
@@ -424,7 +498,10 @@ Consider `$topLevelProgram pub global deactivate $name`''');
   /// Deactivates a previously-activated package named [name].
   ///
   /// Returns `false` if no package with [name] was currently active.
-  bool deactivate(String name) {
+  Future<bool> deactivate(String name) =>
+      _withGlobalPackagesLock(() => _deactivate(name));
+
+  bool _deactivate(String name) {
     final dir = p.join(_directory, name);
     if (!dirExists(_directory)) {
       return false;
@@ -539,87 +616,101 @@ try:
       executable,
       args,
       enableAsserts: enableAsserts,
-      recompile: (exectuable) async {
-        final root = entrypoint.workspaceRoot;
-        final name = exectuable.package;
-
-        // When recompiling we re-resolve it and download its dependencies. This
-        // is mainly to protect from the case where the sdk was updated, and
-        // that causes some incompatibilities. (could be the new sdk is outside
-        // some package's environment constraint range, or that the sdk came
-        // with incompatible versions of sdk packages).
-        //
-        // We use --enforce-lockfile semantics, because we want upgrading
-        // globally activated packages to be conscious, and not a part of
-        // running them.
-        SolveResult result;
-        try {
-          result = await log.spinner(
-            'Resolving dependencies',
-            () => resolveVersions(
-              SolveType.get,
-              cache,
-              root,
-              lockFile: entrypoint.lockFile,
+      recompile:
+          (executableToRecompile) => _withGlobalPackagesLock(
+            () => _recompileExecutable(
+              entrypoint,
+              executable,
+              executableToRecompile,
+              recompile,
             ),
-          );
-        } on SolveFailure catch (e) {
-          log.error(e.message);
-          fail('''The package `$name` as currently activated cannot resolve.
+          ),
+      vmArgs: vmArgs,
+      alwaysUseSubprocess: alwaysUseSubprocess,
+    );
+  }
+
+  Future<void> _recompileExecutable(
+    Entrypoint entrypoint,
+    exec.Executable executable,
+    exec.Executable executableToRecompile,
+    Future<void> Function(exec.Executable) recompile,
+  ) async {
+    final root = entrypoint.workspaceRoot;
+    final name = executableToRecompile.package;
+
+    // When recompiling we re-resolve it and download its dependencies. This is
+    // mainly to protect from the case where the sdk was updated, and that
+    // causes some incompatibilities. (could be the new sdk is outside some
+    // package's environment constraint range, or that the sdk came with
+    // incompatible versions of sdk packages).
+    //
+    // We use --enforce-lockfile semantics, because we want upgrading globally
+    // activated packages to be conscious, and not a part of running them.
+    SolveResult result;
+    try {
+      result = await log.spinner(
+        'Resolving dependencies',
+        () => resolveVersions(
+          SolveType.get,
+          cache,
+          root,
+          lockFile: entrypoint.lockFile,
+        ),
+      );
+    } on SolveFailure catch (e) {
+      log.error(e.message);
+      fail('''The package `$name` as currently activated cannot resolve.
 
 Try reactivating the package.
 `$topLevelProgram pub global activate $name`          
 ''');
-        }
-        // We want the entrypoint to be rooted at 'dep' not the dummy-package.
-        result.packages.removeWhere((id) => id.name == 'pub global activate');
+    }
+    // We want the entrypoint to be rooted at 'dep' not the dummy-package.
+    result.packages.removeWhere((id) => id.name == 'pub global activate');
 
-        final newLockFile = await result.downloadCachedPackages(cache);
-        final report = SolveReport(
-          SolveType.get,
-          entrypoint.workspaceRoot.dir,
-          entrypoint.workspaceRoot.pubspec,
-          entrypoint.workspaceRoot.allOverridesInWorkspace,
-          entrypoint.lockFile,
-          newLockFile,
-          result.availableVersions,
-          cache,
-          dryRun: true,
-          enforceLockfile: true,
-          quiet: false,
-        );
-        await report.show(summary: true);
+    final newLockFile = await result.downloadCachedPackages(cache);
+    final report = SolveReport(
+      SolveType.get,
+      entrypoint.workspaceRoot.dir,
+      entrypoint.workspaceRoot.pubspec,
+      entrypoint.workspaceRoot.allOverridesInWorkspace,
+      entrypoint.lockFile,
+      newLockFile,
+      result.availableVersions,
+      cache,
+      dryRun: true,
+      enforceLockfile: true,
+      quiet: false,
+    );
+    await report.show(summary: true);
 
-        final sameVersions = entrypoint.lockFile.samePackageIds(newLockFile);
+    final sameVersions = entrypoint.lockFile.samePackageIds(newLockFile);
 
-        if (!sameVersions) {
-          if (newLockFile.packages.values.any((p) {
-            return p.source is SdkSource &&
-                p.version != entrypoint.lockFile.packages[p.name]?.version;
-          })) {
-            // More specific error message for the case of a version match with
-            // an sdk package.
-            dataError('''
+    if (!sameVersions) {
+      if (newLockFile.packages.values.any((p) {
+        return p.source is SdkSource &&
+            p.version != entrypoint.lockFile.packages[p.name]?.version;
+      })) {
+        // More specific error message for the case of a version match with an
+        // sdk package.
+        dataError('''
 The current activation of `$name` is not compatible with your current SDK.
 
 Try reactivating the package.
 `$topLevelProgram pub global activate $name`
 ''');
-          } else {
-            dataError('''
+      } else {
+        dataError('''
 The current activation of `$name` cannot resolve to the same set of dependencies.
 
 Try reactivating the package.
 `$topLevelProgram pub global activate $name`
 ''');
-          }
-        }
-        await recompile(exectuable);
-        _refreshBinStubs(entrypoint, executable);
-      },
-      vmArgs: vmArgs,
-      alwaysUseSubprocess: alwaysUseSubprocess,
-    );
+      }
+    }
+    await recompile(executableToRecompile);
+    _refreshBinStubs(entrypoint, executable);
   }
 
   /// Gets the path to the lock file for an activated cached package with
@@ -677,32 +768,39 @@ Try reactivating the package.
   /// Returns a pair of two lists of strings. The first indicates which packages
   /// were successfully re-activated; the second indicates which failed.
   Future<(List<String> successes, List<String> failures)>
-  repairActivatedPackages() async {
-    final executables = <String, List<String>>{};
+  repairActivatedPackages() =>
+      _withGlobalPackagesLock(_repairActivatedPackages);
+
+  Future<(List<String> successes, List<String> failures)>
+  _repairActivatedPackages() async {
+    final binStubs = <String, List<_BinStub>>{};
     if (dirExists(_binStubDir)) {
       for (var entry in listDir(_binStubDir)) {
-        try {
-          final binstub = readTextFile(entry);
-          final package = _binStubProperty(binstub, 'Package');
-          if (package == null) {
-            throw ApplicationException("No 'Package' property.");
-          }
-
-          final executable = _binStubProperty(binstub, 'Executable');
-          if (executable == null) {
-            throw ApplicationException("No 'Executable' property.");
-          }
-
-          executables.putIfAbsent(package, () => []).add(executable);
-        } catch (error, stackTrace) {
-          log.error(
-            'Error reading binstub for '
-            '"${p.basenameWithoutExtension(entry)}"',
-            error,
-            stackTrace,
-          );
-
-          tryDeleteEntry(entry);
+        final binStub = _classifyBinStub(entry);
+        switch (binStub.status) {
+          case _BinStubStatus.active:
+          case _BinStubStatus.orphaned:
+            binStubs.putIfAbsent(binStub.package!, () => []).add(binStub);
+          case _BinStubStatus.malformedPub:
+            log.error(
+              'Error reading binstub for '
+              '"${p.basenameWithoutExtension(entry)}"',
+              ApplicationException(binStub.problem!),
+            );
+            tryDeleteEntry(entry);
+          case _BinStubStatus.foreign:
+            log.error(
+              'Error reading binstub for '
+              '"${p.basenameWithoutExtension(entry)}"',
+              ApplicationException('Not a pub-generated binstub.'),
+            );
+          case _BinStubStatus.unreadable:
+            log.error(
+              'Error reading binstub for '
+              '"${p.basenameWithoutExtension(entry)}"',
+              binStub.error,
+              binStub.stackTrace,
+            );
         }
       }
     }
@@ -717,7 +815,12 @@ Try reactivating the package.
           log.message('Reactivating ${log.bold(id.name)} ${id.version}...');
 
           final entrypoint = await find(id.name);
-          final packageExecutables = executables.remove(id.name) ?? [];
+          final packageExecutables =
+              binStubs
+                  .remove(id.name)
+                  ?.map((binStub) => binStub.executable!)
+                  .toList() ??
+              [];
 
           if (entrypoint.isCached) {
             deleteEntry(_packageDir(id.name));
@@ -725,13 +828,15 @@ Try reactivating the package.
               id.toRange(),
               packageExecutables,
               overwriteBinStubs: true,
+              mutationContext: _BinStubMutationContext.repair,
               silent: true,
             );
           } else {
-            await activatePath(
+            await _activatePath(
               entrypoint.workspaceRoot.dir,
               packageExecutables,
               overwriteBinStubs: true,
+              mutationContext: _BinStubMutationContext.repair,
             );
           }
           successes.add(id.name);
@@ -752,15 +857,18 @@ Try reactivating the package.
       }
     }
 
-    if (executables.isNotEmpty) {
+    if (binStubs.isNotEmpty) {
       final message = StringBuffer(
         'Binstubs exist for non-activated '
         'packages:\n',
       );
-      executables.forEach((package, executableNames) {
-        for (var executable in executableNames) {
-          deleteEntry(p.join(_binStubDir, executable));
+      binStubs.forEach((package, packageBinStubs) {
+        for (var binStub in packageBinStubs) {
+          deleteEntry(binStub.path);
         }
+        final executableNames = packageBinStubs.map(
+          (binStub) => binStub.executable!,
+        );
 
         message.writeln(
           '  From ${log.bold(package)}: '
@@ -780,22 +888,21 @@ Try reactivating the package.
   void _refreshBinStubs(Entrypoint entrypoint, exec.Executable executable) {
     if (!dirExists(_binStubDir)) return;
     for (var file in listDir(_binStubDir, includeDirs: false)) {
-      final contents = readTextFile(file);
-      final binStubPackage = _binStubProperty(contents, 'Package');
-      final binStubScript = _binStubProperty(contents, 'Script');
-      if (binStubPackage == null || binStubScript == null) {
-        log.fine('Could not parse binstub $file:\n$contents');
+      final binStub = _classifyBinStub(file);
+      if (binStub.status != _BinStubStatus.active) {
+        _logBinStubProblem(binStub);
         continue;
       }
-      if (binStubPackage == executable.package &&
-          binStubScript ==
+      if (binStub.package == executable.package &&
+          binStub.script ==
               p.basenameWithoutExtension(executable.relativePath)) {
         log.fine('Replacing old binstub $file');
         _createBinStub(
           activatedPackage(entrypoint),
           p.basenameWithoutExtension(file),
-          binStubScript,
+          binStub.script!,
           overwrite: true,
+          mutationContext: _BinStubMutationContext.userActivation,
           isRefreshingBinstub: true,
           snapshot:
               entrypoint.isCachedGlobal
@@ -831,6 +938,7 @@ Try reactivating the package.
     Package package,
     List<String>? executables, {
     required bool overwriteBinStubs,
+    required _BinStubMutationContext mutationContext,
     bool suggestIfNotOnPath = true,
   }) {
     // Remove any previously activated binstubs for this package, in case the
@@ -845,18 +953,19 @@ Try reactivating the package.
     ensureDir(_binStubDir);
 
     final installed = <String>[];
-    final collided = <String, String>{};
+    final collided = <String, _BinStub>{};
     final allExecutables = package.pubspec.executables.keys.sorted();
     for (var executable in allExecutables) {
       if (executables != null && !executables.contains(executable)) continue;
 
       final script = package.pubspec.executables[executable]!;
 
-      final previousPackage = _createBinStub(
+      final previousBinStub = _createBinStub(
         package,
         executable,
         script,
         overwrite: overwriteBinStubs,
+        mutationContext: mutationContext,
         isRefreshingBinstub: false,
         snapshot:
             entrypoint.isCachedGlobal
@@ -865,10 +974,16 @@ Try reactivating the package.
                 )
                 : null,
       );
-      if (previousPackage != null) {
-        collided[executable] = previousPackage;
+      if (previousBinStub != null) {
+        collided[executable] = previousBinStub;
 
-        if (!overwriteBinStubs) continue;
+        if (!_canOverwriteBinStub(
+          previousBinStub,
+          overwrite: overwriteBinStubs,
+          mutationContext: mutationContext,
+        )) {
+          continue;
+        }
       }
 
       installed.add(executable);
@@ -882,24 +997,51 @@ Try reactivating the package.
     // Show errors for any collisions.
     if (collided.isNotEmpty) {
       for (var command in collided.keys.sorted()) {
-        if (overwriteBinStubs) {
-          log.warning(
-            'Replaced ${log.bold(command)} previously installed from '
-            '${log.bold(collided[command].toString())}.',
-          );
+        final previousBinStub = collided[command]!;
+        final previousPackage = previousBinStub.package;
+        if (_canOverwriteBinStub(
+          previousBinStub,
+          overwrite: overwriteBinStubs,
+          mutationContext: mutationContext,
+        )) {
+          if (previousPackage == null) {
+            log.warning(
+              'Replaced ${log.bold(command)}, which was not installed by pub.',
+            );
+          } else {
+            log.warning(
+              'Replaced ${log.bold(command)} previously installed from '
+              '${log.bold(previousPackage)}.',
+            );
+          }
         } else {
-          log.warning(
-            'Executable ${log.bold(command)} was already installed '
-            'from ${log.bold(collided[command].toString())}.',
-          );
+          if (previousPackage == null) {
+            log.warning(
+              'Executable ${log.bold(command)} already exists and was not '
+              'installed by pub.',
+            );
+          } else {
+            log.warning(
+              'Executable ${log.bold(command)} was already installed '
+              'from ${log.bold(previousPackage)}.',
+            );
+          }
         }
       }
 
-      if (!overwriteBinStubs) {
-        log.warning(
-          'Deactivate the other package(s) or activate '
-          '${log.bold(package.name)} using --overwrite.',
-        );
+      if (mutationContext == _BinStubMutationContext.userActivation &&
+          !overwriteBinStubs) {
+        if (collided.values.any((binStub) => binStub.package == null)) {
+          log.warning(
+            'Remove the conflicting executable(s) or activate '
+            '${log.bold(package.name)} using --overwrite.',
+          );
+        } else {
+          log.warning(
+            'Deactivate the other package(s) or activate '
+            '${log.bold(package.name)} using --overwrite.',
+          );
+        }
       }
     }
 
@@ -944,27 +1086,45 @@ Try reactivating the package.
   /// If [snapshot] is `null`, the binstub will always run `pub global run`
   /// (used for path-activated packages where snapshots would become stale).
   ///
-  /// If a collision occurs, returns the name of the package that owns the
-  /// existing binstub. Otherwise returns `null`.
-  String? _createBinStub(
+  _BinStub? _createBinStub(
     Package package,
     String executable,
     String script, {
     required bool overwrite,
+    required _BinStubMutationContext mutationContext,
     required String? snapshot,
     required bool isRefreshingBinstub,
   }) {
     var binStubPath = p.join(_binStubDir, executable);
     if (platform.isWindows) binStubPath += '.bat';
 
-    String? previousPackage;
+    _BinStub? previousBinStub;
     if (!isRefreshingBinstub && fileExists(binStubPath)) {
-      final contents = readTextFile(binStubPath);
-      previousPackage = _binStubProperty(contents, 'Package');
-      if (previousPackage == null) {
-        log.fine('Could not parse binstub $binStubPath:\n$contents');
-      } else if (!overwrite) {
-        return previousPackage;
+      final binStub = _classifyBinStub(binStubPath);
+      switch (binStub.status) {
+        case _BinStubStatus.active:
+          previousBinStub = binStub;
+          if (!_canOverwriteBinStub(
+            binStub,
+            overwrite: overwrite,
+            mutationContext: mutationContext,
+          )) {
+            return previousBinStub;
+          }
+        case _BinStubStatus.orphaned:
+        case _BinStubStatus.malformedPub:
+          _logBinStubProblem(binStub);
+        case _BinStubStatus.foreign:
+        case _BinStubStatus.unreadable:
+          _logBinStubProblem(binStub);
+          previousBinStub = binStub;
+          if (!_canOverwriteBinStub(
+            binStub,
+            overwrite: overwrite,
+            mutationContext: mutationContext,
+          )) {
+            return previousBinStub;
+          }
       }
     }
     // When running tests we want the binstub to invoke the current pub, not the
@@ -1073,7 +1233,20 @@ ${header}dart $pubInvocation global run $runPubGlobal "\$@"
       deleteEntry(tempDir);
     }
 
-    return previousPackage;
+    return previousBinStub;
+  }
+
+  bool _canOverwriteBinStub(
+    _BinStub binStub, {
+    required bool overwrite,
+    required _BinStubMutationContext mutationContext,
+  }) {
+    if (!overwrite) return false;
+    return switch (binStub.status) {
+      _BinStubStatus.foreign || _BinStubStatus.unreadable =>
+        mutationContext == _BinStubMutationContext.userActivation,
+      _ => true,
+    };
   }
 
   /// Deletes all existing binstubs for [package].
@@ -1081,14 +1254,14 @@ ${header}dart $pubInvocation global run $runPubGlobal "\$@"
     if (!dirExists(_binStubDir)) return;
 
     for (var file in listDir(_binStubDir, includeDirs: false)) {
-      final contents = readTextFile(file);
-      final binStubPackage = _binStubProperty(contents, 'Package');
-      if (binStubPackage == null) {
-        log.fine('Could not parse binstub $file:\n$contents');
+      final binStub = _classifyBinStub(file);
+      if (binStub.status != _BinStubStatus.active &&
+          binStub.status != _BinStubStatus.orphaned) {
+        _logBinStubProblem(binStub);
         continue;
       }
 
-      if (binStubPackage == package) {
+      if (binStub.package == package) {
         log.fine('Deleting old binstub $file');
         deleteEntry(file);
       }
@@ -1149,13 +1322,146 @@ ${header}dart $pubInvocation global run $runPubGlobal "\$@"
     }
   }
 
-  /// Returns the value of the property named [name] in the bin stub script
-  /// [source].
-  String? _binStubProperty(String source, String name) {
-    final pattern = RegExp(RegExp.escape(name) + r': ([a-zA-Z0-9_-]+)');
-    final match = pattern.firstMatch(source);
-    return match == null ? null : match[1];
+  _BinStub _classifyBinStub(String path) {
+    final String contents;
+    try {
+      contents = File(path).readAsStringSync(encoding: const SystemEncoding());
+    } on Object catch (error, stackTrace) {
+      return _BinStub(
+        path,
+        _BinStubStatus.unreadable,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final lines = contents.split(RegExp(r'\r?\n'));
+    final unixMarkerPattern = RegExp(
+      r'^# This file was created by pub v[^\r\n]+\.$',
+    );
+    final windowsMarkerPattern = RegExp(
+      r'^rem This file was created by pub v[^\r\n]+\.$',
+      caseSensitive: false,
+    );
+    var markerIndex = -1;
+    String? prefix;
+    if (lines.isNotEmpty && unixMarkerPattern.hasMatch(lines.first)) {
+      markerIndex = 0;
+      prefix = '#';
+    } else if (lines.length > 1 &&
+        lines.first == '#!/usr/bin/env sh' &&
+        unixMarkerPattern.hasMatch(lines[1])) {
+      markerIndex = 1;
+      prefix = '#';
+    } else if (lines.length > 1 &&
+        lines.first.toLowerCase() == '@echo off' &&
+        windowsMarkerPattern.hasMatch(lines[1])) {
+      markerIndex = 1;
+      prefix = 'rem';
+    }
+    if (markerIndex == -1) {
+      return _BinStub(path, _BinStubStatus.foreign);
+    }
+
+    final propertyPattern = RegExp(
+      '^${RegExp.escape(prefix!)} ([a-zA-Z][a-zA-Z0-9_-]*): (.*)\$',
+      caseSensitive: false,
+    );
+    final properties = <String, String>{};
+    String? problem;
+    for (var i = markerIndex + 1; i < lines.length; i++) {
+      final match = propertyPattern.firstMatch(lines[i]);
+      if (match == null) break;
+      final name = match[1]!.toLowerCase();
+      if (properties.containsKey(name)) {
+        problem = "Duplicate '$name' property.";
+        break;
+      }
+      properties[name] = match[2]!;
+    }
+
+    final package = properties['package'];
+    final executable = properties['executable'];
+    final script = properties['script'];
+    if (problem == null && package == null) {
+      problem = "Missing 'Package' property.";
+    } else if (problem == null && !packageNameRegExp.hasMatch(package!)) {
+      problem = "Invalid 'Package' property.";
+    } else if (problem == null && executable == null) {
+      problem = "Missing 'Executable' property.";
+    } else if (problem == null &&
+        !RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(executable!)) {
+      problem = "Invalid 'Executable' property.";
+    } else if (problem == null &&
+        executable != p.basenameWithoutExtension(path)) {
+      problem = "The 'Executable' property does not match the file name.";
+    } else if (problem == null && script == null) {
+      problem = "Missing 'Script' property.";
+    } else if (problem == null &&
+        (script!.isEmpty || script.contains(RegExp(r'[/\\]')))) {
+      problem = "Invalid 'Script' property.";
+    }
+
+    if (problem != null) {
+      return _BinStub(path, _BinStubStatus.malformedPub, problem: problem);
+    }
+
+    return _BinStub(
+      path,
+      fileExists(_getLockFilePath(package!))
+          ? _BinStubStatus.active
+          : _BinStubStatus.orphaned,
+      package: package,
+      executable: executable,
+      script: script,
+    );
   }
+
+  void _logBinStubProblem(_BinStub binStub) {
+    switch (binStub.status) {
+      case _BinStubStatus.active:
+        return;
+      case _BinStubStatus.orphaned:
+        log.fine(
+          'Binstub ${binStub.path} refers to inactive package '
+          '${binStub.package}.',
+        );
+      case _BinStubStatus.malformedPub:
+        log.fine(
+          'Could not parse pub binstub ${binStub.path}: ${binStub.problem}',
+        );
+      case _BinStubStatus.foreign:
+        log.fine('Binstub ${binStub.path} was not created by pub.');
+      case _BinStubStatus.unreadable:
+        log.fine('Could not read binstub ${binStub.path}: ${binStub.error}');
+    }
+  }
+}
+
+enum _BinStubMutationContext { userActivation, repair }
+
+enum _BinStubStatus { active, orphaned, malformedPub, foreign, unreadable }
+
+class _BinStub {
+  final String path;
+  final _BinStubStatus status;
+  final String? package;
+  final String? executable;
+  final String? script;
+  final String? problem;
+  final Object? error;
+  final StackTrace? stackTrace;
+
+  const _BinStub(
+    this.path,
+    this.status, {
+    this.package,
+    this.executable,
+    this.script,
+    this.problem,
+    this.error,
+    this.stackTrace,
+  });
 }
 
 /// The package that was activated.
