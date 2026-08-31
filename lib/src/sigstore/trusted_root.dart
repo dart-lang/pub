@@ -6,18 +6,19 @@ import 'dart:convert';
 
 import '../exceptions.dart';
 import '../io.dart';
-import '../path.dart';
 import '../platform_info.dart';
-import '../sdk/dart.dart';
+import '../system_cache.dart';
 
 /// Loads the Sigstore `trusted_root.json` root of trust.
 ///
 /// Looks in the following order:
 /// 1. An explicit override path passed in [overridePath].
 /// 2. The `PUB_SIGSTORE_TRUST_ROOT` environment variable.
-/// 3. The built SDK directory at `lib/_internal/sigstore/trusted_root.json`.
-/// 4. The Dart repository checkout at `third_party/sigstore/trusted_root.json`.
-String loadTrustedRootJson({String? overridePath}) {
+/// 3. The cached trusted root in the pub cache (`$PUB_CACHE/sigstore/trusted_root.json`).
+///
+/// Returns `null` if no custom or cached root is found, in which case
+/// `package:sigstore` falls back to its built-in production trusted root.
+String? loadTrustedRootJson({SystemCache? cache, String? overridePath}) {
   if (overridePath != null) {
     if (!fileExists(overridePath)) {
       throw DataException(
@@ -37,37 +38,22 @@ String loadTrustedRootJson({String? overridePath}) {
     return readTextFile(envPath);
   }
 
-  // 1. Check in the built SDK layout:
-  final sdkPath = p.join(
-    DartSdk().rootDirectory,
-    'lib',
-    '_internal',
-    'sigstore',
-    'trusted_root.json',
-  );
-  if (fileExists(sdkPath)) {
-    return readTextFile(sdkPath);
+  final cachePath = cache?.sigstoreTrustedRootPath;
+  if (cachePath != null && fileExists(cachePath)) {
+    return readTextFile(cachePath);
   }
 
-  // 2. Check in the repository checkout layout (when running in repo/tests):
-  final repoPath = p.join(
-    p.dirname(DartSdk().rootDirectory),
-    'third_party',
-    'sigstore',
-    'trusted_root.json',
-  );
-  if (fileExists(repoPath)) {
-    return readTextFile(repoPath);
-  }
-
-  throw ApplicationException(
-    'Could not locate Sigstore trusted_root.json in the Dart SDK.',
-  );
+  return null;
 }
 
-/// Parses and returns the decoded JSON map of the Sigstore trusted root.
-Map<String, dynamic> loadTrustedRoot({String? overridePath}) {
-  final text = loadTrustedRootJson(overridePath: overridePath);
+/// Parses and returns the decoded JSON map of the Sigstore trusted root,
+/// or `null` if no custom or cached root is found.
+Map<String, dynamic>? loadTrustedRoot({
+  SystemCache? cache,
+  String? overridePath,
+}) {
+  final text = loadTrustedRootJson(cache: cache, overridePath: overridePath);
+  if (text == null) return null;
   try {
     return jsonDecode(text) as Map<String, dynamic>;
   } on FormatException catch (e) {
