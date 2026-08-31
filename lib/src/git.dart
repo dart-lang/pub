@@ -247,4 +247,11 @@ Map<String, String> get _gitEnvironment => {
   'LC_ALL': platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
   'LC_MESSAGES': platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
   'LANGUAGE': platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
+  // Restrict git transports to a known-safe set so that git-dependency URLs
+  // from untrusted pubspecs cannot invoke `ext::` or arbitrary remote helpers,
+  // regardless of system or user `protocol.*.allow` config.
+  'GIT_ALLOW_PROTOCOL':
+      platform.environment['GIT_ALLOW_PROTOCOL'] ?? 'file:git:http:https:ssh',
+  'GIT_PROTOCOL_FROM_USER':
+      platform.environment['GIT_PROTOCOL_FROM_USER'] ?? '0',
 };
