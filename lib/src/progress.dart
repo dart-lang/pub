@@ -205,7 +205,7 @@ final class Progress {
       _timer = null;
       if (_hasStarted) {
         if (canUseAnsiCodes) {
-          stdout.write('\r\x1b[2K');
+          stdout.write('\r${log.eraseLine}');
         } else {
           stdout.write(
             '\r${' ' * (_message.length + '... '.length + _timeLength)}\r',
@@ -231,7 +231,7 @@ final class Progress {
     // half-complete time indicator on the console.
     if (_hasStarted) {
       if (canUseAnsiCodes) {
-        stdout.write('\b' * _timeLength + '\x1b[0K');
+        stdout.write('\b' * _timeLength + log.eraseToLineEnd);
       } else {
         stdout.write('\b' * _timeLength);
       }

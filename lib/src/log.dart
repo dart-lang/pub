@@ -61,6 +61,12 @@ final _bold = getAnsi('\u001b[1m');
 final _link = getAnsi('\u001b]8;;');
 final _esc = getAnsi('\u001b\\');
 
+/// An ANSI escape code to erase the entire current line.
+final eraseLine = getAnsi('\u001b[2K');
+
+/// An ANSI escape code to erase from the cursor to the end of the line.
+final eraseToLineEnd = getAnsi('\u001b[0K');
+
 /// An enum type for defining the different logging levels a given message can
 /// be associated with.
 ///

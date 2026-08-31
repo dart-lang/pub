@@ -101,7 +101,7 @@ void main() {
         progress.stopAndClear();
         expect(
           mockStdout.buffer.toString(),
-          'Resolving dependencies... \r\x1b[2K',
+          'Resolving dependencies... \r${log.eraseLine}',
         );
       } finally {
         forceColors = ForceColorOption.auto;
@@ -165,7 +165,7 @@ void main() {
         progress.stopAndClear();
         expect(
           mockStdout.buffer.toString(),
-          'Resolving dependencies... \r\x1b[2K',
+          'Resolving dependencies... \r${log.eraseLine}',
         );
       } finally {
         forceColors = ForceColorOption.auto;
@@ -240,7 +240,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 1100));
         progress.stopAnimating();
         final output = mockStdout.buffer.toString();
-        expect(output, contains('\x1b[0K\n'));
+        expect(output, contains('${log.eraseToLineEnd}\n'));
       } finally {
         forceColors = ForceColorOption.auto;
       }
