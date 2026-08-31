@@ -106,4 +106,87 @@ void main() {
       exitCode: exit_codes.UNAVAILABLE,
     );
   });
+
+  test('allows chained internal relative symlinks in a git package', () async {
+    ensureGit();
+
+    await d.git('foo.git', [
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('lib', [
+        d.file('foo.dart', 'const foo = "foo";'),
+        d.link('link1.dart', 'foo.dart'),
+        d.link('link2.dart', 'link1.dart'),
+      ]),
+    ]).create();
+
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
+
+    await pubGet();
+
+    expect(packageSpec('foo'), isNotNull);
+  });
+
+  test('rejects escaping symlinks created by combining symlinks', () async {
+    ensureGit();
+
+    await d.git('foo.git', [
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('lib', [
+        d.file('foo.dart', 'const foo = "foo";'),
+        d.dir('sub', [
+          d.link('parent_link', '..'),
+          d.link('escape_link', 'parent_link/../../../../etc/passwd'),
+        ]),
+      ]),
+    ]).create();
+
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
+
+    await pubGet(
+      error: contains(
+        'contains a symbolic link "lib/sub/escape_link" targeting "parent_link/../../../../etc/passwd" which points outside the repository.',
+      ),
+      exitCode: exit_codes.UNAVAILABLE,
+    );
+  });
+
+  test('rejects circular symlinks in a git package', () async {
+    ensureGit();
+
+    await d.git('foo.git', [
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('lib', [
+        d.file('foo.dart', 'const foo = "foo";'),
+        d.link('circ1.dart', 'circ2.dart'),
+        d.link('circ2.dart', 'circ1.dart'),
+      ]),
+    ]).create();
+
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
+
+    await pubGet(
+      error: matches(
+        r'contains a circular symbolic link at "lib/circ[12]\.dart"',
+      ),
+      exitCode: exit_codes.UNAVAILABLE,
+    );
+  });
 }

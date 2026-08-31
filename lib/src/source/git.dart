@@ -908,7 +908,7 @@ class GitSource extends CachedSource {
   }
 
   /// Validates that no symbolic link in [repoRoot] points outside of
-  /// [repoRoot].
+  /// [repoRoot], resolving any intermediate symlinks or symlink chains.
   void _validateSymlinks(
     String repoRoot, {
     required String packageName,
@@ -917,28 +917,77 @@ class GitSource extends CachedSource {
     final rootDir = Directory(repoRoot);
     if (!rootDir.existsSync()) return;
 
-    for (final entity in rootDir.listSync(
-      recursive: true,
-      followLinks: false,
-    )) {
-      if (entity is! Link) continue;
+    final normalizedRepoRoot = p.normalize(p.absolute(repoRoot));
 
-      final target = entity.targetSync();
-      final linkDir = p.dirname(entity.path);
-      final resolvedTarget =
-          p.isAbsolute(target)
-              ? p.normalize(target)
-              : p.normalize(p.join(linkDir, target));
+    String resolveLinkTarget(String linkPath, {required Set<String> visited}) {
+      final canonicalLinkPath = p.normalize(p.absolute(linkPath));
+      if (!visited.add(canonicalLinkPath)) {
+        final relLinkPath = p.relative(linkPath, from: normalizedRepoRoot);
+        throw PackageNotFoundException(
+          'Package "$packageName" from "${GitDescription.prettyUri(url)}" '
+          'contains a circular symbolic link at "$relLinkPath".',
+        );
+      }
 
-      if (!p.isWithin(repoRoot, resolvedTarget) &&
-          !p.equals(repoRoot, resolvedTarget)) {
-        final relLinkPath = p.relative(entity.path, from: repoRoot);
+      final link = Link(linkPath);
+      final target = link.targetSync();
+      if (p.isAbsolute(target) ||
+          target.startsWith('/') ||
+          target.startsWith(r'\') ||
+          RegExp(r'^[a-zA-Z]:').hasMatch(target)) {
+        final relLinkPath = p.relative(linkPath, from: normalizedRepoRoot);
         throw PackageNotFoundException(
           'Package "$packageName" from "${GitDescription.prettyUri(url)}" '
           'contains a symbolic link "$relLinkPath" targeting "$target" '
           'which points outside the repository.',
         );
       }
+
+      final segments = target.split(RegExp(r'[/\\]'));
+      var current = p.normalize(p.absolute(p.dirname(linkPath)));
+
+      for (final segment in segments) {
+        if (segment == '' || segment == '.') {
+          continue;
+        } else if (segment == '..') {
+          current = p.dirname(current);
+          if (!p.isWithin(normalizedRepoRoot, current) &&
+              !p.equals(normalizedRepoRoot, current)) {
+            final relLinkPath = p.relative(linkPath, from: normalizedRepoRoot);
+            throw PackageNotFoundException(
+              'Package "$packageName" from "${GitDescription.prettyUri(url)}" '
+              'contains a symbolic link "$relLinkPath" targeting "$target" '
+              'which points outside the repository.',
+            );
+          }
+        } else {
+          final next = p.normalize(p.join(current, segment));
+          if (FileSystemEntity.isLinkSync(next)) {
+            current = resolveLinkTarget(next, visited: Set.of(visited));
+          } else {
+            current = next;
+          }
+          if (!p.isWithin(normalizedRepoRoot, current) &&
+              !p.equals(normalizedRepoRoot, current)) {
+            final relLinkPath = p.relative(linkPath, from: normalizedRepoRoot);
+            throw PackageNotFoundException(
+              'Package "$packageName" from "${GitDescription.prettyUri(url)}" '
+              'contains a symbolic link "$relLinkPath" targeting "$target" '
+              'which points outside the repository.',
+            );
+          }
+        }
+      }
+
+      return current;
+    }
+
+    for (final entity in rootDir.listSync(
+      recursive: true,
+      followLinks: false,
+    )) {
+      if (entity is! Link) continue;
+      resolveLinkTarget(entity.path, visited: {});
     }
   }
 
