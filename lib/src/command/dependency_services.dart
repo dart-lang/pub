@@ -25,7 +25,6 @@ import '../package_name.dart';
 import '../path.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
-import '../sdk.dart';
 import '../solver.dart';
 import '../solver/version_solver.dart';
 import '../source/git.dart';
@@ -666,23 +665,19 @@ VersionConstraint _widenConstraint(
     final max = original.max;
     if (min == max) return newVersion;
     if (max != null && newVersion >= max) {
-      return _compatibleWithIfPossible(
-        VersionRange(
-          min: min,
-          includeMin: original.includeMin,
-          max: newVersion.nextBreaking.firstPreRelease,
-        ),
-      );
+      return VersionRange(
+        min: min,
+        includeMin: original.includeMin,
+        max: newVersion.nextBreaking.firstPreRelease,
+      ).asCompatibleWithIfPossible();
     }
     if (min != null && newVersion <= min) {
-      return _compatibleWithIfPossible(
-        VersionRange(
-          min: newVersion,
-          includeMin: true,
-          max: max,
-          includeMax: original.includeMax,
-        ),
-      );
+      return VersionRange(
+        min: newVersion,
+        includeMin: true,
+        max: max,
+        includeMax: original.includeMax,
+      ).asCompatibleWithIfPossible();
     }
   }
 
@@ -692,14 +687,6 @@ VersionConstraint _widenConstraint(
     'original',
     'Must be a Version range or empty',
   );
-}
-
-VersionConstraint _compatibleWithIfPossible(VersionRange versionRange) {
-  final min = versionRange.min;
-  if (min != null && min.nextBreaking.firstPreRelease == versionRange.max) {
-    return VersionConstraint.compatibleWith(min);
-  }
-  return versionRange;
 }
 
 /// `true` iff any of the packages described by the [lockfile] has a
