@@ -200,4 +200,20 @@ b: {}'''),
     expect(() => hexDecode('0p'), throwsA(isA<FormatException>()));
     expect(() => hexDecode('p0'), throwsA(isA<FormatException>()));
   });
+
+  group('sanitizeForTerminal', () {
+    test('neutralizes control characters and non-ascii', () {
+      expect(
+        sanitizeForTerminal('bar\x1b]52;c;evil\x07baz'),
+        'bar ]52;c;evil baz',
+      );
+      expect(sanitizeForTerminal('hello\x00world'), 'hello world');
+      expect(sanitizeForTerminal('unicode: 🚀'), 'unicode:  ');
+    });
+
+    test('truncates at 1024 characters', () {
+      final long = 'a' * 2000;
+      expect(sanitizeForTerminal(long), 'a' * 1024);
+    });
+  });
 }
