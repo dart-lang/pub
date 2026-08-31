@@ -496,6 +496,16 @@ class GitSource extends CachedSource {
               description.url,
             ], workingDir: revisionCachePath);
             await _checkOut(revisionCachePath, resolvedRef);
+            try {
+              _validateSymlinks(
+                revisionCachePath,
+                packageName: id.name,
+                url: description.url,
+              );
+            } catch (_) {
+              tryDeleteEntry(revisionCachePath);
+              rethrow;
+            }
             _writePackageList(revisionCachePath, [path]);
             didUpdate = true;
           } else {
@@ -604,10 +614,15 @@ class GitSource extends CachedSource {
         // Discard all changes to tracked files.
         await git.run(['reset', '--hard', 'HEAD'], workingDir: package.dir);
 
+        final repoRoot = git.repoRoot(package.dir);
+        if (repoRoot != null) {
+          _validateSymlinks(repoRoot, packageName: package.name, url: repoRoot);
+        }
+
         result.add(
           RepairResult(package.name, package.version, this, success: true),
         );
-      } on git.GitException catch (error, stackTrace) {
+      } catch (error, stackTrace) {
         log.error(
           'Failed to reset ${log.bold(package.name)} '
           '${package.version}. Error:\n$error',
@@ -890,6 +905,41 @@ class GitSource extends CachedSource {
     return git
         .run(['checkout', ref], workingDir: repoPath)
         .then((result) => null);
+  }
+
+  /// Validates that no symbolic link in [repoRoot] points outside of
+  /// [repoRoot].
+  void _validateSymlinks(
+    String repoRoot, {
+    required String packageName,
+    required String url,
+  }) {
+    final rootDir = Directory(repoRoot);
+    if (!rootDir.existsSync()) return;
+
+    for (final entity in rootDir.listSync(
+      recursive: true,
+      followLinks: false,
+    )) {
+      if (entity is! Link) continue;
+
+      final target = entity.targetSync();
+      final linkDir = p.dirname(entity.path);
+      final resolvedTarget =
+          p.isAbsolute(target)
+              ? p.normalize(target)
+              : p.normalize(p.join(linkDir, target));
+
+      if (!p.isWithin(repoRoot, resolvedTarget) &&
+          !p.equals(repoRoot, resolvedTarget)) {
+        final relLinkPath = p.relative(entity.path, from: repoRoot);
+        throw PackageNotFoundException(
+          'Package "$packageName" from "${GitDescription.prettyUri(url)}" '
+          'contains a symbolic link "$relLinkPath" targeting "$target" '
+          'which points outside the repository.',
+        );
+      }
+    }
   }
 
   String _revisionCachePath(PackageId id, SystemCache cache) => p.join(
