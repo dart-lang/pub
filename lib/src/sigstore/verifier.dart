@@ -2,15 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:io';
-
 import 'package:pub_semver/pub_semver.dart';
 
 import '../system_cache.dart';
 import 'sigstore.dart';
+import 'trusted_root.dart';
 
 export 'lockfile_policy.dart';
 export 'sigstore.dart';
+export 'trusted_root.dart';
 
 /// Result of verifying a package attestation bundle.
 class AttestationVerificationResult {
@@ -33,19 +33,20 @@ class AttestationVerificationResult {
   });
 }
 
-/// Attestation verifier in pub pre-configured with the Dart SDK's trusted root.
+/// Attestation verifier in pub pre-configured with the Sigstore trusted root.
 class PubAttestationVerifier {
-  final String? _trustedRootPath;
+  final SystemCache? _cache;
+  final String? _overrideTrustedRootPath;
   final String? _overrideTrustedRootJson;
   final bool _offline;
 
   PubAttestationVerifier({
-    // ignore: avoid_unused_constructor_parameters
     SystemCache? cache,
     String? overrideTrustedRootPath,
     String? overrideTrustedRootJson,
     bool offline = true,
-  }) : _trustedRootPath = overrideTrustedRootPath,
+  }) : _cache = cache,
+       _overrideTrustedRootPath = overrideTrustedRootPath,
        _overrideTrustedRootJson = overrideTrustedRootJson,
        _offline = offline;
 
@@ -59,11 +60,13 @@ class PubAttestationVerifier {
   }) {
     try {
       var trustedRootJson = _overrideTrustedRootJson ?? '';
-      if (trustedRootJson.isEmpty && _trustedRootPath != null) {
-        final f = File(_trustedRootPath);
-        if (f.existsSync()) {
-          trustedRootJson = f.readAsStringSync();
-        }
+      if (trustedRootJson.isEmpty) {
+        trustedRootJson =
+            loadTrustedRootJson(
+              cache: _cache,
+              overridePath: _overrideTrustedRootPath,
+            ) ??
+            '';
       }
 
       final client = SigstoreClient.create();

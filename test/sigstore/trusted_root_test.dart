@@ -8,6 +8,7 @@ library;
 import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/path.dart';
 import 'package:pub/src/sigstore/trusted_root.dart';
+import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -24,7 +25,7 @@ void main() {
     final customPath = p.join(d.sandbox, 'custom_ca', 'trusted_root.json');
     final root = loadTrustedRoot(overridePath: customPath);
 
-    expect(root['mediaType'], equals('test'));
+    expect(root!['mediaType'], equals('test'));
     expect(root['certificateAuthorities'], isEmpty);
   });
 
@@ -45,5 +46,27 @@ void main() {
       () => loadTrustedRoot(overridePath: badPath),
       throwsA(isA<DataException>()),
     );
+  });
+
+  test('loads trusted_root.json from pub cache', () async {
+    await d.dir('cache', [
+      d.dir('sigstore', [
+        d.file(
+          'trusted_root.json',
+          '{"mediaType":"cache_test","certificateAuthorities":[]}',
+        ),
+      ]),
+    ]).create();
+
+    final cache = SystemCache(rootDir: p.join(d.sandbox, 'cache'));
+    final root = loadTrustedRoot(cache: cache);
+
+    expect(root!['mediaType'], equals('cache_test'));
+    expect(root['certificateAuthorities'], isEmpty);
+  });
+
+  test('returns null when no override or cache is found', () {
+    final root = loadTrustedRoot();
+    expect(root, isNull);
   });
 }
