@@ -34,6 +34,10 @@ class PackageServer {
   // Setting this to false will disable automatic calculation of content-hashes.
   bool serveContentHashes = true;
 
+  // Setting this to true will enable automatic ETag generation and 304 Not
+  // Modified.
+  bool serveEtags = false;
+
   /// Whether the [shelf_io.IOServer] should compress the content, if possible.
   /// The default value is `false` (compression disabled).
   /// See [HttpServer.autoCompress] for details.
@@ -96,34 +100,52 @@ class PackageServer {
         return shelf.Response.notFound('No package named $name');
       }
 
+      final bodyJson = jsonEncode({
+        'name': name,
+        'uploaders': ['nweiz@google.com'],
+        'versions': [
+          for (final version in package.versions.values)
+            {
+              'pubspec': version.pubspec,
+              'version': version.version.toString(),
+              'archive_url':
+                  '${server.url}/packages/$name/versions/${version.version}.tar.gz',
+              if (version.isRetracted) 'retracted': true,
+              if (version.published != null)
+                'published': version.published!.toUtc().toIso8601String(),
+              if (version.sha256 != null || server.serveContentHashes)
+                'archive_sha256':
+                    version.sha256 ??
+                    hexEncode(
+                      (await sha256.bind(version.contents()).first).bytes,
+                    ),
+            },
+        ],
+        if (package.isDiscontinued) 'isDiscontinued': true,
+        if (package.advisoriesUpdated != null)
+          'advisoriesUpdated': package.advisoriesUpdated!.toIso8601String(),
+        if (package.discontinuedReplacementText != null)
+          'replacedBy': package.discontinuedReplacementText,
+      });
+
+      if (server.serveEtags) {
+        final etag = 'W/"${sha256.convert(utf8.encode(bodyJson))}"';
+        final ifNoneMatch = request.headers['if-none-match'];
+        if (ifNoneMatch == etag) {
+          return shelf.Response.notModified(headers: {'etag': etag});
+        }
+
+        return shelf.Response.ok(
+          bodyJson,
+          headers: {
+            HttpHeaders.contentTypeHeader: server.contentType,
+            'etag': etag,
+          },
+        );
+      }
+
       return shelf.Response.ok(
-        jsonEncode({
-          'name': name,
-          'uploaders': ['nweiz@google.com'],
-          'versions': [
-            for (final version in package.versions.values)
-              {
-                'pubspec': version.pubspec,
-                'version': version.version.toString(),
-                'archive_url':
-                    '${server.url}/packages/$name/versions/${version.version}.tar.gz',
-                if (version.isRetracted) 'retracted': true,
-                if (version.published != null)
-                  'published': version.published!.toUtc().toIso8601String(),
-                if (version.sha256 != null || server.serveContentHashes)
-                  'archive_sha256':
-                      version.sha256 ??
-                      hexEncode(
-                        (await sha256.bind(version.contents()).first).bytes,
-                      ),
-              },
-          ],
-          if (package.isDiscontinued) 'isDiscontinued': true,
-          if (package.advisoriesUpdated != null)
-            'advisoriesUpdated': package.advisoriesUpdated!.toIso8601String(),
-          if (package.discontinuedReplacementText != null)
-            'replacedBy': package.discontinuedReplacementText,
-        }),
+        bodyJson,
         headers: {HttpHeaders.contentTypeHeader: server.contentType},
       );
     });

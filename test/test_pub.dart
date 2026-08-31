@@ -996,8 +996,8 @@ PackageServer? _globalServer;
 
 /// Creates an HTTP server that replicates the structure of pub.dev and makes it
 /// the current [globalServer].
-Future<PackageServer> servePackages() async {
-  final server = await startPackageServer();
+Future<PackageServer> servePackages({bool serveEtags = false}) async {
+  final server = await startPackageServer(serveEtags: serveEtags);
   _globalServer = server;
 
   addTearDown(() {
@@ -1006,8 +1006,9 @@ Future<PackageServer> servePackages() async {
   return server;
 }
 
-Future<PackageServer> startPackageServer() async {
+Future<PackageServer> startPackageServer({bool serveEtags = false}) async {
   final server = await PackageServer.start();
+  server.serveEtags = serveEtags;
 
   addTearDown(() async {
     await server.close();
