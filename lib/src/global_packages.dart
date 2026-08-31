@@ -71,12 +71,63 @@ class GlobalPackages {
   /// The directory where binstubs for global package executables are stored.
   String get _binStubDir => p.join(cache.rootDir, 'bin');
 
+  /// Kept beside the cache so cache deletion cannot replace the locked inode.
+  /// The parent directory of the cache must be writable.
+  String get _globalPackagesLockPath {
+    final cacheRoot = canonicalize(cache.rootDir);
+    return p.join(
+      p.dirname(cacheRoot),
+      '${p.basename(cacheRoot)}.global_packages.lock',
+    );
+  }
+
   /// Creates a new global package registry backed by the given directory on
   /// the user's file system.
   ///
   /// The directory may not physically exist yet. If not, this will create it
   /// when needed.
   GlobalPackages(this.cache);
+
+  Future<T> _withGlobalPackagesLock<T>(FutureOr<T> Function() action) async {
+    final lockPath = _globalPackagesLockPath;
+    final lockDirectory = p.dirname(lockPath);
+    final RandomAccessFile lockFile;
+    try {
+      ensureDir(lockDirectory);
+      lockFile = await File(lockPath).open(mode: FileMode.append);
+    } on FileSystemException catch (error, stackTrace) {
+      final reason = error.osError?.message ?? error.message;
+      throw WrappedException(
+        'Unable to open the global package lock at "$lockPath".\n'
+        'The canonical pub cache parent directory "$lockDirectory" must be '
+        'writable.\n'
+        'Move the pub cache under a writable parent or make this directory '
+        'writable.\n'
+        'Reason: $reason',
+        error,
+        stackTrace,
+      );
+    }
+    var isLocked = false;
+    try {
+      try {
+        await lockFile.lock();
+      } on FileSystemException {
+        await log.spinner(
+          'Waiting to acquire the global package mutation lock',
+          () => lockFile.lock(FileLock.blockingExclusive),
+        );
+      }
+      isLocked = true;
+      return await action();
+    } finally {
+      try {
+        if (isLocked) await lockFile.unlock();
+      } finally {
+        await lockFile.close();
+      }
+    }
+  }
 
   /// Caches the package located in the Git repository [repo] and makes it the
   /// active global version.
@@ -96,39 +147,41 @@ class GlobalPackages {
     String? ref,
     String? tagPattern,
   }) async {
-    final name = await cache.git.getPackageNameFromRepo(
-      repo,
-      ref,
-      path,
-      cache,
-      relativeTo: p.current,
-      tagPattern: tagPattern,
-    );
-
-    // TODO(nweiz): Add some special handling for git repos that contain path
-    // dependencies. Their executables shouldn't be cached, and there should
-    // be a mechanism for redoing dependency resolution if a path pubspec has
-    // changed (see also issue 20499).
-    PackageRef packageRef;
-    try {
-      packageRef = cache.git.parseRef(
-        name,
-        {
-          'url': repo,
-          if (path != null) 'path': path,
-          if (ref != null) 'ref': ref,
-        },
-        containingDescription: ResolvedRootDescription.fromDir(p.current),
-        languageVersion: LanguageVersion.fromVersion(sdk.version),
+    await _withGlobalPackagesLock(() async {
+      final name = await cache.git.getPackageNameFromRepo(
+        repo,
+        ref,
+        path,
+        cache,
+        relativeTo: p.current,
+        tagPattern: tagPattern,
       );
-    } on FormatException catch (e) {
-      throw ApplicationException(e.message);
-    }
-    await _installInCache(
-      packageRef.withConstraint(VersionConstraint.any),
-      executables,
-      overwriteBinStubs: overwriteBinStubs,
-    );
+
+      // TODO(nweiz): Add some special handling for git repos that contain path
+      // dependencies. Their executables shouldn't be cached, and there should
+      // be a mechanism for redoing dependency resolution if a path pubspec has
+      // changed (see also issue 20499).
+      PackageRef packageRef;
+      try {
+        packageRef = cache.git.parseRef(
+          name,
+          {
+            'url': repo,
+            if (path != null) 'path': path,
+            if (ref != null) 'ref': ref,
+          },
+          containingDescription: ResolvedRootDescription.fromDir(p.current),
+          languageVersion: LanguageVersion.fromVersion(sdk.version),
+        );
+      } on FormatException catch (e) {
+        throw ApplicationException(e.message);
+      }
+      await _installInCache(
+        packageRef.withConstraint(VersionConstraint.any),
+        executables,
+        overwriteBinStubs: overwriteBinStubs,
+      );
+    });
   }
 
   Package packageForConstraint(PackageRange dep, String dir) {
@@ -168,10 +221,12 @@ class GlobalPackages {
     required bool overwriteBinStubs,
     String? url,
   }) async {
-    await _installInCache(
-      range,
-      executables,
-      overwriteBinStubs: overwriteBinStubs,
+    await _withGlobalPackagesLock(
+      () => _installInCache(
+        range,
+        executables,
+        overwriteBinStubs: overwriteBinStubs,
+      ),
     );
   }
 
@@ -202,6 +257,15 @@ Follow progress in https://github.com/dart-lang/sdk/issues/60889.
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
   Future<void> activatePath(
+    String path,
+    List<String>? executables, {
+    required bool overwriteBinStubs,
+  }) => _withGlobalPackagesLock(
+    () =>
+        _activatePath(path, executables, overwriteBinStubs: overwriteBinStubs),
+  );
+
+  Future<void> _activatePath(
     String path,
     List<String>? executables, {
     required bool overwriteBinStubs,
@@ -424,7 +488,10 @@ Consider `$topLevelProgram pub global deactivate $name`''');
   /// Deactivates a previously-activated package named [name].
   ///
   /// Returns `false` if no package with [name] was currently active.
-  bool deactivate(String name) {
+  Future<bool> deactivate(String name) =>
+      _withGlobalPackagesLock(() => _deactivate(name));
+
+  bool _deactivate(String name) {
     final dir = p.join(_directory, name);
     if (!dirExists(_directory)) {
       return false;
@@ -539,87 +606,101 @@ try:
       executable,
       args,
       enableAsserts: enableAsserts,
-      recompile: (exectuable) async {
-        final root = entrypoint.workspaceRoot;
-        final name = exectuable.package;
-
-        // When recompiling we re-resolve it and download its dependencies. This
-        // is mainly to protect from the case where the sdk was updated, and
-        // that causes some incompatibilities. (could be the new sdk is outside
-        // some package's environment constraint range, or that the sdk came
-        // with incompatible versions of sdk packages).
-        //
-        // We use --enforce-lockfile semantics, because we want upgrading
-        // globally activated packages to be conscious, and not a part of
-        // running them.
-        SolveResult result;
-        try {
-          result = await log.spinner(
-            'Resolving dependencies',
-            () => resolveVersions(
-              SolveType.get,
-              cache,
-              root,
-              lockFile: entrypoint.lockFile,
+      recompile:
+          (executableToRecompile) => _withGlobalPackagesLock(
+            () => _recompileExecutable(
+              entrypoint,
+              executable,
+              executableToRecompile,
+              recompile,
             ),
-          );
-        } on SolveFailure catch (e) {
-          log.error(e.message);
-          fail('''The package `$name` as currently activated cannot resolve.
+          ),
+      vmArgs: vmArgs,
+      alwaysUseSubprocess: alwaysUseSubprocess,
+    );
+  }
+
+  Future<void> _recompileExecutable(
+    Entrypoint entrypoint,
+    exec.Executable executable,
+    exec.Executable executableToRecompile,
+    Future<void> Function(exec.Executable) recompile,
+  ) async {
+    final root = entrypoint.workspaceRoot;
+    final name = executableToRecompile.package;
+
+    // When recompiling we re-resolve it and download its dependencies. This is
+    // mainly to protect from the case where the sdk was updated, and that
+    // causes some incompatibilities. (could be the new sdk is outside some
+    // package's environment constraint range, or that the sdk came with
+    // incompatible versions of sdk packages).
+    //
+    // We use --enforce-lockfile semantics, because we want upgrading globally
+    // activated packages to be conscious, and not a part of running them.
+    SolveResult result;
+    try {
+      result = await log.spinner(
+        'Resolving dependencies',
+        () => resolveVersions(
+          SolveType.get,
+          cache,
+          root,
+          lockFile: entrypoint.lockFile,
+        ),
+      );
+    } on SolveFailure catch (e) {
+      log.error(e.message);
+      fail('''The package `$name` as currently activated cannot resolve.
 
 Try reactivating the package.
 `$topLevelProgram pub global activate $name`          
 ''');
-        }
-        // We want the entrypoint to be rooted at 'dep' not the dummy-package.
-        result.packages.removeWhere((id) => id.name == 'pub global activate');
+    }
+    // We want the entrypoint to be rooted at 'dep' not the dummy-package.
+    result.packages.removeWhere((id) => id.name == 'pub global activate');
 
-        final newLockFile = await result.downloadCachedPackages(cache);
-        final report = SolveReport(
-          SolveType.get,
-          entrypoint.workspaceRoot.dir,
-          entrypoint.workspaceRoot.pubspec,
-          entrypoint.workspaceRoot.allOverridesInWorkspace,
-          entrypoint.lockFile,
-          newLockFile,
-          result.availableVersions,
-          cache,
-          dryRun: true,
-          enforceLockfile: true,
-          quiet: false,
-        );
-        await report.show(summary: true);
+    final newLockFile = await result.downloadCachedPackages(cache);
+    final report = SolveReport(
+      SolveType.get,
+      entrypoint.workspaceRoot.dir,
+      entrypoint.workspaceRoot.pubspec,
+      entrypoint.workspaceRoot.allOverridesInWorkspace,
+      entrypoint.lockFile,
+      newLockFile,
+      result.availableVersions,
+      cache,
+      dryRun: true,
+      enforceLockfile: true,
+      quiet: false,
+    );
+    await report.show(summary: true);
 
-        final sameVersions = entrypoint.lockFile.samePackageIds(newLockFile);
+    final sameVersions = entrypoint.lockFile.samePackageIds(newLockFile);
 
-        if (!sameVersions) {
-          if (newLockFile.packages.values.any((p) {
-            return p.source is SdkSource &&
-                p.version != entrypoint.lockFile.packages[p.name]?.version;
-          })) {
-            // More specific error message for the case of a version match with
-            // an sdk package.
-            dataError('''
+    if (!sameVersions) {
+      if (newLockFile.packages.values.any((p) {
+        return p.source is SdkSource &&
+            p.version != entrypoint.lockFile.packages[p.name]?.version;
+      })) {
+        // More specific error message for the case of a version match with an
+        // sdk package.
+        dataError('''
 The current activation of `$name` is not compatible with your current SDK.
 
 Try reactivating the package.
 `$topLevelProgram pub global activate $name`
 ''');
-          } else {
-            dataError('''
+      } else {
+        dataError('''
 The current activation of `$name` cannot resolve to the same set of dependencies.
 
 Try reactivating the package.
 `$topLevelProgram pub global activate $name`
 ''');
-          }
-        }
-        await recompile(exectuable);
-        _refreshBinStubs(entrypoint, executable);
-      },
-      vmArgs: vmArgs,
-      alwaysUseSubprocess: alwaysUseSubprocess,
-    );
+      }
+    }
+    await recompile(executableToRecompile);
+    _refreshBinStubs(entrypoint, executable);
   }
 
   /// Gets the path to the lock file for an activated cached package with
@@ -677,7 +758,11 @@ Try reactivating the package.
   /// Returns a pair of two lists of strings. The first indicates which packages
   /// were successfully re-activated; the second indicates which failed.
   Future<(List<String> successes, List<String> failures)>
-  repairActivatedPackages() async {
+  repairActivatedPackages() =>
+      _withGlobalPackagesLock(_repairActivatedPackages);
+
+  Future<(List<String> successes, List<String> failures)>
+  _repairActivatedPackages() async {
     final executables = <String, List<String>>{};
     if (dirExists(_binStubDir)) {
       for (var entry in listDir(_binStubDir)) {
@@ -728,7 +813,7 @@ Try reactivating the package.
               silent: true,
             );
           } else {
-            await activatePath(
+            await _activatePath(
               entrypoint.workspaceRoot.dir,
               packageExecutables,
               overwriteBinStubs: true,
@@ -963,6 +1048,11 @@ Try reactivating the package.
       previousPackage = _binStubProperty(contents, 'Package');
       if (previousPackage == null) {
         log.fine('Could not parse binstub $binStubPath:\n$contents');
+      } else if (!fileExists(_getLockFilePath(previousPackage))) {
+        log.fine(
+          'Binstub $binStubPath refers to inactive package $previousPackage.',
+        );
+        previousPackage = null;
       } else if (!overwrite) {
         return previousPackage;
       }
