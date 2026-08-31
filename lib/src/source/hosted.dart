@@ -464,25 +464,68 @@ class HostedSource extends CachedSource {
     final url = _listVersionsUrl(ref);
     log.io('Get versions from $url.');
 
-    final String bodyText;
+    // Only attach If-None-Match when running on native platforms (dart:io).
+    // In browser environments (e.g. web tests), If-None-Match triggers a CORS
+    // preflight OPTIONS request which package repositories may not support.
+    final (cachedEtag, cachedDoc) =
+        const bool.fromEnvironment('dart.library.io')
+            ? _cachedVersionListingDoc(ref, cache)
+            : (null, null);
+    final String? bodyText;
     final dynamic body;
     final List<HostedVersionInfo> result;
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/http/issues/424.
-      bodyText = await withAuthenticatedClient(cache, Uri.parse(hostedUrl), (
-        client,
-      ) async {
-        return await retryForHttp(
-          'fetching versions for "$packageName" from "$url"',
-          () async {
-            final request = http.Request('GET', url);
-            request.attachPubApiHeaders();
-            final response = await client.fetch(request);
-            return response.body;
-          },
-        );
-      });
+      final (responseBody, responseEtag, is304) = await withAuthenticatedClient(
+        cache,
+        Uri.parse(hostedUrl),
+        (client) async {
+          return await retryForHttp(
+            'fetching versions for "$packageName" from "$url"',
+            () async {
+              final request = http.Request('GET', url);
+              request.attachPubApiHeaders();
+              if (cachedEtag != null) {
+                request.headers[HttpHeaders.ifNoneMatchHeader] = cachedEtag;
+              }
+              final response = await client.fetch(request);
+              if (response.statusCode == HttpStatus.notModified) {
+                return (null, null, true);
+              }
+              return (
+                response.body,
+                response.headers[HttpHeaders.etagHeader],
+                false,
+              );
+            },
+          );
+        },
+      );
+
+      if (is304) {
+        if (cachedDoc != null) {
+          try {
+            final res = _versionInfoFromPackageListing(
+              cachedDoc,
+              ref,
+              Uri.file(_versionListingCachePath(ref, cache)),
+              cache,
+            );
+            cache.hostedCache._responseCache[ref] = (DateTime.now(), res);
+            log.io('Version listing for "$packageName" is not modified (304).');
+            return res;
+          } on FormatException {
+            // Cached document was invalid, fall through to refetch.
+          }
+        }
+        // If the cache was missing/corrupted despite having an ETag, refetch
+        // unconditionally.
+        tryDeleteEntry(_versionListingCachePath(ref, cache));
+        return await _fetchVersionsNoPrefetching(ref, cache);
+      }
+
+      bodyText = responseBody!;
       final decoded = jsonDecode(bodyText);
       if (decoded is! Map<String, dynamic>) {
         throw const FormatException('version listing must be a mapping');
@@ -494,16 +537,21 @@ class HostedSource extends CachedSource {
         url,
         cache,
       );
+
+      // Cache the response on disk.
+      // Don't cache overly big responses.
+      if (bodyText.length < 1000 * 1024) {
+        await _cacheVersionListingResponse(
+          body,
+          ref,
+          cache,
+          etag: responseEtag,
+        );
+      }
+      return result;
     } on Exception catch (error, stackTrace) {
       _throwFriendlyError(error, stackTrace, packageName, hostedUrl);
     }
-
-    // Cache the response on disk.
-    // Don't cache overly big responses.
-    if (bodyText.length < 1000 * 1024) {
-      await _cacheVersionListingResponse(body, ref, cache);
-    }
-    return result;
   }
 
   Future<List<HostedVersionInfo>> fetchVersions(
@@ -904,13 +952,51 @@ class HostedSource extends CachedSource {
     }
   }
 
+  /// Matches an RFC 9110 compliant entity-tag (e.g. `"abc123"` or `W/"abc123"`).
+  static final RegExp _etagRegExp = RegExp(r'^(?:W/)?"[\x21\x23-\x7e]*"$');
+
+  /// Returns true if [etag] is a syntactically valid RFC 9110 entity-tag and
+  /// does not exceed reasonable length limits.
+  static bool _isValidETag(String? etag) {
+    if (etag == null) return false;
+    final trimmed = etag.trim();
+    if (trimmed.isEmpty || trimmed.length > 512) return false;
+    return _etagRegExp.hasMatch(trimmed);
+  }
+
+  /// Returns the cached ETag and decoded JSON document for [ref] if one is
+  /// stored in `.cache/<pkg>-versions.json`.
+  (String? etag, Map<String, dynamic>? doc) _cachedVersionListingDoc(
+    PackageRef ref,
+    SystemCache cache,
+  ) {
+    final cachePath = _versionListingCachePath(ref, cache);
+    try {
+      final cachedDoc = jsonDecode(readTextFile(cachePath));
+      if (cachedDoc is Map<String, dynamic>) {
+        final etag = cachedDoc['_etag'];
+        final validEtag =
+            etag is String && _isValidETag(etag) ? etag.trim() : null;
+        return (validEtag, cachedDoc);
+      }
+    } on io.IOException {
+      // Ignore read errors (e.g. file does not exist).
+    } on FormatException {
+      // Corrupted file on disk. Delete it so subsequent requests don't trip.
+      tryDeleteEntry(cachePath);
+    }
+    return (null, null);
+  }
+
   /// Saves the (decoded) response from package-listing of [ref].
   Future<void> _cacheVersionListingResponse(
     Map<String, dynamic> body,
     PackageRef ref,
-    SystemCache cache,
-  ) async {
+    SystemCache cache, {
+    String? etag,
+  }) async {
     final path = _versionListingCachePath(ref, cache);
+    final validEtag = _isValidETag(etag) ? etag!.trim() : null;
     try {
       ensureDir(p.dirname(path));
       await writeTextFileAsync(
@@ -918,6 +1004,7 @@ class HostedSource extends CachedSource {
         jsonEncode(<String, dynamic>{
           ...body,
           '_fetchedAt': DateTime.now().toIso8601String(),
+          if (validEtag != null) '_etag': validEtag,
         }),
       );
       // Delete the entry in the in-memory cache to maintain the invariant that
