@@ -62,7 +62,7 @@ environment:
       expect(await pub(['outdated']), 0);
       expect(await pub(['upgrade']), 0);
       expect(await pub(['remove', 'retry']), 0);
-      expect(await pub(['unpack', 'retry']), 0);
+      expect(await pub(['unpack', 'retry', '--no-resolve']), 0);
     } catch (_) {
       printOnFailure(utf8.decode(bs.bytes));
       rethrow;
