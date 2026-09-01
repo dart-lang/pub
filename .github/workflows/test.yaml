@@ -66,6 +66,7 @@ jobs:
       - name: Install dependencies
         run: dart pub get
       - name: Build snapshot
+        shell: bash
         run: dart --snapshot="$_PUB_TEST_SNAPSHOT" bin/pub.dart
       - name: Run tests
         run: dart test --preset ci --total-shards=7 --shard-index=${{ matrix.shard }}
