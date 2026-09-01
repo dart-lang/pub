@@ -813,6 +813,15 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     }
   }
 
+  /// Returns the nearest enclosing directory of [dir] that contains a
+  /// `pubspec.yaml`, or [dir] if none is found.
+  static String _rootPackageDir(String dir) {
+    return parentDirs(dir).firstWhereOrNull(
+          (parent) => tryStatFile(p.join(parent, 'pubspec.yaml')) != null,
+        ) ??
+        dir;
+  }
+
   /// The [PackageConfig] object representing `.dart_tool/package_config.json`
   /// along with the dir where it resides, if it and `pubspec.lock` exist and
   /// are up to date with respect to pubspec.yaml and its dependencies. Or
@@ -859,11 +868,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     String relativeIfNeeded(String path) =>
         wasRelative ? p.relative(path) : path;
 
-    late final rootPackageDir =
-        parentDirs(dir).firstWhereOrNull(
-          (parent) => tryStatFile(p.join(parent, 'pubspec.yaml')) != null,
-        ) ??
-        dir;
+    late final rootPackageDir = _rootPackageDir(dir);
     late final root = Package.load(
       rootPackageDir,
       loadPubspec: Pubspec.loadRootWithSources(cache.sources),
@@ -917,14 +922,20 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         }
       }
 
-      if (!root.immediateDependencies.values.every(isDependencyUpToDate)) {
-        final pubspecPath = p.normalize(p.join(dir, 'pubspec.yaml'));
+      for (final workspacePackage in workspaceRoot.transitiveWorkspace) {
+        if (!workspacePackage.immediateDependencies.values.every(
+          isDependencyUpToDate,
+        )) {
+          final pubspecPath = p.normalize(
+            p.join(workspacePackage.dir, 'pubspec.yaml'),
+          );
 
-        log.fine(
-          'The $pubspecPath file has changed since the $lockFilePath file '
-          'was generated.',
-        );
-        return false;
+          log.fine(
+            'The $pubspecPath file has changed since the $lockFilePath file '
+            'was generated.',
+          );
+          return false;
+        }
       }
 
       // Check that uncached dependencies' pubspecs are also still satisfied,
@@ -940,7 +951,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
               .values
               .every(
                 (dep) =>
-                    root.allOverridesInWorkspace.containsKey(dep.name) ||
+                    workspaceRoot.allOverridesInWorkspace.containsKey(
+                      dep.name,
+                    ) ||
                     isDependencyUpToDate(dep),
               )) {
             continue;
@@ -993,6 +1006,14 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
             });
         if (hasExtraMappings) {
           return false;
+        }
+
+        // Check that all packages in the workspace are reflected in the
+        // [packagePathsMapping].
+        for (final workspacePackage in workspaceRoot.transitiveWorkspace) {
+          if (!packagePathsMapping.containsKey(workspacePackage.name)) {
+            return false;
+          }
         }
 
         // Check that all packages in the [lockFile] are reflected in the
@@ -1065,7 +1086,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       // Check if language version specified in the `package_config.json` is
       // correct. This is important for path dependencies as these can mutate.
       for (final pkg in packageConfig.packages) {
-        if (pkg.name == root.name) continue;
         final workspacePkg = workspaceRoot.transitiveWorkspace.firstWhereOrNull(
           (p) => p.name == pkg.name,
         );
@@ -1412,8 +1432,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       log.fine('Package Config up to date.');
       return (packageConfig: packageConfig, rootDir: rootDir);
     }
+    final rootPackageDir = _rootPackageDir(dir);
     final entrypoint = Entrypoint(
-      dir,
+      rootPackageDir,
       cache,
       // [ensureUpToDate] is also used for entries in 'global_packages/'
       checkInCache: false,

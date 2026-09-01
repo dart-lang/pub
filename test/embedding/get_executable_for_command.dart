@@ -533,5 +533,256 @@ void testGetExecutableForCommand() {
         resolution: ResolutionAttempt.fastPath,
       );
     });
+
+    test('Works from subdirectory when resolution is out of date', () async {
+      final server = await servePackages();
+      server.serve(
+        'foo',
+        '1.0.0',
+        contents: [
+          d.dir('bin', [d.file('foo.dart', 'main() => print("foo");')]),
+        ],
+      );
+
+      await d.dir(appPath, [
+        d.appPubspec(dependencies: {'foo': '^1.0.0'}),
+        d.dir('lib', [d.file('lib.dart', '')]),
+      ]).create();
+
+      // Run from lib/ directory when lockfile does not exist.
+      await testGetExecutable(
+        'foo',
+        p.join(d.sandbox, appPath, 'lib'),
+        executable: p.join(
+          '..',
+          '.dart_tool',
+          'pub',
+          'bin',
+          'foo',
+          'foo.dart-3.5.0.snapshot',
+        ),
+        packageConfig: p.join('..', '.dart_tool', 'package_config.json'),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        resolution: ResolutionAttempt.resolution,
+      );
+    });
+
+    test(
+      'Invalidates resolution when new package added to workspace',
+      () async {
+        await servePackages();
+        await d.dir(appPath, [
+          d.libPubspec(
+            'myapp',
+            '1.0.0',
+            sdk: '^3.5.0',
+            extras: {
+              'workspace': ['sub'],
+            },
+          ),
+          d.dir('sub', [
+            d.libPubspec(
+              'sub',
+              '1.0.0',
+              sdk: '^3.5.0',
+              resolutionWorkspace: true,
+            ),
+            d.dir('bin', [d.file('tool.dart', 'main() => print("sub");')]),
+          ]),
+        ]).create();
+
+        await testGetExecutable(
+          'sub:tool',
+          p.join(d.sandbox, appPath),
+          allowSnapshot: false,
+          executable: p.join(d.sandbox, appPath, 'sub', 'bin', 'tool.dart'),
+          packageConfig: p.join('.dart_tool', 'package_config.json'),
+          environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+          resolution: ResolutionAttempt.resolution,
+        );
+
+        // Now add a second workspace package pkg_b to workspace.
+        await d.dir(appPath, [
+          d.libPubspec(
+            'myapp',
+            '1.0.0',
+            sdk: '^3.5.0',
+            extras: {
+              'workspace': ['sub', 'pkg_b'],
+            },
+          ),
+          d.dir('pkg_b', [
+            d.libPubspec(
+              'pkg_b',
+              '1.0.0',
+              sdk: '^3.5.0',
+              resolutionWorkspace: true,
+            ),
+            d.dir('bin', [d.file('tool.dart', 'main() => print("pkg_b");')]),
+          ]),
+        ]).create();
+
+        await testGetExecutable(
+          'pkg_b:tool',
+          p.join(d.sandbox, appPath),
+          allowSnapshot: false,
+          executable: p.join(d.sandbox, appPath, 'pkg_b', 'bin', 'tool.dart'),
+          packageConfig: p.join('.dart_tool', 'package_config.json'),
+          environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+          resolution: ResolutionAttempt.resolution,
+        );
+      },
+    );
+
+    test(
+      'Invalidates resolution when workspace member dependency is modified',
+      () async {
+        final server = await servePackages();
+        server.serve('foo', '1.0.0');
+
+        await d.dir(appPath, [
+          d.libPubspec(
+            'myapp',
+            '1.0.0',
+            sdk: '^3.5.0',
+            extras: {
+              'workspace': ['sub'],
+            },
+          ),
+          d.dir('sub', [
+            d.libPubspec(
+              'sub',
+              '1.0.0',
+              sdk: '^3.5.0',
+              resolutionWorkspace: true,
+            ),
+            d.dir('bin', [d.file('tool.dart', 'main() => print("sub");')]),
+          ]),
+        ]).create();
+
+        await testGetExecutable(
+          'sub:tool',
+          p.join(d.sandbox, appPath),
+          allowSnapshot: false,
+          executable: p.join(d.sandbox, appPath, 'sub', 'bin', 'tool.dart'),
+          packageConfig: p.join('.dart_tool', 'package_config.json'),
+          environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+          resolution: ResolutionAttempt.resolution,
+        );
+
+        // Subsequent call uses fastPath.
+        await testGetExecutable(
+          'sub:tool',
+          p.join(d.sandbox, appPath),
+          allowSnapshot: false,
+          executable: p.join(d.sandbox, appPath, 'sub', 'bin', 'tool.dart'),
+          packageConfig: p.join('.dart_tool', 'package_config.json'),
+          environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+          resolution: ResolutionAttempt.fastPath,
+        );
+
+        // Add dependency to member 'sub' without modifying root pubspec.yaml.
+        await d.dir(appPath, [
+          d.dir('sub', [
+            d.libPubspec(
+              'sub',
+              '1.0.0',
+              sdk: '^3.5.0',
+              deps: {'foo': '^1.0.0'},
+              resolutionWorkspace: true,
+            ),
+          ]),
+        ]).create();
+
+        // Resolution should be invalidated because member pubspec changed.
+        await testGetExecutable(
+          'sub:tool',
+          p.join(d.sandbox, appPath),
+          allowSnapshot: false,
+          executable: p.join(d.sandbox, appPath, 'sub', 'bin', 'tool.dart'),
+          packageConfig: p.join('.dart_tool', 'package_config.json'),
+          environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+          resolution: ResolutionAttempt.resolution,
+        );
+      },
+    );
+
+    test('Works from subdirectory of workspace member when resolution is out '
+        'of date', () async {
+      final server = await servePackages();
+      server.serve(
+        'foo',
+        '1.0.0',
+        contents: [
+          d.dir('bin', [d.file('foo.dart', 'main() => print("foo");')]),
+        ],
+      );
+
+      await d.dir(appPath, [
+        d.libPubspec(
+          'myapp',
+          '1.0.0',
+          sdk: '^3.5.0',
+          extras: {
+            'workspace': ['pkgs/a'],
+          },
+        ),
+        d.dir('pkgs', [
+          d.dir('a', [
+            d.libPubspec(
+              'a',
+              '1.0.0',
+              sdk: '^3.5.0',
+              deps: {'foo': '^1.0.0'},
+              resolutionWorkspace: true,
+            ),
+            d.dir('bin', [d.file('tool.dart', 'main() => print("a");')]),
+            d.dir('lib', [d.file('a.dart', '')]),
+          ]),
+        ]),
+      ]).create();
+
+      // Run from pkgs/a/lib directory when lockfile does not exist.
+      await testGetExecutable(
+        'foo',
+        p.join(d.sandbox, appPath, 'pkgs', 'a', 'lib'),
+        executable: p.join(
+          '..',
+          '..',
+          '..',
+          '.dart_tool',
+          'pub',
+          'bin',
+          'foo',
+          'foo.dart-3.5.0.snapshot',
+        ),
+        packageConfig: p.join(
+          '..',
+          '..',
+          '..',
+          '.dart_tool',
+          'package_config.json',
+        ),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        resolution: ResolutionAttempt.resolution,
+      );
+
+      // Also test invoking the member's own tool with :tool from pkgs/a/lib.
+      await testGetExecutable(
+        ':tool',
+        p.join(d.sandbox, appPath, 'pkgs', 'a', 'lib'),
+        allowSnapshot: false,
+        executable: p.join(d.sandbox, appPath, 'pkgs', 'a', 'bin', 'tool.dart'),
+        packageConfig: p.join(
+          '..',
+          '..',
+          '..',
+          '.dart_tool',
+          'package_config.json',
+        ),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        resolution: ResolutionAttempt.fastPath,
+      );
+    });
   });
 }
