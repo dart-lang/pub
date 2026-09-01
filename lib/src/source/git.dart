@@ -257,13 +257,20 @@ class GitSource extends CachedSource {
         "The 'path' field of the description must be a relative path URL.",
       );
     }
-    if (!p.url.isWithin('.', path) && !p.url.equals('.', path)) {
+    final normalized = p.url.normalize(parsed.toString());
+    final posixDecoded = p.posix.fromUri(normalized);
+    final windowsDecoded = p.windows.fromUri(normalized);
+    if ((!p.url.isWithin('.', normalized) && !p.url.equals('.', normalized)) ||
+        (!p.posix.isWithin('.', posixDecoded) &&
+            !p.posix.equals('.', posixDecoded)) ||
+        (!p.windows.isWithin('.', windowsDecoded) &&
+            !p.windows.equals('.', windowsDecoded))) {
       throw const FormatException(
         "The 'path' field of the description must not reach outside the "
         'repository.',
       );
     }
-    return p.url.normalize(parsed.toString());
+    return normalized;
   }
 
   /// Given a Git repo that contains a pub package, gets the name of the pub
