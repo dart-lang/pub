@@ -1,5 +1,8 @@
 name: Dart CI
 
+permissions:
+  contents: read
+
 on:
   # Run CI on pushes to the main branch, and on PRs against main.
   push:
@@ -11,7 +14,7 @@ on:
 
 env:
   PUB_ENVIRONMENT: bot.github
-  _PUB_TEST_SNAPSHOT: ${{ github.workspace }}/.dart_tool/pub.dart.snapshot.dart2
+  _PUB_TEST_EXECUTABLE: ${{ github.workspace }}/.dart_tool/_pub_build/bundle/bin/pub
   _TESTS_FILE: .dart_tool/test_files
 
 jobs:
@@ -45,6 +48,9 @@ jobs:
   test:
     needs: analyze
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -58,7 +64,9 @@ jobs:
           sdk: ${{ matrix.sdk }}
       - name: Install dependencies
         run: dart pub get
-      - name: Build snapshot
-        run: dart --snapshot=${{ env._PUB_TEST_SNAPSHOT }} bin/pub.dart
+      - name: Build executable
+        run: dart build cli -t bin/pub.dart -o .dart_tool/_pub_build
       - name: Run tests
-        run: dart test --preset ci --total-shards=7 --shard-index=${{ matrix.shard }}
+        env:
+          SHARD_INDEX: ${{ matrix.shard }}
+        run: dart test --preset ci --total-shards=7 --shard-index="${SHARD_INDEX}"

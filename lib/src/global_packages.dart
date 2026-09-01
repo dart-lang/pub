@@ -969,8 +969,23 @@ Try reactivating the package.
     }
     // When running tests we want the binstub to invoke the current pub, not the
     // one from the sdk.
-    final pubInvocation =
-        runningFromTest ? platform.script.toFilePath() : 'pub';
+    final String pubInvocation;
+    if (runningFromTest) {
+      final exeEnv = platform.environment['_PUB_TEST_EXECUTABLE'];
+      if (exeEnv != null && exeEnv.isNotEmpty) {
+        pubInvocation = '"${p.absolute(exeEnv)}" --verbosity=normal';
+      } else {
+        final isDartVm =
+            p.basenameWithoutExtension(platform.resolvedExecutable) == 'dart';
+        if (isDartVm) {
+          pubInvocation = 'dart "${platform.script.toFilePath()}"';
+        } else {
+          pubInvocation = '"${platform.resolvedExecutable}"';
+        }
+      }
+    } else {
+      pubInvocation = 'pub';
+    }
 
     final runPubGlobal = '${package.name}:$script';
 
@@ -1002,9 +1017,9 @@ ${header}if exist "$snapshot" $padding(
   if not errorlevel 253 (
     goto error
   )
-  call dart $pubInvocation global run $runPubGlobal %*
+  call $pubInvocation global run $runPubGlobal %*
 ) else (
-  call dart $pubInvocation global run $runPubGlobal %*
+  call $pubInvocation global run $runPubGlobal %*
 )
 goto eof
 :error
@@ -1013,7 +1028,7 @@ exit /b %errorlevel%
 ''';
       } else {
         binstub = '''
-${header}call dart $pubInvocation global run $runPubGlobal %*
+${header}call $pubInvocation global run $runPubGlobal %*
 ''';
       }
     } else {
@@ -1037,11 +1052,11 @@ ${header}if [ -f $snapshot ]; then
     exit \$exit_code
   fi
 fi
-dart $pubInvocation global run $runPubGlobal "\$@"
+$pubInvocation global run $runPubGlobal "\$@"
 ''';
       } else {
         binstub = '''
-${header}dart $pubInvocation global run $runPubGlobal "\$@"
+$header$pubInvocation global run $runPubGlobal "\$@"
 ''';
       }
     }

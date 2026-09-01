@@ -464,6 +464,9 @@ Map<String, String> getPubTestEnvironment([String? tokenEndpoint]) => {
 
   // Ensure a known SDK version is set for the tests that rely on that.
   '_PUB_TEST_SDK_VERSION': testVersion,
+  '_PUB_TEST_SDK_DIR': p.dirname(p.dirname(Platform.resolvedExecutable)),
+  if (Platform.environment['_PUB_TEST_EXECUTABLE'] case final exe?)
+    '_PUB_TEST_EXECUTABLE': p.absolute(exe),
   if (tokenEndpoint != null) '_PUB_TEST_TOKEN_ENDPOINT': tokenEndpoint,
   if (_globalServer?.port != null)
     'PUB_HOSTED_URL': 'http://localhost:${_globalServer?.port}',
@@ -503,22 +506,32 @@ Future<PubProcess> startPub({
 
   ensureDir(_pathInSandbox(appPath));
 
-  // If there's a snapshot for "pub" available we use it. If the snapshot is
-  // out-of-date local source the tests will be useless, therefore it is
-  // recommended to use a temporary file with a unique name for each test run.
-  // Note: running tests without a snapshot is significantly slower, use
-  // tool/test.dart to generate the snapshot.
-  var pubPath = Platform.environment['_PUB_TEST_SNAPSHOT'] ?? '';
-  if (pubPath.isEmpty || !fileExists(pubPath)) {
-    pubPath = p.absolute(p.join(_pubRoot, 'bin/pub.dart'));
+  var pubExecutable = Platform.environment['_PUB_TEST_EXECUTABLE'] ?? '';
+  if (pubExecutable.isNotEmpty) {
+    pubExecutable = p.absolute(pubExecutable);
+    if (Platform.isWindows &&
+        !pubExecutable.endsWith('.exe') &&
+        fileExists('$pubExecutable.exe')) {
+      pubExecutable = '$pubExecutable.exe';
+    }
   }
 
-  final dotPackagesPath = (await Isolate.packageConfig).toString();
-
-  final dartArgs = ['--packages=$dotPackagesPath', '--enable-asserts'];
-  dartArgs
-    ..addAll([pubPath, if (!verbose) '--verbosity=normal'])
-    ..addAll(args);
+  final String executable;
+  final List<String> processArgs;
+  if (pubExecutable.isNotEmpty && fileExists(pubExecutable)) {
+    executable = pubExecutable;
+    processArgs = [if (!verbose) '--verbosity=normal', ...args];
+  } else {
+    executable = Platform.resolvedExecutable;
+    final dotPackagesPath = (await Isolate.packageConfig).toString();
+    processArgs = [
+      '--packages=$dotPackagesPath',
+      '--enable-asserts',
+      p.absolute(p.join(_pubRoot, 'bin/pub.dart')),
+      if (!verbose) '--verbosity=normal',
+      ...args,
+    ];
+  }
 
   final systemRoot = Platform.environment['SYSTEMROOT'];
   final tmp = Platform.environment['TMP'];
@@ -546,8 +559,8 @@ Future<PubProcess> startPub({
   }
 
   return await PubProcess.start(
-    Platform.resolvedExecutable,
-    dartArgs,
+    executable,
+    processArgs,
     environment: mergedEnvironment,
     workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
     description: args.isEmpty ? 'pub' : 'pub ${args.join(' ')}',
