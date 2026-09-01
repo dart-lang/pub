@@ -388,12 +388,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
   final executable = Executable(package, p.join('bin', '$command.dart'));
   final packageConfigPath = p.normalize(
-    p.join(
-      rootOrCurrent,
-      workspaceRootDir,
-      '.dart_tool',
-      'package_config.json',
-    ),
+    p.join(workspaceRootDir, '.dart_tool', 'package_config.json'),
   );
   final path = executable.resolve(packageConfig, packageConfigPath);
   if (!fileExists(p.join(rootOrCurrent, path))) {
@@ -412,7 +407,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     // PackageGraph, as it requires loading and reading all the pubspec.yaml
     // files.
     final entrypoint = Entrypoint(
-      rootOrCurrent,
+      workspaceRootDir,
       SystemCache(rootDir: pubCacheDir),
     );
 
