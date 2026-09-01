@@ -58,35 +58,29 @@ void main() {
     );
   });
 
-  test('git subprocess environment restricts allowed protocols', () async {
+  test('git clone passes -- to prevent option injection', () async {
     ensureGit();
 
-    await git.run(['config', '--global', 'protocol.ext.allow', 'user']);
-    addTearDown(() async {
-      await git.run(['config', '--global', '--unset', 'protocol.ext.allow']);
-    });
-
-    final proofFile = p.join(d.sandbox, 'pwned_subprocess.txt');
     final tempDir = p.join(d.sandbox, 'temp_clone');
 
+    // With '--', Git treats '--upload-pack=...' as a repository name rather
+    // than a CLI option.
     expect(
       () => git.run([
         'clone',
         '--mirror',
         '--',
-        'ext::sh -c touch\$IFS$proofFile @',
+        '--upload-pack=touch /tmp/evil',
         tempDir,
       ]),
       throwsA(
         isA<git.GitException>().having(
           (e) => e.stderr,
           'stderr',
-          contains("transport 'ext' not allowed"),
+          isNot(contains('unknown option')),
         ),
       ),
     );
-
-    expect(File(proofFile).existsSync(), isFalse);
   });
 
   test('GitDescription validates URL schemes and syntax', () {

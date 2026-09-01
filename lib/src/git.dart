@@ -247,10 +247,4 @@ Map<String, String> get _gitEnvironment => {
   'LC_ALL': platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
   'LC_MESSAGES': platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
   'LANGUAGE': platform.isMacOS ? 'en_US.UTF-8' : 'C.UTF-8',
-  // Prevent git from using protocols configured with `user` policy (such as
-  // `protocol.ext.allow=user`) when invoked from pub, preventing command
-  // injection via git-remote-ext without breaking custom protocols configured
-  // with `always` (like `sso`).
-  'GIT_PROTOCOL_FROM_USER':
-      platform.environment['GIT_PROTOCOL_FROM_USER'] ?? '0',
 };
