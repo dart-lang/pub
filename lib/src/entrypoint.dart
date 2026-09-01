@@ -951,7 +951,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
               .values
               .every(
                 (dep) =>
-                    root.allOverridesInWorkspace.containsKey(dep.name) ||
+                    workspaceRoot.allOverridesInWorkspace.containsKey(
+                      dep.name,
+                    ) ||
                     isDependencyUpToDate(dep),
               )) {
             continue;
@@ -1084,7 +1086,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       // Check if language version specified in the `package_config.json` is
       // correct. This is important for path dependencies as these can mutate.
       for (final pkg in packageConfig.packages) {
-        if (pkg.name == root.name) continue;
         final workspacePkg = workspaceRoot.transitiveWorkspace.firstWhereOrNull(
           (p) => p.name == pkg.name,
         );
