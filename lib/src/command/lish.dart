@@ -188,30 +188,27 @@ class LishCommand extends PubCommand {
             invalidServerResponse(parametersResponse);
           }
 
-          await retryForHttp(
-            'uploading attestation',
-            () async {
-              final attRequest = http.MultipartRequest(
-                'POST',
-                attestationStorageUrl,
-              );
-              attestationFields.forEach((key, value) {
-                if (value is! String) invalidServerResponse(parametersResponse);
-                attRequest.fields[key as String] = value;
-              });
-              attRequest.files.add(
-                http.MultipartFile.fromBytes(
-                  'file',
-                  attestationBytes,
-                  filename: 'attestation.sigstore.json',
-                ),
-              );
-              attRequest.followRedirects = false;
-              final attResponse = await client.fetch(attRequest);
-              attResponse.throwIfNotOk();
-              return attResponse;
-            },
-          );
+          await retryForHttp('uploading attestation', () async {
+            final attRequest = http.MultipartRequest(
+              'POST',
+              attestationStorageUrl,
+            );
+            attestationFields.forEach((key, value) {
+              if (value is! String) invalidServerResponse(parametersResponse);
+              attRequest.fields[key as String] = value;
+            });
+            attRequest.files.add(
+              http.MultipartFile.fromBytes(
+                'file',
+                attestationBytes,
+                filename: 'attestation.sigstore.json',
+              ),
+            );
+            attRequest.followRedirects = false;
+            final attResponse = await client.fetch(attRequest);
+            attResponse.throwIfNotOk();
+            return attResponse;
+          });
         }
 
         /// 3. Upload package
@@ -244,8 +241,7 @@ class LishCommand extends PubCommand {
                 filename: 'package.tar.gz',
               ),
             );
-            final response = await client.fetch(request);
-            return response;
+            return await client.fetch(request);
           },
         );
 
@@ -501,10 +497,17 @@ the \$PUB_HOSTED_URL environment variable.''');
     Uint8List? attestationBytes;
     if (_withAttestation != null) {
       final repository = pubspec.fields['repository']?.toString();
-      if (repository == null || !repository.contains('github.com')) {
+      if (repository == null) {
         dataError(
           'A GitHub repository must be specified in the "repository" field of '
           'pubspec.yaml when publishing with an attestation.',
+        );
+      }
+      if (!repository.contains('github.com')) {
+        dataError(
+          'A GitHub repository must be specified in the "repository" field of '
+          'pubspec.yaml when publishing with an attestation. The repository '
+          '"$repository" is not a GitHub repository.',
         );
       }
       try {
@@ -638,11 +641,11 @@ the \$PUB_HOSTED_URL environment variable.''');
 
 class _Publication {
   Uint8List packageBytes;
+  Uint8List? attestationBytes;
   int warningCount;
   int hintCount;
 
   Pubspec pubspec;
-  Uint8List? attestationBytes;
 
   String get warningsCountMessage {
     final hintText =
