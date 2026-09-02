@@ -298,8 +298,15 @@ changed.
 
 ```js
 {
-  "url": "<multipart-upload-url>",
+  "url": "<archive-upload-url>",
   "fields": {
+    "<field-1>": "<value-1>",
+    "<field-2>": "<value-2>",
+    ...,
+    "<field-N>": "<value-N>",
+  },
+  "attestationUrl": "<attestation-upload-url>",
+  "attestationFields": {
     "<field-1>": "<value-1>",
     "<field-2>": "<value-2>",
     ...,
@@ -309,14 +316,74 @@ changed.
 ```
 
 To publish a package an HTTP `GET` request for
-`<hosted-url>/api/packages/versions/new` is made. This request returns an
-`<multipart-upload-url>` and a dictionary of fields. To upload the package
-archive a multi-part `POST` request is made to `<multipart-upload-url>` with
-fields and the field `file` containing the gzipped tar archive.
+`<hosted-url>/api/packages/versions/new` is made. This request returns:
+* `url`: An `<archive-upload-url>` for uploading the package archive.
+* `fields`: A dictionary of form fields required by the storage service for the
+  archive upload.
+* `attestationUrl`: An `<attestation-upload-url>` for uploading a package
+  attestation bundle (such as a Sigstore provenance bundle). Present on
+  repositories that support attestations.
+* `attestationFields`: A dictionary of form fields required by the storage
+  service for the attestation upload. Present if `attestationUrl` is present.
+
+The `attestationUrl` and `attestationFields` properties are returned by
+repositories that support package attestations. If the user requests publishing
+with an attestation and the server response omits `attestationUrl`, the client
+should abort the publication with an informative error message.
+
+### Uploading the Attestation
+
+When publishing with an attestation, the client **MUST** upload the attestation
+bundle to `<attestation-upload-url>` (from `attestationUrl`) **before** uploading
+the package archive to `<archive-upload-url>` (from `url`). This ensures that an
+attestation is never omitted due to partial or interrupted uploads. If not
+publishing with an attestation, this step is skipped.
+
+To upload the attestation bundle, a multi-part `POST` request is made to
+`<attestation-upload-url>` containing all key-value pairs from
+`attestationFields`, along with a `file` part containing the attestation JSON
+bundle:
 
 ```http
-POST <path(multipart-upload-url)> HTTP/1.1
-Host: <host(multipart-upload-url)>
+POST <path(attestation-upload-url)> HTTP/1.1
+Host: <host(attestation-upload-url)>
+Content-Length: <length>
+Content-Type: multipart/form-data; boundary=<boundary>
+
+--<boundary>
+Content-Disposition: form-data; name="<urlencode(field-1)>"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: binary
+
+<value-1>
+...
+--<boundary>
+Content-Disposition: form-data; name="<urlencode(field-N)>"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: binary
+
+<value-N>
+--<boundary>
+Content-Type: application/json; charset=utf-8
+Content-Disposition: form-data; name="file"; filename="attestation.sigstore.json"
+
+<attestation JSON bundle>
+--<boundary>--
+```
+
+The storage service may respond with `HTTP 204 No Content` or `HTTP 200 OK`. The
+client must verify that the request succeeded before proceeding to upload the
+package archive.
+
+### Uploading the Package Archive
+
+To upload the package archive a multi-part `POST` request is made to
+`<archive-upload-url>` containing all key-value pairs from `fields`, along with a
+`file` part containing the gzipped tar archive:
+
+```http
+POST <path(archive-upload-url)> HTTP/1.1
+Host: <host(archive-upload-url)>
 Content-Length: <length>
 Content-Type: multipart/form-data; boundary=<boundary>
 
@@ -343,20 +410,37 @@ Content-Transfer-Encoding: binary
 Content-Type: application/octet-stream
 Content-Disposition: form-data; name="file"; filename="package.tar.gz"
 
-<gzipped archieve>
+<gzipped archive>
+--<boundary>--
 ```
 
-The above `POST` request to `<multipart-upload-url>` should respond as follows:
+The above `POST` request to `<archive-upload-url>` may respond as follows:
 
 ```http
 HTTP/1.1 204 No Content
 Location: <finalize-upload-url>
 ```
 
+or with an HTTP `303 See Other` redirect to `<finalize-upload-url>`.
+
+### Finalizing the Upload
+
 The client shall then issue a `GET` request to `<finalize-upload-url>`. As with
 `archive_url` the client will only attach an `Authorization` if the
-`<hosted-url>` is a prefix of `<finalize-upload-url>`. If the server wants to
-accept the uploaded package the server should respond:
+`<hosted-url>` is a prefix of `<finalize-upload-url>`.
+
+During finalization, the server inspects the uploaded archive, along with any
+accompanying attestation that was uploaded prior to the archive. If an
+attestation was uploaded, the server verifies its validity before accepting
+the publication. An attestation may be rejected as invalid if:
+ * the JSON bundle is malformed or cannot be parsed as a Sigstore bundle,
+ * the cryptographic signature cannot be verified against the trusted root,
+ * the artifact digest recorded in the attestation does not match the SHA-256
+   hash of the uploaded package archive, or
+ * the provenance information (such as the source repository) does not match
+   the `repository` field in `pubspec.yaml`.
+
+If the server wants to accept the uploaded package the server should respond:
 
 ```http
 HTTP/1.1 200 Ok
@@ -388,84 +472,15 @@ Content-Type: application/vnd.pub.v2+json
 ```
 
 This can be used to forbid git dependencies in published packages, limit the
-archive size, or enforce any other repository-specific constraints.
+archive size, reject invalid attestations, or enforce any other
+repository-specific constraints.
 
-This upload flow allows for archives to be uploaded directly to a signed POST
-URL for [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/HTTPPOSTExamples.html),
+This upload flow allows for archives and attestations to be uploaded directly to
+a signed POST URL for [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/HTTPPOSTExamples.html),
 [GCS](https://cloud.google.com/storage/docs/xml-api/post-object-forms) or
-similar blob storage service. Both the
-`<multipart-upload-url>` and `<finalize-upload-url>` are allowed to contain
-query-string parameters, and both of these URLs need only be temporary.
-
-### Uploading Package Attestations
-
-When publishing with a package attestation, the client uploads a Sigstore bundle
-to `<multipart-upload-url>` before uploading the package archive.
-
-The multi-part `POST` request for the attestation uses the same fields
-dictionary returned by `<hosted-url>/api/packages/versions/new`, with the
-following modifications:
- * If a `key` field is present in `fields`, its value is modified by appending
-   `.sigstore.json` (i.e. `<key>.sigstore.json`). This sets the storage object
-   path for the attestation file, allowing the server to locate and correlate the
-   attestation bundle with the package archive (stored at `<key>`) during
-   finalization.
- * The `success_action_redirect` field, if present in `fields`, is omitted.
-   The server typically supplies this field to instruct blob storage services
-   (such as Google Cloud Storage or Amazon S3) to automatically redirect to
-   `<finalize-upload-url>` upon completion. Omitting it for the attestation
-   upload ensures the storage service returns an HTTP `204 No Content` response
-   without triggering the finalization redirect before the package archive itself
-   is uploaded.
- * The `file` field contains the Sigstore attestation JSON bundle with
-   `filename="attestation.sigstore.json"`.
-
-Example multi-part `POST` request to `<multipart-upload-url>` for uploading the
-attestation bundle:
-
-```http
-POST <path(multipart-upload-url)> HTTP/1.1
-Host: <host(multipart-upload-url)>
-Content-Length: <length>
-Content-Type: multipart/form-data; boundary=<boundary>
-
---<boundary>
-Content-Disposition: form-data; name="<urlencode(field-1)>"
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: binary
-
-<value-1>
-...
---<boundary>
-Content-Disposition: form-data; name="key"
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: binary
-
-<value-of-key>.sigstore.json
-...
---<boundary>
-Content-Type: application/octet-stream
-Content-Disposition: form-data; name="file"; filename="attestation.sigstore.json"
-
-<attestation JSON bundle>
-```
-
-Once the attestation bundle has been uploaded, the client proceeds to upload the
-package archive `package.tar.gz` and finalize publishing as described above.
-
-During upload finalization (when the client issues the `GET` request to
-`<finalize-upload-url>`), the server locates the uploaded attestation bundle
-alongside the package archive and verifies it before accepting the publication.
-An attestation may be rejected as invalid if:
- * the JSON bundle is malformed or cannot be parsed as a Sigstore bundle,
- * the cryptographic signature cannot be verified against the trusted root,
- * the artifact digest recorded in the attestation does not match the SHA-256
-   hash of the uploaded package archive, or
- * the provenance information (such as the source repository) does not match
-   the `repository` field in `pubspec.yaml`.
-
-If verification fails, the server rejects the upload with an HTTP
-`400 Bad Request` response.
+similar blob storage service. Both the `<archive-upload-url>`,
+`<attestation-upload-url>`, and `<finalize-upload-url>` are allowed to contain
+query-string parameters, and all of these URLs need only be temporary.
 
 
 ## List security advisories for a package
