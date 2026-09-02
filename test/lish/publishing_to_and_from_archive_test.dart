@@ -113,7 +113,11 @@ void main() {
     expect(pub.stdout, emitsThrough('Publishing from archive: archive.tar.gz'));
     await confirmPublish(pub);
 
-    handleUploadForm(server);
+    handleUploadForm(server, withAttestation: true);
+    server.handle('/upload-attestation', (request) async {
+      await request.read().drain<void>();
+      return Response(204);
+    });
     server.handle('/upload', (request) async {
       await request.read().drain<void>();
       return Response.found(Uri.parse(server.url).resolve('/create'));
@@ -129,6 +133,58 @@ void main() {
     );
     await pub.shouldExit(SUCCESS);
   });
+
+  test(
+    'Fails when publishing with attestation to a server that does not '
+    'support it',
+    () async {
+      final server = await servePackages();
+      await d
+          .validPackage(
+            pubspecExtras: {
+              'repository': 'https://github.com/dart-lang/test_pkg',
+            },
+          )
+          .create();
+      await d.credentialsFile(server, 'access-token').create();
+      await runPub(
+        args: ['lish', '--to-archive', p.join('..', 'archive.tar.gz')],
+      );
+
+      final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+      File(bundlePath).writeAsStringSync('{"mediaType": "sigstore"}');
+
+      final pub = await startPublish(
+        server,
+        args: [
+          '--from-archive',
+          'archive.tar.gz',
+          '--with-attestation',
+          bundlePath,
+        ],
+        workingDirectory: d.sandbox,
+      );
+
+      expect(
+        pub.stdout,
+        emitsThrough('Publishing from archive: archive.tar.gz'),
+      );
+      await confirmPublish(pub);
+
+      handleUploadForm(server);
+
+      expect(pub.stdout, emitsThrough(startsWith('Uploading...')));
+      await pub.shouldExit(DATA);
+      expect(
+        pub.stderr,
+        emitsThrough(
+          contains(
+            'does not support uploading package attestations',
+          ),
+        ),
+      );
+    },
+  );
 
   test(
     'Fails when publishing with attestation without github repo in pubspec',

@@ -165,7 +165,56 @@ class LishCommand extends PubCommand {
         );
         final parameters = parseJsonResponse(parametersResponse);
 
-        /// 2. Upload package
+        /// 2. Upload attestation (if provided)
+        if (attestationBytes != null) {
+          final attestationUrl = parameters['attestationUrl'];
+          if (attestationUrl == null) {
+            dataError(
+              'The package repository $host does not support uploading '
+              'package attestations.',
+            );
+          }
+          if (attestationUrl is! String) {
+            invalidServerResponse(parametersResponse);
+          }
+          final attestationStorageUrl = Uri.parse(attestationUrl);
+
+          final attestationFields = _expectField(
+            parameters,
+            'attestationFields',
+            parametersResponse,
+          );
+          if (attestationFields is! Map) {
+            invalidServerResponse(parametersResponse);
+          }
+
+          await retryForHttp(
+            'uploading attestation',
+            () async {
+              final attRequest = http.MultipartRequest(
+                'POST',
+                attestationStorageUrl,
+              );
+              attestationFields.forEach((key, value) {
+                if (value is! String) invalidServerResponse(parametersResponse);
+                attRequest.fields[key as String] = value;
+              });
+              attRequest.files.add(
+                http.MultipartFile.fromBytes(
+                  'file',
+                  attestationBytes,
+                  filename: 'attestation.sigstore.json',
+                ),
+              );
+              attRequest.followRedirects = false;
+              final attResponse = await client.fetch(attRequest);
+              attResponse.throwIfNotOk();
+              return attResponse;
+            },
+          );
+        }
+
+        /// 3. Upload package
         final url = _expectField(parameters, 'url', parametersResponse);
         if (url is! String) invalidServerResponse(parametersResponse);
         cloudStorageUrl = Uri.parse(url);
@@ -186,37 +235,6 @@ class LishCommand extends PubCommand {
               if (value is! String) invalidServerResponse(parametersResponse);
               request.fields[key as String] = value;
             });
-
-            if (attestationBytes != null) {
-              // Upload the Sigstore attestation bundle alongside the package
-              // archive using the same signed Cloud Storage upload credentials.
-              // We store it at `<baseKey>.sigstore.json` so the backend can
-              // correlate it with the package archive during finalization.
-              final baseKey = fields['key'] as String?;
-              final attestationFields = Map<String, String>.from(
-                request.fields,
-              );
-              if (baseKey != null) {
-                attestationFields['key'] = '$baseKey.sigstore.json';
-              }
-              // Remove `success_action_redirect` so Cloud Storage does not
-              // issue a 303 redirect to the finalization URL prematurely. Only
-              // the subsequent package archive upload triggers the finalization
-              // redirect.
-              attestationFields.remove('success_action_redirect');
-              final attRequest =
-                  http.MultipartRequest('POST', cloudStorageUrl!)
-                    ..fields.addAll(attestationFields)
-                    ..files.add(
-                      http.MultipartFile.fromBytes(
-                        'file',
-                        attestationBytes,
-                        filename: 'attestation.sigstore.json',
-                      ),
-                    )
-                    ..followRedirects = false;
-              await client.fetch(attRequest);
-            }
 
             request.followRedirects = false;
             request.files.add(
