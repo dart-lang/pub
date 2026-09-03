@@ -450,7 +450,8 @@ class HostedSource extends CachedSource {
       }
       final status = PackageStatus(
         isDiscontinued: isDiscontinued,
-        discontinuedReplacedBy: replacedBy,
+        discontinuedReplacedBy:
+            replacedBy == null ? null : sanitizeForTerminal(replacedBy),
         isRetracted: retracted,
         advisoriesUpdated: advisoriesDate,
         published: publishedDate,
@@ -2101,7 +2102,7 @@ class Advisory {
     this.pubDisplayUrl,
   });
 
-  String get displayHandle => pubDisplayUrl ?? id;
+  String get displayHandle => sanitizeForTerminal(pubDisplayUrl ?? id);
 }
 
 /// Given a URL, returns a "normalized" string to be used as a directory name

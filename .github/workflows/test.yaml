@@ -1,11 +1,14 @@
 name: Dart CI
 
+permissions:
+  contents: read
+
 on:
   # Run CI on pushes to the main branch, and on PRs against main.
   push:
-    branches: [master]
+    branches: [main, master]
   pull_request:
-    branches: [master]
+    branches: [main, master]
   schedule:
     - cron: '0 0 * * 0'
 
@@ -25,6 +28,8 @@ jobs:
         sdk: [dev]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
       - uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260
         with:
           sdk: ${{ matrix.sdk }}
@@ -53,12 +58,15 @@ jobs:
         shard: [0, 1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
       - uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260
         with:
           sdk: ${{ matrix.sdk }}
       - name: Install dependencies
         run: dart pub get
       - name: Build snapshot
-        run: dart --snapshot=${{ env._PUB_TEST_SNAPSHOT }} bin/pub.dart
+        shell: bash
+        run: dart --snapshot="$_PUB_TEST_SNAPSHOT" bin/pub.dart
       - name: Run tests
         run: dart test --preset ci --total-shards=7 --shard-index=${{ matrix.shard }}

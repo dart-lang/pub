@@ -8,7 +8,7 @@ import 'term.dart';
 
 /// A set of mutually-incompatible terms.
 ///
-/// See https://github.com/dart-lang/pub/tree/master/doc/solver.md#incompatibility.
+/// See https://github.com/dart-lang/pub/tree/main/doc/solver.md#incompatibility.
 class Incompatibility {
   /// The mutually-incompatible terms.
   final List<Term> terms;

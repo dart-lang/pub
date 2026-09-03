@@ -55,7 +55,7 @@ class SolveFailure implements ApplicationException {
 /// A class that writes a human-readable description of the cause of a
 /// [SolveFailure].
 ///
-/// See https://github.com/dart-lang/pub/tree/master/doc/solver.md#error-reporting
+/// See https://github.com/dart-lang/pub/tree/main/doc/solver.md#error-reporting
 /// for details on how this algorithm works.
 class _Writer {
   /// The root incompatibility.
