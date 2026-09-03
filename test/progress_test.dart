@@ -91,6 +91,10 @@ final class _MockStdout implements Stdout {
 }
 
 void main() {
+  setUp(resetGracePeriod);
+
+  tearDown(resetGracePeriod);
+
   test('stopAndClear erases line with ANSI escape sequence', () async {
     final mockStdout = _MockStdout();
     await IOOverrides.runZoned(() async {
@@ -306,8 +310,22 @@ void main() {
   });
 
   test('log.progress supports synchronous callbacks', () async {
-    final result = await log.progress('Sync task', () => 42);
-    expect(result, 42);
+    final mockStdout = _MockStdout();
+    await IOOverrides.runZoned(() async {
+      final result = await log.progress('Sync task', () => 42);
+      expect(result, 42);
+    }, stdout: () => mockStdout);
+  });
+
+  test('ProgressGracePeriod starts an unstarted stopwatch', () async {
+    final stopwatch = Stopwatch();
+    expect(stopwatch.isRunning, isFalse);
+    final grace = ProgressGracePeriod(stopwatch: stopwatch);
+    expect(stopwatch.isRunning, isTrue);
+    expect(
+      grace.remainingDelay,
+      lessThanOrEqualTo(const Duration(milliseconds: 500)),
+    );
   });
 
   test(
