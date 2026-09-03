@@ -1430,7 +1430,7 @@ R withOverrides<R>(
   StreamSink<List<int>>? stderr,
   http.Client? httpClient,
 }) {
-  // If there are no overrides we're done
+  // If there are no overrides we're done.
   if (fileSystem == null &&
       environment == null &&
       platformVersion == null &&
