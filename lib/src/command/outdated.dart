@@ -38,10 +38,9 @@ class OutdatedCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-outdated';
 
-  /// Avoid showing spinning progress messages when not in a terminal, and
-  /// when we are outputting machine-readable json.
-  bool get _shouldShowSpinner =>
-      terminalOutputForStdout && !argResults.flag('json');
+  /// Avoid showing spinning progress messages when not in an ANSI-capable
+  /// terminal, and when we are outputting machine-readable json.
+  bool get _shouldShowSpinner => canUseAnsiCodes && !argResults.flag('json');
 
   @override
   bool get takesArguments => false;

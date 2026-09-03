@@ -109,23 +109,38 @@ void main() {
     }, stdout: () => mockStdout);
   });
 
-  test('stopAndClear overwrites with spaces when ANSI is disabled', () async {
+  test('transient progress produces no output when ANSI is disabled', () async {
     final mockStdout = _MockStdout();
     await IOOverrides.runZoned(() async {
       forceColors = ForceColorOption.never;
       try {
-        final progress = Progress('Resolving dependencies');
-        expect(mockStdout.buffer.toString(), 'Resolving dependencies... ');
+        final progress = Progress('Resolving dependencies', transient: true);
+        expect(mockStdout.buffer.toString(), isEmpty);
         progress.stopAndClear();
-        expect(
-          mockStdout.buffer.toString(),
-          'Resolving dependencies... \r${' ' * 26}\r',
-        );
+        expect(mockStdout.buffer.toString(), isEmpty);
       } finally {
         forceColors = ForceColorOption.auto;
       }
     }, stdout: () => mockStdout);
   });
+
+  test(
+    'non-transient progress logs once without animation when ANSI is disabled',
+    () async {
+      final mockStdout = _MockStdout();
+      await IOOverrides.runZoned(() async {
+        forceColors = ForceColorOption.never;
+        try {
+          final progress = Progress('Resolving dependencies');
+          expect(mockStdout.buffer.toString(), 'Resolving dependencies...\n');
+          progress.stop();
+          expect(mockStdout.buffer.toString(), 'Resolving dependencies...\n');
+        } finally {
+          forceColors = ForceColorOption.auto;
+        }
+      }, stdout: () => mockStdout);
+    },
+  );
 
   test('stop prints completed newline', () async {
     final mockStdout = _MockStdout();
@@ -266,17 +281,15 @@ void main() {
     }, stdout: () => mockStdout);
   });
 
-  test('stopAnimating erases elapsed time in non-ANSI mode', () async {
+  test('stopAnimating is a no-op when ANSI is disabled', () async {
     final mockStdout = _MockStdout();
     await IOOverrides.runZoned(() async {
       forceColors = ForceColorOption.never;
       try {
         final progress = Progress('Animating task', delay: Duration.zero);
-        await Future<void>.delayed(const Duration(milliseconds: 1100));
+        expect(mockStdout.buffer.toString(), 'Animating task...\n');
         progress.stopAnimating();
-        final output = mockStdout.buffer.toString();
-        expect(output, contains('\rAnimating task... '));
-        expect(output.endsWith('\n'), isTrue);
+        expect(mockStdout.buffer.toString(), 'Animating task...\n');
       } finally {
         forceColors = ForceColorOption.auto;
       }

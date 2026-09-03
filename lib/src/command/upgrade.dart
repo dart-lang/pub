@@ -111,8 +111,9 @@ class UpgradeCommand extends PubCommand {
     );
   }
 
-  /// Avoid showing spinning progress messages when not in a terminal.
-  bool get _shouldShowSpinner => terminalOutputForStdout;
+  /// Avoid showing spinning progress messages when not in an ANSI-capable
+  /// terminal.
+  bool get _shouldShowSpinner => canUseAnsiCodes;
 
   bool get _dryRun => argResults.flag('dry-run');
 

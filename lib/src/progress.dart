@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'io.dart';
 import 'log.dart' as log;
 import 'utils.dart';
 
@@ -145,8 +144,8 @@ final class Progress {
 
     // The animation is only shown when it would be meaningful to a human.
     // That means we're writing a visible message to a TTY at normal log levels
-    // with non-JSON output.
-    if (!terminalOutputForStdout ||
+    // with ANSI support and non-JSON output.
+    if (!canUseAnsiCodes ||
         !log.verbosity.isLevelVisible(level) ||
         fine ||
         log.verbosity.isLevelVisible(log.Level.fine)) {
@@ -180,13 +179,7 @@ final class Progress {
 
   /// Erases the progress message from the terminal.
   void _erase() {
-    if (canUseAnsiCodes) {
-      stdout.write('\r${log.eraseLine}');
-    } else {
-      stdout.write(
-        '\r${' ' * (_message.length + '... '.length + _timeLength)}\r',
-      );
-    }
+    stdout.write('\r${log.eraseLine}');
   }
 
   /// Stops the progress indicator and prints the final elapsed time.
@@ -241,11 +234,7 @@ final class Progress {
       } else {
         // Erase the time indicator so that we don't leave a misleading
         // half-complete time indicator on the console.
-        if (canUseAnsiCodes) {
-          stdout.write('\r$_message... ${log.eraseToLineEnd}');
-        } else {
-          stdout.write('\r$_message... ${' ' * _timeLength}\r$_message... ');
-        }
+        stdout.write('\r$_message... ${log.eraseToLineEnd}');
         stdout.writeln();
       }
     }
