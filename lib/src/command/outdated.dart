@@ -40,7 +40,8 @@ class OutdatedCommand extends PubCommand {
 
   /// Avoid showing spinning progress messages when not in an ANSI-capable
   /// terminal, and when we are outputting machine-readable json.
-  bool get _shouldShowSpinner => canUseAnsiCodes && !argResults.flag('json');
+  bool get _shouldShowSpinner =>
+      terminalOutputForStdout && canUseAnsiCodes && !argResults.flag('json');
 
   @override
   bool get takesArguments => false;
