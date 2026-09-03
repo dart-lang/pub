@@ -198,12 +198,22 @@ class GitSource extends CachedSource {
 
   /// Throws a [FormatException] if [url] isn't a valid Git URL.
   static _ValidatedUrl _validatedUrl(String url, String? containingDir) {
+    if (url.startsWith('-')) {
+      throw FormatException('"$url" is not a valid Git URL.');
+    }
     var relative = false;
-    // If the URL contains an @, it's probably an SSH hostname, which we don't
-    // know how to validate.
-    if (!url.contains('@')) {
+    // An SCP-style SSH URL (e.g. git@github.com:org/repo.git) has '@' before
+    // the first ':', which Dart's URI parser cannot parse.
+    final atIndex = url.indexOf('@');
+    final colonIndex = url.indexOf(':');
+    final isScpUrl =
+        atIndex != -1 && (colonIndex == -1 || atIndex < colonIndex);
+    if (!isScpUrl) {
       // Otherwise, we use Dart's URL parser to validate the URL.
       final parsed = Uri.parse(url);
+      if (parsed.hasScheme && parsed.scheme == 'ext') {
+        throw FormatException('"$url" is not a valid Git URL.');
+      }
       if (!parsed.hasAbsolutePath) {
         // Relative paths coming from pubspecs that are not on the local file
         // system aren't allowed. This can happen if a hosted or git dependency
@@ -854,6 +864,7 @@ class GitSource extends CachedSource {
     final args = [
       'clone',
       if (mirror) '--mirror' else '--no-checkout',
+      '--',
       from,
       to,
     ];
