@@ -73,16 +73,6 @@ ProgressGracePeriod get currentProgressGracePeriod =>
     Zone.current[_progressGracePeriodKey] as ProgressGracePeriod? ??
     _defaultProgressGracePeriod;
 
-/// Whether a progress message has been displayed since the last reset.
-bool get hasShownProgress => currentProgressGracePeriod.hasShownProgress;
-set hasShownProgress(bool value) {
-  if (value) {
-    currentProgressGracePeriod.markProgressShown();
-  } else {
-    currentProgressGracePeriod.reset();
-  }
-}
-
 /// Resets the shared grace period timer.
 void resetGracePeriod() {
   currentProgressGracePeriod.reset();

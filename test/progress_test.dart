@@ -195,7 +195,7 @@ void main() {
       await IOOverrides.runZoned(() async {
         forceColors = ForceColorOption.always;
         try {
-          hasShownProgress = true;
+          currentProgressGracePeriod.markProgressShown();
           final progress = Progress('Downloading packages');
           expect(mockStdout.buffer.toString(), 'Downloading packages... ');
           progress.stopAndClear();
