@@ -1,0 +1,22 @@
+name: Sync master with main
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  sync-master:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'dart-lang' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fast-forward master to main
+        run: |
+          git push origin HEAD:refs/heads/master --force

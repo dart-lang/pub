@@ -10,7 +10,7 @@ import 'set_relation.dart';
 /// A statement about a package which is true or false for a given selection of
 /// package versions.
 ///
-/// See https://github.com/dart-lang/pub/tree/master/doc/solver.md#term.
+/// See https://github.com/dart-lang/pub/tree/main/doc/solver.md#term.
 class Term {
   /// Whether the term is positive or not.
   ///
