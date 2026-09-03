@@ -120,6 +120,9 @@ final class Progress {
   /// Whether the initial start message has been printed.
   var _hasStarted = false;
 
+  /// Whether this progress indicator is transient (erased upon completion).
+  final bool _transient;
+
   /// Creates a new progress indicator.
   ///
   /// If [fine] is passed, this will log progress messages on [log.Level.fine]
@@ -135,7 +138,7 @@ final class Progress {
     bool fine = false,
     Duration? delay,
     bool transient = false,
-  }) {
+  }) : _transient = transient {
     _stopwatch.start();
 
     final level = fine ? log.Level.fine : log.Level.message;
@@ -175,6 +178,17 @@ final class Progress {
     }
   }
 
+  /// Erases the progress message from the terminal.
+  void _erase() {
+    if (canUseAnsiCodes) {
+      stdout.write('\r${log.eraseLine}');
+    } else {
+      stdout.write(
+        '\r${' ' * (_message.length + '... '.length + _timeLength)}\r',
+      );
+    }
+  }
+
   /// Stops the progress indicator and prints the final elapsed time.
   void stop() {
     _stopwatch.stop();
@@ -204,13 +218,7 @@ final class Progress {
       _timer!.cancel();
       _timer = null;
       if (_hasStarted) {
-        if (canUseAnsiCodes) {
-          stdout.write('\r${log.eraseLine}');
-        } else {
-          stdout.write(
-            '\r${' ' * (_message.length + '... '.length + _timeLength)}\r',
-          );
-        }
+        _erase();
       }
     }
 
@@ -227,15 +235,19 @@ final class Progress {
   void stopAnimating() {
     if (_timer == null) return;
 
-    // Erase the time indicator so that we don't leave a misleading
-    // half-complete time indicator on the console.
     if (_hasStarted) {
-      if (canUseAnsiCodes) {
-        stdout.write('\b' * _timeLength + log.eraseToLineEnd);
+      if (_transient) {
+        _erase();
       } else {
-        stdout.write('\b' * _timeLength);
+        // Erase the time indicator so that we don't leave a misleading
+        // half-complete time indicator on the console.
+        if (canUseAnsiCodes) {
+          stdout.write('\r$_message... ${log.eraseToLineEnd}');
+        } else {
+          stdout.write('\r$_message... ${' ' * _timeLength}\r$_message... ');
+        }
+        stdout.writeln();
       }
-      stdout.writeln();
     }
     _timeLength = 0;
     _timer!.cancel();

@@ -240,7 +240,43 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 1100));
         progress.stopAnimating();
         final output = mockStdout.buffer.toString();
-        expect(output, contains('${log.eraseToLineEnd}\n'));
+        expect(output, contains('\rAnimating task... ${log.eraseToLineEnd}\n'));
+      } finally {
+        forceColors = ForceColorOption.auto;
+      }
+    }, stdout: () => mockStdout);
+  });
+
+  test('stopAnimating erases entire line when transient', () async {
+    final mockStdout = _MockStdout();
+    await IOOverrides.runZoned(() async {
+      forceColors = ForceColorOption.always;
+      try {
+        final progress = Progress(
+          'Transient task',
+          delay: Duration.zero,
+          transient: true,
+        );
+        progress.stopAnimating();
+        final output = mockStdout.buffer.toString();
+        expect(output, 'Transient task... \r${log.eraseLine}');
+      } finally {
+        forceColors = ForceColorOption.auto;
+      }
+    }, stdout: () => mockStdout);
+  });
+
+  test('stopAnimating erases elapsed time in non-ANSI mode', () async {
+    final mockStdout = _MockStdout();
+    await IOOverrides.runZoned(() async {
+      forceColors = ForceColorOption.never;
+      try {
+        final progress = Progress('Animating task', delay: Duration.zero);
+        await Future<void>.delayed(const Duration(milliseconds: 1100));
+        progress.stopAnimating();
+        final output = mockStdout.buffer.toString();
+        expect(output, contains('\rAnimating task... '));
+        expect(output.endsWith('\n'), isTrue);
       } finally {
         forceColors = ForceColorOption.auto;
       }
