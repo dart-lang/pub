@@ -442,9 +442,9 @@ the \$PUB_HOSTED_URL environment variable.''');
     final warnings = <String>[];
     final errors = <String>[];
 
-    await log.spinner(
+    await log.progress(
       'Validating package',
-      () async => await Validator.runAll(
+      () => Validator.runAll(
         entrypoint,
         packageBytes.length,
         host,
@@ -453,6 +453,7 @@ the \$PUB_HOSTED_URL environment variable.''');
         warnings: warnings,
         errors: errors,
       ),
+      transient: true,
     );
 
     if (errors.isNotEmpty) {

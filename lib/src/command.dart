@@ -187,18 +187,17 @@ abstract class PubCommand extends Command<int> {
 
   @override
   @nonVirtual
-  Future<int> run() async {
-    return await withOverrides(
-      _run,
-      fileSystem: _pubEmbeddableCommand?.fileSystem,
-      environment: _pubEmbeddableCommand?.environment,
-      platformVersion: _pubEmbeddableCommand?.platformVersion,
-      stdin: _pubEmbeddableCommand?.stdin,
-      stdout: _pubEmbeddableCommand?.stdout,
-      stderr: _pubEmbeddableCommand?.stderr,
-      httpClient: _pubEmbeddableCommand?.httpClient,
-    );
-  }
+  Future<int> run() => withOverrides(
+    _run,
+    fileSystem: _pubEmbeddableCommand?.fileSystem,
+    environment: _pubEmbeddableCommand?.environment,
+    platformVersion: _pubEmbeddableCommand?.platformVersion,
+    stdin: _pubEmbeddableCommand?.stdin,
+    stdout: _pubEmbeddableCommand?.stdout,
+    stderr: _pubEmbeddableCommand?.stderr,
+    httpClient: _pubEmbeddableCommand?.httpClient,
+    progressGracePeriod: _pubEmbeddableCommand?.progressGracePeriod,
+  );
 
   Future<int> _run() async {
     _computeCommand(_pubTopLevel.argResults);

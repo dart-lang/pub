@@ -624,7 +624,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
           unlock: unlock,
           additionalConstraints: additionalConstraints,
         );
-      });
+      }, transient: summaryOnly);
     } on SolveFailure catch (e) {
       throw SolveFailure(
         e.incompatibility,
@@ -640,7 +640,10 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
 
     // We have to download files also with --dry-run to ensure we know the
     // archive hashes for downloaded files.
-    final newLockFile = await result.downloadCachedPackages(cache);
+    final newLockFile = await result.downloadCachedPackages(
+      cache,
+      transient: summaryOnly,
+    );
     final report = SolveReport(
       type,
       workspaceRoot.presentationDir,
@@ -764,7 +767,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         additionalSources: additionalSources,
         nativeAssets: nativeAssets,
       );
-    });
+    }, transient: true);
   }
 
   Future<void> _precompileExecutable(

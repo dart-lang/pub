@@ -111,8 +111,9 @@ class UpgradeCommand extends PubCommand {
     );
   }
 
-  /// Avoid showing spinning progress messages when not in a terminal.
-  bool get _shouldShowSpinner => terminalOutputForStdout;
+  /// Avoid showing spinning progress messages when not in an ANSI-capable
+  /// terminal.
+  bool get _shouldShowSpinner => terminalOutputForStdout && canUseAnsiCodes;
 
   bool get _dryRun => argResults.flag('dry-run');
 
@@ -422,16 +423,19 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     Entrypoint e, {
     Iterable<ConstraintAndCause>? additionalConstraints,
   }) async {
-    final solveResult = await log.spinner('Resolving dependencies', () async {
-      return await resolveVersions(
+    final solveResult = await log.progress(
+      'Resolving dependencies',
+      () => resolveVersions(
         SolveType.upgrade,
         cache,
         e.workspaceRoot.transformWorkspace(
           (package) => stripVersionBounds(package.pubspec),
         ),
         additionalConstraints: additionalConstraints,
-      );
-    }, condition: _shouldShowSpinner);
+      ),
+      condition: _shouldShowSpinner,
+      transient: true,
+    );
     return {for (final package in solveResult.packages) package.name: package};
   }
 

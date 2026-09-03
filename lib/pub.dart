@@ -12,6 +12,7 @@ import 'src/entrypoint.dart';
 import 'src/exceptions.dart';
 import 'src/http.dart';
 import 'src/io.dart';
+import 'src/progress.dart';
 import 'src/pub_embeddable_command.dart';
 import 'src/source/git.dart';
 import 'src/system_cache.dart';
@@ -22,15 +23,20 @@ export 'src/executable.dart'
         CommandResolutionIssue,
         DartExecutableWithPackageConfig,
         getExecutableForCommand;
+export 'src/progress.dart' show ProgressGracePeriod, withProgressGracePeriod;
 
 /// Returns a [Command] for pub functionality that can be used by an embedding
 /// CommandRunner.
 ///
 /// [isVerbose] should return `true` (after argument resolution) if the
 /// embedding top-level is in verbose mode.
+///
+/// [progressGracePeriod] specifies the shared grace period before initial
+/// spinners are displayed.
 Command<int> pubCommand({
   required bool Function() isVerbose,
   String category = '',
+  ProgressGracePeriod? progressGracePeriod,
   f.FileSystem? fileSystem,
   Map<String, String>? environment,
   String? platformVersion,
@@ -49,7 +55,9 @@ Command<int> pubCommand({
     stdout: stdout,
     stderr: stderr,
     httpClient: httpClient,
+    progressGracePeriod: progressGracePeriod,
   ),
+  progressGracePeriod: progressGracePeriod,
   fileSystem: fileSystem,
   environment: environment,
   platformVersion: platformVersion,
@@ -71,12 +79,16 @@ Command<int> pubCommand({
 /// If [onlyOutputWhenTerminal] is `true` (the default) there will be no
 /// output if no terminal is attached.
 ///
+/// [progressGracePeriod] specifies the shared grace period before initial
+/// spinners are displayed.
+///
 /// Throws a [ResolutionFailedException] if resolution fails.
 Future<void> ensurePubspecResolved(
   String dir, {
   bool isOffline = false,
   bool summaryOnly = true,
   bool onlyOutputWhenTerminal = true,
+  ProgressGracePeriod? progressGracePeriod,
   f.FileSystem? fileSystem,
   Map<String, String>? environment,
   String? platformVersion,
@@ -84,38 +96,41 @@ Future<void> ensurePubspecResolved(
   StreamSink<List<int>>? stdout,
   StreamSink<List<int>>? stderr,
   http.Client? httpClient,
-}) async {
-  return await withOverrides(
-    () async {
-      try {
-        await Entrypoint.ensureUpToDate(
-          dir,
-          cache: SystemCache(isOffline: isOffline),
-          summaryOnly: summaryOnly,
-          onlyOutputWhenTerminal: onlyOutputWhenTerminal,
-        );
-      } on ApplicationException catch (e) {
-        throw ResolutionFailedException._(e.toString());
-      } finally {
-        // TODO(https://github.com/dart-lang/pub/issues/4200)
-        // This is a bit of a hack.
-        // We should most likely take a client here.
-        globalHttpClient.close();
-      }
-    },
-    fileSystem: fileSystem,
-    environment: environment,
-    platformVersion: platformVersion,
-    stdin: stdin,
-    stdout: stdout,
-    stderr: stderr,
-    httpClient: httpClient,
-  );
-}
+}) => withOverrides(
+  () async {
+    try {
+      await Entrypoint.ensureUpToDate(
+        dir,
+        cache: SystemCache(isOffline: isOffline),
+        summaryOnly: summaryOnly,
+        onlyOutputWhenTerminal: onlyOutputWhenTerminal,
+      );
+    } on ApplicationException catch (e) {
+      throw ResolutionFailedException._(e.toString());
+    } finally {
+      // TODO(https://github.com/dart-lang/pub/issues/4200)
+      // This is a bit of a hack.
+      // We should most likely take a client here.
+      globalHttpClient.close();
+    }
+  },
+  progressGracePeriod: progressGracePeriod,
+  fileSystem: fileSystem,
+  environment: environment,
+  platformVersion: platformVersion,
+  stdin: stdin,
+  stdout: stdout,
+  stderr: stderr,
+  httpClient: httpClient,
+);
 
-class ResolutionFailedException implements Exception {
-  String message;
+/// Exception thrown when package resolution fails in [ensurePubspecResolved].
+final class ResolutionFailedException implements Exception {
+  final String message;
   ResolutionFailedException._(this.message);
+
+  @override
+  String toString() => message;
 }
 
 /// Given a Git repo that contains a pub package, gets the name of the pub
