@@ -28,8 +28,8 @@ final class ProgressGracePeriod {
 
   /// Creates a [ProgressGracePeriod] with an optional [defaultGracePeriod].
   ///
-  /// If provided, [stopwatch] is used to track elapsed time; it is started if
-  /// not already running.
+  /// If provided, [stopwatch] is used to track elapsed time. It is an error if
+  /// [stopwatch] is not running.
   ///
   /// If [hasShownProgress] is `true`, initial progress delay is bypassed
   /// immediately.
@@ -40,7 +40,7 @@ final class ProgressGracePeriod {
     Stopwatch? stopwatch,
     bool hasShownProgress = false,
   }) : _defaultGracePeriod = defaultGracePeriod,
-       _stopwatch = (stopwatch ?? Stopwatch())..start(),
+       _stopwatch = stopwatch ?? (Stopwatch()..start()),
        _hasShownProgress = hasShownProgress {
     if (defaultGracePeriod.isNegative) {
       throw ArgumentError.value(
@@ -48,6 +48,9 @@ final class ProgressGracePeriod {
         'defaultGracePeriod',
         'Must not be negative',
       );
+    }
+    if (stopwatch != null && !stopwatch.isRunning) {
+      throw ArgumentError.value(stopwatch, 'stopwatch', 'Must be running');
     }
   }
 

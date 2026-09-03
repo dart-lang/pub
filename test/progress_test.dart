@@ -317,11 +317,17 @@ void main() {
     }, stdout: () => mockStdout);
   });
 
-  test('ProgressGracePeriod starts an unstarted stopwatch', () async {
+  test('ProgressGracePeriod rejects an unstarted stopwatch', () {
     final stopwatch = Stopwatch();
-    expect(stopwatch.isRunning, isFalse);
+    expect(
+      () => ProgressGracePeriod(stopwatch: stopwatch),
+      throwsArgumentError,
+    );
+  });
+
+  test('ProgressGracePeriod accepts a running stopwatch', () {
+    final stopwatch = Stopwatch()..start();
     final grace = ProgressGracePeriod(stopwatch: stopwatch);
-    expect(stopwatch.isRunning, isTrue);
     expect(
       grace.remainingDelay,
       lessThanOrEqualTo(const Duration(milliseconds: 500)),
