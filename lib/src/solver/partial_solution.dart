@@ -12,7 +12,7 @@ import 'term.dart';
 /// what's true for the eventual set of package versions that will comprise the
 /// total solution.
 ///
-/// See https://github.com/dart-lang/pub/tree/master/doc/solver.md#partial-solution.
+/// See https://github.com/dart-lang/pub/tree/main/doc/solver.md#partial-solution.
 class PartialSolution {
   /// The canonical [PackageRef]s of workspace root packages, keyed by package
   /// name.

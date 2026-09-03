@@ -37,7 +37,7 @@ import 'type.dart';
 /// The version solver that finds a set of package versions that satisfy the
 /// root package's dependencies.
 ///
-/// See https://github.com/dart-lang/pub/tree/master/doc/solver.md for details
+/// See https://github.com/dart-lang/pub/tree/main/doc/solver.md for details
 /// on how this solver works.
 class VersionSolver {
   /// All known incompatibilities, indexed by package name.
@@ -150,7 +150,7 @@ class VersionSolver {
   /// Performs [unit propagation][] on incompatibilities transitively related to
   /// [package] to derive new assignments for [_solution].
   ///
-  /// [unit propagation]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#unit-propagation
+  /// [unit propagation]: https://github.com/dart-lang/pub/tree/main/doc/solver.md#unit-propagation
   void _propagate(String package) {
     final changed = {package};
 
@@ -188,7 +188,7 @@ class VersionSolver {
   /// If [incompatibility] is [almost satisfied][] by [_solution], adds the
   /// negation of the unsatisfied term to [_solution].
   ///
-  /// [almost satisfied]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#incompatibility
+  /// [almost satisfied]: https://github.com/dart-lang/pub/tree/main/doc/solver.md#incompatibility
   ///
   /// If [incompatibility] is satisfied by [_solution], returns `#conflict`. If
   /// [incompatibility] is almost satisfied by [_solution], returns the
@@ -244,7 +244,7 @@ class VersionSolver {
   /// incompatibility will allow [_propagate] to deduce new assignments.
   ///
   /// [conflict resolution]:
-  /// https://github.com/dart-lang/pub/tree/master/doc/solver.md#conflict-resolution
+  /// https://github.com/dart-lang/pub/tree/main/doc/solver.md#conflict-resolution
   ///
   /// Adds the new incompatibility to [_incompatibilities] and returns it.
   Incompatibility _resolveConflict(Incompatibility incompatibility) {
@@ -349,7 +349,7 @@ class VersionSolver {
       // the incompatibility as well, See [the algorithm documentation][] for
       // details.
       //
-      // [the algorithm documentation]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#conflict-resolution
+      // [the algorithm documentation]: https://github.com/dart-lang/pub/tree/main/doc/solver.md#conflict-resolution
       if (difference != null) newTerms.add(difference.inverse);
 
       incompatibility = Incompatibility(

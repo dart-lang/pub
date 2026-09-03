@@ -6,9 +6,9 @@ permissions:
 on:
   # Run CI on pushes to the main branch, and on PRs against main.
   push:
-    branches: [master]
+    branches: [main, master]
   pull_request:
-    branches: [master]
+    branches: [main, master]
   schedule:
     - cron: '0 0 * * 0'
 
