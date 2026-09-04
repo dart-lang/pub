@@ -73,8 +73,8 @@ void main() {
         .create();
 
     await pubGet(
-      error: contains(
-        'contains a symbolic link "lib/escape_link" targeting "../../../../etc/passwd" which points outside the repository.',
+      error: matches(
+        r'contains a symbolic link "lib[/\\]escape_link" targeting "(\.\.[/\\]){4}etc[/\\]passwd" which points outside the repository\.',
       ),
       exitCode: exit_codes.UNAVAILABLE,
     );
@@ -100,8 +100,8 @@ void main() {
         .create();
 
     await pubGet(
-      error: contains(
-        'contains a symbolic link "lib/abs_link" targeting "/etc/passwd" which points outside the repository.',
+      error: matches(
+        r'contains a symbolic link "lib[/\\]abs_link" targeting "[/\\]etc[/\\]passwd" which points outside the repository\.',
       ),
       exitCode: exit_codes.UNAVAILABLE,
     );
@@ -155,8 +155,8 @@ void main() {
         .create();
 
     await pubGet(
-      error: contains(
-        'contains a symbolic link "lib/sub/escape_link" targeting "parent_link/../../../../etc/passwd" which points outside the repository.',
+      error: matches(
+        r'contains a symbolic link "lib[/\\]sub[/\\]escape_link" targeting "parent_link[/\\](\.\.[/\\]){4}etc[/\\]passwd" which points outside the repository\.',
       ),
       exitCode: exit_codes.UNAVAILABLE,
     );
@@ -184,7 +184,7 @@ void main() {
 
     await pubGet(
       error: matches(
-        r'contains a circular symbolic link at "lib/circ[12]\.dart"',
+        r'contains a circular symbolic link at "lib[/\\]circ[12]\.dart"',
       ),
       exitCode: exit_codes.UNAVAILABLE,
     );
