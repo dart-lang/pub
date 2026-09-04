@@ -372,6 +372,9 @@ class HostedSource extends CachedSource {
     r'^[a-zA-Z_]+[a-zA-Z0-9_]*$',
   );
 
+  /// Matches a trailing timezone indicator (e.g. 'Z', '+02:00', or '-0500').
+  static final _timezoneSuffixRegExp = RegExp(r'(?:Z|[+-]\d{2}(?::?\d{2})?)$');
+
   List<HostedVersionInfo> _versionInfoFromPackageListing(
     Map body,
     PackageRef ref,
@@ -432,7 +435,7 @@ class HostedSource extends CachedSource {
         if (publishedData is! String) {
           throw const FormatException('published must be a String');
         }
-        if (!RegExp(r'(?:Z|[+-]\d{2}(?::?\d{2})?)$').hasMatch(publishedData)) {
+        if (!_timezoneSuffixRegExp.hasMatch(publishedData)) {
           throw const FormatException(
             'published must contain timezone information '
             '(e.g. "2026-05-28T09:09:29Z")',

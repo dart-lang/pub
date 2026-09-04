@@ -71,7 +71,7 @@ class VersionSolver {
     for (final package in _root.transitiveWorkspace) package.name: package,
   };
 
-  /// The policy to apply, if any, found in the workspace.
+  /// The [Policies] to apply, if any, found in the workspace.
   late final Policies? _policies = _root.transitiveWorkspace
       .map((p) => p.pubspec.policies)
       .firstWhereOrNull((policies) => policies != null);

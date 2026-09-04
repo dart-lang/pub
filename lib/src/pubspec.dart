@@ -132,7 +132,10 @@ environment:
     };
   }();
 
-  /// The policy configuration.
+  /// The workspace [Policies] configured in this pubspec, or `null` if none
+  /// are defined.
+  ///
+  /// Parsed lazily on first access.
   Policies? get policies => _policies ??= _parsePolicies();
   Policies? _policies;
 
@@ -239,9 +242,7 @@ environment:
 
   DateTime _parseBefore(YamlNode node) {
     if (node case YamlScalar(value: final String value)) {
-      if (!RegExp(
-        r'^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?)?Z$',
-      ).hasMatch(value)) {
+      if (!_utcIso8601RegExp.hasMatch(value)) {
         _error(
           '"before" must be a UTC timestamp in ISO 8601 format '
           '(e.g. "2026-05-28T09:09:29Z")',
@@ -291,7 +292,7 @@ environment:
   }
 
   Duration _parseDuration(String s) {
-    final match = RegExp(r'^(\d+)([dw])$').firstMatch(s);
+    final match = _durationRegExp.firstMatch(s);
     if (match == null) {
       throw const FormatException(
         'Invalid duration format. Expected e.g. "7d" or "2w"',
@@ -306,6 +307,16 @@ environment:
     }
     throw const FormatException('Invalid duration unit');
   }
+
+  /// Matches a UTC timestamp in ISO 8601 format ending with 'Z'
+  /// (e.g. "2026-05-28T09:09:29Z" or "2026-05-28Z").
+  static final _utcIso8601RegExp = RegExp(
+    r'^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?)?Z$',
+  );
+
+  /// Matches a duration string of digits followed by 'd' (days) or 'w' (weeks),
+  /// such as "7d" or "2w".
+  static final _durationRegExp = RegExp(r'^(\d+)([dw])$');
 
   /// The additional packages this package depends on.
   Map<String, PackageRange> get dependencies =>
