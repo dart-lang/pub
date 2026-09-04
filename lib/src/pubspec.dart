@@ -167,126 +167,127 @@ environment:
     }
 
     final cooldownNode = policiesNode.nodes['cooldown'];
-    CooldownPolicy? cooldown;
-    if (cooldownNode != null && cooldownNode.value != null) {
-      if (cooldownNode is! YamlMap) {
-        _error('"cooldown" must be a map', cooldownNode.span);
-      }
-
-      final minAgeNode = cooldownNode.nodes['min_age'];
-      Duration? minAge;
-      switch (minAgeNode) {
-        case null:
-          break;
-        case YamlScalar(value: final String value):
-          try {
-            minAge = _parseDuration(value);
-          } on FormatException catch (e) {
-            _error('Invalid "min_age": ${e.message}', minAgeNode.span);
-          }
-        default:
-          _error('"min_age" must be a string', minAgeNode.span);
-      }
-
-      final beforeNode = cooldownNode.nodes['before'];
-      DateTime? before;
-      switch (beforeNode) {
-        case null:
-          break;
-        case YamlScalar(value: final String value):
-          if (!RegExp(
-            r'^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?)?Z$',
-          ).hasMatch(value)) {
-            _error(
-              '"before" must be a UTC timestamp in ISO 8601 format '
-              '(e.g. "2026-05-28T09:09:29Z")',
-              beforeNode.span,
-            );
-          }
-          final parsed = DateTime.tryParse(value);
-          if (parsed == null || !parsed.isUtc) {
-            _error(
-              '"before" must be a valid UTC timestamp in ISO 8601 format',
-              beforeNode.span,
-            );
-          }
-          before = parsed;
-        default:
-          _error('"before" must be a string', beforeNode.span);
-      }
-
-      if (minAgeNode != null && beforeNode != null) {
-        _error(
-          'Only one of "min_age" and "before" can be specified.',
-          cooldownNode.span,
-        );
-      }
-      if (minAgeNode == null && beforeNode == null) {
-        _error(
-          'One of "min_age" or "before" must be specified.',
-          cooldownNode.span,
-        );
-      }
-
-      final excludeNode = cooldownNode.nodes['exclude'];
-      final exclude = <String, VersionConstraint>{};
-      switch (excludeNode) {
-        case null:
-          break;
-        case YamlMap():
-          excludeNode.nodes.forEach((key, constraintNode) {
-            final keyNode = key as YamlNode;
-            final packageName = keyNode.value;
-            if (packageName is! String) {
-              _error(
-                'Exclude keys must be package names (strings).',
-                keyNode.span,
-              );
-            }
-            if (!packageNameRegExp.hasMatch(packageName)) {
-              _error('Not a valid package name.', keyNode.span);
-            }
-            final constraint = _parseVersionConstraint(
-              constraintNode as YamlNode?,
-              _packageName,
-              _FileType.pubspec,
-            );
-            exclude[packageName] = constraint;
-          });
-        default:
-          _error('"exclude" must be a map', excludeNode.span);
-      }
-
-      final stabilityNode = cooldownNode.nodes['stability'];
-      var stability = false;
-      switch (stabilityNode) {
-        case null:
-          break;
-        case YamlScalar(value: final bool value):
-          stability = value;
-        default:
-          _error('"stability" must be a boolean', stabilityNode.span);
-      }
-
-      if (stabilityNode != null && beforeNode != null) {
-        _error(
-          '"stability" is only supported when "min_age" is specified.',
-          stabilityNode.span,
-        );
-      }
-
-      if (minAge != null) {
-        cooldown = CooldownPolicy.minAge(
-          minAge: minAge,
-          exclude: exclude,
-          stability: stability,
-        );
-      } else {
-        cooldown = CooldownPolicy.before(before: before!, exclude: exclude);
-      }
-    }
+    final cooldown =
+        cooldownNode == null || cooldownNode.value == null
+            ? null
+            : _parseCooldownPolicy(cooldownNode);
 
     return Policies(cooldown: cooldown, span: policiesNode.span);
+  }
+
+  CooldownPolicy _parseCooldownPolicy(YamlNode cooldownNode) {
+    if (cooldownNode is! YamlMap) {
+      _error('"cooldown" must be a map', cooldownNode.span);
+    }
+
+    final minAgeNode = cooldownNode.nodes['min_age'];
+    final beforeNode = cooldownNode.nodes['before'];
+
+    if (minAgeNode != null && beforeNode != null) {
+      _error(
+        'Only one of "min_age" and "before" can be specified.',
+        cooldownNode.span,
+      );
+    }
+    if (minAgeNode == null && beforeNode == null) {
+      _error(
+        'One of "min_age" or "before" must be specified.',
+        cooldownNode.span,
+      );
+    }
+
+    final excludeNode = cooldownNode.nodes['exclude'];
+    final exclude =
+        excludeNode != null
+            ? _parseExclude(excludeNode)
+            : const <String, VersionConstraint>{};
+
+    final stabilityNode = cooldownNode.nodes['stability'];
+    if (stabilityNode != null && beforeNode != null) {
+      _error(
+        '"stability" is only supported when "min_age" is specified.',
+        stabilityNode.span,
+      );
+    }
+    final stability =
+        stabilityNode != null ? _parseStability(stabilityNode) : false;
+
+    if (minAgeNode != null) {
+      return CooldownPolicy.minAge(
+        minAge: _parseMinAge(minAgeNode),
+        exclude: exclude,
+        stability: stability,
+      );
+    } else {
+      return CooldownPolicy.before(
+        before: _parseBefore(beforeNode!),
+        exclude: exclude,
+      );
+    }
+  }
+
+  Duration _parseMinAge(YamlNode node) {
+    if (node case YamlScalar(value: final String value)) {
+      try {
+        return _parseDuration(value);
+      } on FormatException catch (e) {
+        _error('Invalid "min_age": ${e.message}', node.span);
+      }
+    }
+    _error('"min_age" must be a string', node.span);
+  }
+
+  DateTime _parseBefore(YamlNode node) {
+    if (node case YamlScalar(value: final String value)) {
+      if (!RegExp(
+        r'^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?)?Z$',
+      ).hasMatch(value)) {
+        _error(
+          '"before" must be a UTC timestamp in ISO 8601 format '
+          '(e.g. "2026-05-28T09:09:29Z")',
+          node.span,
+        );
+      }
+      final parsed = DateTime.tryParse(value);
+      if (parsed == null || !parsed.isUtc) {
+        _error(
+          '"before" must be a valid UTC timestamp in ISO 8601 format',
+          node.span,
+        );
+      }
+      return parsed;
+    }
+    _error('"before" must be a string', node.span);
+  }
+
+  Map<String, VersionConstraint> _parseExclude(YamlNode node) {
+    if (node is! YamlMap) {
+      _error('"exclude" must be a map', node.span);
+    }
+    final exclude = <String, VersionConstraint>{};
+    for (final MapEntry(:key, :value) in node.nodes.entries) {
+      final keyNode = key as YamlNode;
+      final packageName = keyNode.value;
+      if (packageName is! String) {
+        _error('Exclude keys must be package names (strings).', keyNode.span);
+      }
+      if (!packageNameRegExp.hasMatch(packageName)) {
+        _error('Not a valid package name.', keyNode.span);
+      }
+      exclude[packageName] = _parseVersionConstraint(
+        value as YamlNode?,
+        _packageName,
+        _FileType.pubspec,
+      );
+    }
+    return exclude;
+  }
+
+  bool _parseStability(YamlNode node) {
+    if (node case YamlScalar(value: final bool value)) {
+      return value;
+    }
+    _error('"stability" must be a boolean', node.span);
   }
 
   Duration _parseDuration(String s) {
@@ -1046,6 +1047,16 @@ enum Resolution {
 
 /// Represents workspace policies specified under the `policies` key in
 /// `pubspec.yaml`.
+///
+/// For example:
+/// ```yaml
+/// policies:
+///   cooldown:
+///     min_age: 7d
+///     stability: true
+///     exclude:
+///       foo: ^1.0.0
+/// ```
 final class Policies {
   /// The cooldown policy configuration, if defined.
   final CooldownPolicy? cooldown;
@@ -1059,7 +1070,11 @@ final class Policies {
 /// A policy that restricts dependency versions based on publication age or an
 /// absolute cutoff timestamp.
 ///
-/// A [CooldownPolicy] is either configured with a relative minimum age via
+/// Cooldown policies mitigate supply-chain risks by delaying the adoption of
+/// newly published versions, giving repositories and ecosystem tooling time to
+/// detect and yank compromised or broken releases.
+///
+/// A [CooldownPolicy] is configured either with a relative minimum age via
 /// [CooldownPolicy.minAge] or an absolute UTC cutoff date via
 /// [CooldownPolicy.before].
 final class CooldownPolicy {

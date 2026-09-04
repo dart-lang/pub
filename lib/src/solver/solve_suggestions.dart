@@ -63,6 +63,9 @@ Future<String?> suggestResolutionAlternatives(
       for (final term in externalIncompatibility.terms) {
         final name = term.package.name;
 
+        // If a package cannot be resolved because versions are blocked by
+        // cooldown policy, suggest adding an exclusion so the user has an
+        // actionable resolution path if they trust the newer release.
         if (cause is PackageVersionForbiddenCause &&
             cause.reason != null &&
             cause.reason!.contains('cooldown policy')) {

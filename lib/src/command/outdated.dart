@@ -269,6 +269,9 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         cache,
       );
 
+      // Check if the latest available release is blocked by the workspace
+      // cooldown policy so `pub outdated` can explain why that version is not
+      // resolvable.
       final policy = entrypoint.workspaceRoot.pubspec.policies?.cooldown;
       var isLatestBlockedByCooldown = false;
       if (policy != null && latest != null) {

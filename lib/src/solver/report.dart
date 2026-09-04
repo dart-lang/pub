@@ -460,6 +460,9 @@ $contentHashesDocumentationUrl
         }
       }
 
+      // When reporting available newer versions (e.g. in `pub get`),
+      // check whether the newest available version is blocked by the root
+      // package's cooldown policy so we can append `(blocked by cooldown)`.
       Version? latestVersion;
       var isLatestBlocked = false;
       if (versions.isNotEmpty) {
