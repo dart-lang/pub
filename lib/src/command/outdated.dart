@@ -797,7 +797,7 @@ Future<void> _outputHuman(
       if (package.isLatestBlockedByCooldown) {
         log.message(
           '    Version ${package.latest!._id.version} is too new for '
-          'cooldown policy.',
+          'the cooldown policy.',
         );
       }
       final displayedAdvisories = advisoriesToDisplay[package.name]!;
@@ -1016,6 +1016,9 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final String? discontinuedReplacedBy;
   final bool isCurrentRetracted;
   final bool isLatest;
+
+  /// Whether the latest version of this package is blocked by the cooldown
+  /// policy in the root pubspec.
   final bool isLatestBlockedByCooldown;
 
   /// List of advisories affecting this package which are not present in the

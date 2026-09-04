@@ -2070,6 +2070,9 @@ class HostedVersionInfo {
   final Pubspec pubspec;
   final Uri archiveUrl;
   final Version version;
+
+  /// The UTC date and time this package version was published, or `null` if
+  /// the package repository does not provide publication timestamps.
   final DateTime? published;
 
   /// The sha256 digest of the archive according to the package-repository.

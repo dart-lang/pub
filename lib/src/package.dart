@@ -529,6 +529,9 @@ Workspace members must have unique names.
   }
 
   // Check that at most one policies configuration is specified.
+  // Because all workspace members resolve together into a single shared
+  // lockfile, allowing multiple different policy configurations could produce
+  // conflicting resolution constraints.
   Policies? policiesSeen;
   for (final package in root.transitiveWorkspace) {
     final currentPolicies = package.pubspec.policies;

@@ -486,9 +486,7 @@ $contentHashesDocumentationUrl
       final cooldownSuffix = isLatestBlocked ? ' (blocked by cooldown)' : '';
 
       if (status.isRetracted) {
-        if (newerStable) {
-          notes.add('retracted, $latestVersion available$cooldownSuffix');
-        } else if (newId.version.isPreRelease && newerUnstable) {
+        if (newerStable || (newId.version.isPreRelease && newerUnstable)) {
           notes.add('retracted, $latestVersion available$cooldownSuffix');
         } else {
           notes.add('retracted');
@@ -505,13 +503,8 @@ $contentHashesDocumentationUrl
             'discontinued replaced by ${status.discontinuedReplacedBy}',
           );
         }
-      } else if (newerStable) {
-        // If there are newer stable versions, only show those.
-        notes.add('$latestVersion available$cooldownSuffix');
-      } else if (
-      // Only show newer prereleases for versions where a prerelease is
-      // already chosen.
-      newId.version.isPreRelease && newerUnstable) {
+      } else if (newerStable || (newId.version.isPreRelease && newerUnstable)) {
+        // Show newer versions (prioritizing stable versions if available).
         notes.add('$latestVersion available$cooldownSuffix');
       }
 

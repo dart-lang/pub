@@ -32,7 +32,11 @@ class PackageLister {
   /// Only used when _ref is root.
   final Package? _rootPackage;
 
-  /// The policy to apply, if any.
+  /// The [Policies] to apply to versions of this package, if any.
+  ///
+  /// Used by the version solver to reject versions that violate configured
+  /// policies (such as [CooldownPolicy]) by generating incompatibility
+  /// constraints.
   final Policies? _policies;
 
   /// The version of this package in the lockfile.
@@ -260,8 +264,9 @@ class PackageLister {
             [Term(PackageRange(id.toRef(), VersionConstraint.any), true)],
             PackageVersionForbiddenCause(
               reason:
-                  'all versions of ${id.name} are too new for cooldown policy\n'
-                  'Cooldown policy defined at '
+                  'all versions of ${id.name} are too new for the cooldown '
+                  'policy\n'
+                  'The cooldown policy is defined at '
                   '${policiesWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml'}:'
                   '${policiesWrapper.span.start.line + 1}',
             ),
@@ -297,6 +302,10 @@ class PackageLister {
       }
     }
 
+    // If a cooldown policy is defined, check if this specific version is
+    // blocked by minimum age, absolute cutoff date, or stability. If so,
+    // mark it as forbidden with a detailed reason explaining the policy
+    // constraint.
     if ((id.description, policiesWrapper?.cooldown) case (
       ResolvedHostedDescription(),
       final CooldownPolicy policy,
@@ -334,11 +343,11 @@ class PackageLister {
         } else {
           reasonPrefix =
               'version ${id.version} of ${id.name} lacks publication date '
-              'required by policy\n';
+              'required by the cooldown policy\n';
         }
         final reason =
             '$reasonPrefix'
-            'Cooldown policy defined at '
+            'The cooldown policy is defined at '
             '${policiesWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml'}:'
             '${policiesWrapper.span.start.line + 1}';
         return [

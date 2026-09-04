@@ -261,6 +261,9 @@ class PackageStatus {
   /// package has been synchronized into pub, `null` if this package is not
   /// affected by a security advisory.
   final DateTime? advisoriesUpdated;
+
+  /// The UTC date and time this package version was published, or `null` if
+  /// the package repository does not provide publication timestamps.
   final DateTime? published;
   PackageStatus({
     this.isDiscontinued = false,

@@ -236,7 +236,7 @@ void main() {
       error: allOf(
         contains('version solving failed'),
         contains('all versions of foo are too new'),
-        contains('Cooldown policy defined at'),
+        contains('The cooldown policy is defined at'),
         contains('pubspec.yaml'),
         contains('Consider excluding "foo" from the cooldown policy'),
       ),
@@ -321,7 +321,7 @@ void main() {
         contains('1.0.0'), // Upgradable
         contains('1.0.0'), // Resolvable
         contains('1.0.1'), // Latest
-        contains('Version 1.0.1 is too new for cooldown policy.'),
+        contains('Version 1.0.1 is too new for the cooldown policy.'),
       ]),
     );
   });
