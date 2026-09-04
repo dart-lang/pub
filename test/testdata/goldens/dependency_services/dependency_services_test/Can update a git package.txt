@@ -11,19 +11,19 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "1ea665d6de007c60308949db4c6ae8049c2395f0"
+      resolved-ref: 1ea665d6de007c60308949db4c6ae8049c2395f0
       url: "../bar.git"
     source: git
-    version: "1.0.0"
+    version: 1.0.0
   foo:
     dependency: "direct main"
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "9e8b8ad5091bec2c4724b1e0c8ff9d6e32a7eaa4"
+      resolved-ref: 9e8b8ad5091bec2c4724b1e0c8ff9d6e32a7eaa4
       url: "../foo.git"
     source: git
-    version: "1.0.0"
+    version: 1.0.0
 sdks:
   dart: ">=3.0.2 <4.0.0"
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -218,18 +218,18 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "1ea665d6de007c60308949db4c6ae8049c2395f0"
+      resolved-ref: 1ea665d6de007c60308949db4c6ae8049c2395f0
       url: "../bar.git"
     source: git
-    version: "1.0.0"
+    version: 1.0.0
   foo:
     dependency: "direct main"
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "385bb2860e7ebf9519993b2548d6cab74a6008ef"
+      resolved-ref: 385bb2860e7ebf9519993b2548d6cab74a6008ef
       url: "../foo.git"
     source: git
-    version: "2.0.0"
+    version: 2.0.0
 sdks:
   dart: ">=3.0.2 <4.0.0"
