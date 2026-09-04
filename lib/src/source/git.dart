@@ -908,7 +908,24 @@ class GitSource extends CachedSource {
   }
 
   /// Validates that no symbolic link in [repoRoot] points outside of
-  /// [repoRoot], resolving any intermediate symlinks or symlink chains.
+  /// [repoRoot], including any intermediate symlinks, chained links, or
+  /// directory symlinks.
+  ///
+  /// For every symbolic link found in [repoRoot]:
+  /// - Absolute links (starting with `/`, `\`, or Windows drive letters) are
+  ///   rejected.
+  /// - Relative links are resolved segment-by-segment. If a path segment
+  ///   encounters an intermediate directory symlink, that link is recursively
+  ///   dereferenced and resolved to ensure no combination of symlinks and `..`
+  ///   traversals can escape [repoRoot].
+  /// - Cycles in symlink chains are detected and rejected.
+  /// - If any link or chain resolves to a location outside [repoRoot], a
+  ///   [PackageNotFoundException] is thrown.
+  ///
+  /// Note: Git repositories do not support hardlinks in tree objects or working
+  /// tree checkouts (Git tree entries are limited to regular files, executable
+  /// files, symlinks, and submodules), so only symbolic links need to be
+  /// validated here.
   void _validateSymlinks(
     String repoRoot, {
     required String packageName,
