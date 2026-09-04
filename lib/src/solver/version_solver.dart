@@ -71,6 +71,11 @@ class VersionSolver {
     for (final package in _root.transitiveWorkspace) package.name: package,
   };
 
+  /// The [Policies] to apply, if any, found in the workspace.
+  late final Policies? _policies = _root.transitiveWorkspace
+      .map((p) => p.pubspec.policies)
+      .firstWhereOrNull((policies) => policies != null);
+
   /// The lockfile, indicating which package versions were previously selected.
   final LockFile _lockFile;
 
@@ -546,6 +551,7 @@ class VersionSolver {
           _systemCache,
           overriddenPackages: _overriddenPackages,
           sdkOverrides: _sdkOverrides,
+          policies: _policies,
         );
       }
 
@@ -570,6 +576,7 @@ class VersionSolver {
         _getAllowedRetracted(ref.name),
         downgrade: _type == SolveType.downgrade,
         sdkOverrides: _sdkOverrides,
+        policies: _policies,
       );
     });
   }

@@ -528,6 +528,25 @@ Workspace members must have unique names.
     namesSeen[package.name] = package;
   }
 
+  // Check that at most one policies configuration is specified.
+  // Because all workspace members resolve together into a single shared
+  // lockfile, allowing multiple different policy configurations could produce
+  // conflicting resolution constraints.
+  Policies? policiesSeen;
+  for (final package in root.transitiveWorkspace) {
+    final currentPolicies = package.pubspec.policies;
+    if (currentPolicies != null) {
+      if (policiesSeen != null) {
+        fail('''
+Only a single policies configuration is allowed across all workspace pubspec.yaml files.
+Found policies in both:
+* ${policiesSeen.span.sourceUrl?.path ?? 'pubspec.yaml'}
+* ${currentPolicies.span.sourceUrl?.path ?? 'pubspec.yaml'}''');
+      }
+      policiesSeen = currentPolicies;
+    }
+  }
+
   // Check that the workspace doesn't contain two overrides of the same package.
   // Also check that workspace packages are not overridden.
   final overridesSeen = <String, Package>{};

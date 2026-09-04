@@ -459,13 +459,38 @@ $contentHashesDocumentationUrl
           notes.add(advisoriesMessage);
         }
       }
-      if (status.isRetracted) {
-        if (newerStable) {
-          notes.add(
-            'retracted, ${maxAll(versions, Version.prioritize)} available',
+
+      // When reporting available newer versions (e.g. in `pub get`),
+      // check whether the newest available version is blocked by the root
+      // package's cooldown policy so we can append `(blocked by cooldown)`.
+      Version? latestVersion;
+      var isLatestBlocked = false;
+      if (versions.isNotEmpty) {
+        latestVersion =
+            newerStable
+                ? maxAll(versions, Version.prioritize)
+                : maxAll(versions);
+        final policy = _rootPubspec.policies?.cooldown;
+        final desc = newId.description;
+        if (policy != null && desc is ResolvedHostedDescription) {
+          final latestStatus = await newId.toRef().source.status(
+            newId.toRef(),
+            latestVersion,
+            _cache,
           );
-        } else if (newId.version.isPreRelease && newerUnstable) {
-          notes.add('retracted, ${maxAll(versions)} available');
+          isLatestBlocked = policy.isBlocked(
+            newId.name,
+            latestVersion,
+            latestStatus.published,
+          );
+        }
+      }
+
+      final cooldownSuffix = isLatestBlocked ? ' (blocked by cooldown)' : '';
+
+      if (status.isRetracted) {
+        if (newerStable || (newId.version.isPreRelease && newerUnstable)) {
+          notes.add('retracted, $latestVersion available$cooldownSuffix');
         } else {
           notes.add('retracted');
         }
@@ -481,14 +506,9 @@ $contentHashesDocumentationUrl
             'discontinued replaced by ${status.discontinuedReplacedBy}',
           );
         }
-      } else if (newerStable) {
-        // If there are newer stable versions, only show those.
-        notes.add('${maxAll(versions, Version.prioritize)} available');
-      } else if (
-      // Only show newer prereleases for versions where a prerelease is
-      // already chosen.
-      newId.version.isPreRelease && newerUnstable) {
-        notes.add('${maxAll(versions)} available');
+      } else if (newerStable || (newId.version.isPreRelease && newerUnstable)) {
+        // Show newer versions (prioritizing stable versions if available).
+        notes.add('$latestVersion available$cooldownSuffix');
       }
 
       message = notes.isEmpty ? null : '(${notes.join(', ')})';
