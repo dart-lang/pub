@@ -86,6 +86,19 @@ bool entryExists(String path) =>
 /// whether it's broken.
 bool linkExists(String link) => Link(link).existsSync();
 
+/// Returns the target of the symlink at [link].
+String readLink(String link) => Link(link).targetSync();
+
+/// Returns all symlink paths in [dir] recursively.
+List<String> listSymlinks(String dir) {
+  if (!dirExists(dir)) return const [];
+  return Directory(dir)
+      .listSync(recursive: true, followLinks: false)
+      .whereType<Link>()
+      .map((link) => link.path)
+      .toList();
+}
+
 /// Returns whether [file] exists on the file system.
 ///
 /// This returns `true` for a symlink only if that symlink is unbroken and
