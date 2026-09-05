@@ -1175,48 +1175,84 @@ Future<Uint8List> extractFileFromTarGz(
   throw FormatException('Could not find $filename in archive');
 }
 
+/// Regex matching Windows reserved DOS device names: CON, PRN, AUX, NUL,
+/// COM1-9, LPT1-9 (case-insensitive, with any extension).
+final _windowsDeviceName = RegExp(
+  r'^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$',
+  caseSensitive: false,
+);
+
 /// Extracts a `.tar.gz` file from [stream] to [destination].
+///
+/// Only regular files and directories are extracted; symlinks, hardlinks, and
+/// special files are safely ignored.
 Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracting .tar.gz stream to $destination.');
 
-  destination = p.absolute(destination);
+  destination = p.normalize(p.absolute(destination));
   final reader = TarReader(stream.transform(gzipDecoder));
   final paths = <String>{};
+  final normalizedPaths = <String>{};
+  final isCaseInsensitive = platform.isWindows || platform.isMacOS;
+
   while (await reader.moveNext()) {
     final entry = reader.current;
 
-    final filePath = p.normalize(
-      p.joinAll([
-        destination,
-        // Tar file names always use forward slashes
-        ...p.posix.split(entry.name),
-      ]),
-    );
-    if (!paths.add(filePath)) {
-      // The tar file contained the same entry twice. Assume it is broken.
+    // Reject illegal characters (backslashes, colons, null bytes, control
+    // chars).
+    if (entry.name.contains('\\') ||
+        entry.name.contains(':') ||
+        entry.name.contains('\x00')) {
       await reader.cancel();
-      throw FormatException('Tar file contained duplicate path ${entry.name}');
+      throw FormatException('Invalid tar entry name: `${entry.name}`');
     }
 
-    if (!(p.isWithin(destination, filePath) ||
-        // allow including '.' as an entry in the tar.gz archive.
-        (entry.type == TypeFlag.dir && p.equals(destination, filePath)))) {
-      // The tar contains entries that would be written outside of the
-      // destination. That doesn't happen by accident, assume that the tar file
-      // is malicious.
+    for (var i = 0; i < entry.name.length; i++) {
+      final code = entry.name.codeUnitAt(i);
+      if (code < 32 || code == 127) {
+        await reader.cancel();
+        throw FormatException(
+          'Invalid tar entry name with control character: `${entry.name}`',
+        );
+      }
+    }
+
+    final segments =
+        p.posix
+            .split(entry.name)
+            .where((s) => s.isNotEmpty && s != '.')
+            .toList();
+
+    if (p.posix.isAbsolute(entry.name) || segments.contains('..')) {
       await reader.cancel();
       throw FormatException('Invalid tar entry: `${entry.name}`');
     }
 
-    final parentDirectory = p.dirname(filePath);
-
-    bool checkValidTarget(String linkTarget) {
-      final isValid = p.isWithin(destination, linkTarget);
-      if (!isValid) {
-        log.fine('Skipping ${entry.name}: Invalid link target');
+    // Reject Windows DOS device names and trailing dots/spaces.
+    for (final segment in segments) {
+      if (_windowsDeviceName.hasMatch(segment) ||
+          segment.endsWith('.') ||
+          segment.endsWith(' ')) {
+        await reader.cancel();
+        throw FormatException(
+          'Invalid filename segment `$segment` in `${entry.name}`',
+        );
       }
+    }
 
-      return isValid;
+    final filePath = p.normalize(p.joinAll([destination, ...segments]));
+
+    if (!p.isWithin(destination, filePath) &&
+        !(entry.type == TypeFlag.dir && p.equals(destination, filePath))) {
+      await reader.cancel();
+      throw FormatException('Invalid tar entry: `${entry.name}`');
+    }
+
+    // Guard against duplicate paths and case-folding collisions.
+    final pathKey = isCaseInsensitive ? filePath.toLowerCase() : filePath;
+    if (!paths.add(filePath) || !normalizedPaths.add(pathKey)) {
+      await reader.cancel();
+      throw FormatException('Tar file contained duplicate path ${entry.name}');
     }
 
     switch (entry.type) {
@@ -1225,54 +1261,20 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
         break;
       case TypeFlag.reg:
       case TypeFlag.regA:
-        // Regular file
-        deleteIfLink(filePath);
-        ensureDir(parentDirectory);
+        ensureDir(p.dirname(filePath));
         await createFileFromStream(entry.contents, filePath);
 
         if (platform.isLinux || platform.isMacOS) {
-          // Apply executable bits from tar header, but don't change r/w bits
-          // from the default
           final mode = _defaultMode | (entry.header.mode & _executableMask);
-
-          if (mode != _defaultMode) {
-            _chmod(mode, filePath);
-          }
+          if (mode != _defaultMode) _chmod(mode, filePath);
         }
-        break;
-      case TypeFlag.symlink:
-        // Link to another file in this tar, relative from this entry.
-        final resolvedTarget = p.joinAll([
-          parentDirectory,
-          ...p.posix.split(entry.header.linkName!),
-        ]);
-        if (!checkValidTarget(resolvedTarget)) {
-          // Don't allow links to files outside of this tar.
-          break;
-        }
-
-        ensureDir(parentDirectory);
-        createSymlink(
-          p.relative(resolvedTarget, from: parentDirectory),
-          filePath,
-        );
-        break;
-      case TypeFlag.link:
-        // We generate hardlinks as symlinks too, but their linkName is relative
-        // to the root of the tar file (unlike symlink entries, whose linkName
-        // is relative to the entry itself).
-        final fromDestination = p.join(destination, entry.header.linkName);
-        if (!checkValidTarget(fromDestination)) {
-          break; // Link points outside of the tar file.
-        }
-
-        final fromFile = p.relative(fromDestination, from: parentDirectory);
-        ensureDir(parentDirectory);
-        createSymlink(fromFile, filePath);
         break;
       default:
-        // Only extract files
-        continue;
+        // Ignore symlinks, hardlinks, and special files.
+        log.fine(
+          'Skipping non-regular tar entry: ${entry.name} (${entry.type})',
+        );
+        break;
     }
   }
 
