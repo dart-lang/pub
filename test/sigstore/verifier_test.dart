@@ -70,4 +70,23 @@ void main() {
     expect(result.isValid, isFalse);
     expect(result.errors.first, contains('does not match expected repository'));
   });
+
+  test('fails when expected repository is not on GitHub', () {
+    final verifier = PubAttestationVerifier();
+    final bundle = SigstoreBundle.fromJson(sampleBundleJson);
+
+    final result = verifier.verify(
+      packageName: 'sample',
+      packageVersion: Version(1, 0, 0),
+      archiveBytes: sampleArtifactBytes,
+      bundle: bundle,
+      expectedRepository: 'https://gitlab.com/unexpected-owner/unexpected-repo',
+    );
+
+    expect(result.isValid, isFalse);
+    expect(
+      result.errors.first,
+      contains('currently only supported for GitHub repositories'),
+    );
+  });
 }
