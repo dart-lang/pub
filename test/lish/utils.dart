@@ -9,12 +9,7 @@ import 'package:test/test.dart';
 
 import '../test_pub.dart';
 
-void handleUploadForm(
-  PackageServer server, {
-  Map? body,
-  String path = '',
-  bool withAttestation = false,
-}) {
+void handleUploadForm(PackageServer server, {Map? body, String path = ''}) {
   server.expect('GET', '$path/api/packages/versions/new', (request) {
     expect(
       request.headers,
@@ -24,11 +19,6 @@ void handleUploadForm(
     body ??= {
       'url': Uri.parse(server.url).resolve('/upload').toString(),
       'fields': {'field1': 'value1', 'field2': 'value2'},
-      if (withAttestation) ...{
-        'attestationUrl':
-            Uri.parse(server.url).resolve('/upload-attestation').toString(),
-        'attestationFields': {'field1': 'value1', 'field2': 'value2'},
-      },
     };
 
     return shelf.Response.ok(

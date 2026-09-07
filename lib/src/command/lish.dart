@@ -165,53 +165,7 @@ class LishCommand extends PubCommand {
         );
         final parameters = parseJsonResponse(parametersResponse);
 
-        /// 2. Upload attestation (if provided)
-        if (attestationBytes != null) {
-          final attestationUrl = parameters['attestationUrl'];
-          if (attestationUrl == null) {
-            dataError(
-              'The package repository $host does not support uploading '
-              'package attestations.',
-            );
-          }
-          if (attestationUrl is! String) {
-            invalidServerResponse(parametersResponse);
-          }
-          final attestationStorageUrl = Uri.parse(attestationUrl);
-
-          final attestationFields = _expectField(
-            parameters,
-            'attestationFields',
-            parametersResponse,
-          );
-          if (attestationFields is! Map) {
-            invalidServerResponse(parametersResponse);
-          }
-
-          await retryForHttp('uploading attestation', () async {
-            final attRequest = http.MultipartRequest(
-              'POST',
-              attestationStorageUrl,
-            );
-            attestationFields.forEach((key, value) {
-              if (value is! String) invalidServerResponse(parametersResponse);
-              attRequest.fields[key as String] = value;
-            });
-            attRequest.files.add(
-              http.MultipartFile.fromBytes(
-                'file',
-                attestationBytes,
-                filename: 'attestation.sigstore.json',
-              ),
-            );
-            attRequest.followRedirects = false;
-            final attResponse = await client.fetch(attRequest);
-            attResponse.throwIfNotOk();
-            return attResponse;
-          });
-        }
-
-        /// 3. Upload package
+        /// 2. Upload package
         final url = _expectField(parameters, 'url', parametersResponse);
         if (url is! String) invalidServerResponse(parametersResponse);
         cloudStorageUrl = Uri.parse(url);
@@ -251,8 +205,18 @@ class LishCommand extends PubCommand {
         final finalizeResponse = await retryForHttp(
           'finalizing publish',
           () async {
-            final request = http.Request('GET', Uri.parse(location));
+            final request = http.Request(
+              attestationBytes != null ? 'POST' : 'GET',
+              Uri.parse(location),
+            );
             request.attachPubApiHeaders();
+            if (attestationBytes != null) {
+              request.headers[HttpHeaders.contentTypeHeader] =
+                  'application/json';
+              request.body = jsonEncode({
+                'attestation': jsonDecode(utf8.decode(attestationBytes)),
+              });
+            }
             return await client.fetch(request);
           },
         );
@@ -281,6 +245,11 @@ class LishCommand extends PubCommand {
       if (url == cloudStorageUrl) {
         handleGCSError(error.response);
         fail(log.red('Failed to upload the package.'));
+      } else if (error.response.statusCode == 405 && attestationBytes != null) {
+        dataError(
+          'The package repository $host does not support publishing '
+          'with attestations.',
+        );
       } else if (Uri.parse(url.origin) == Uri.parse(host.origin)) {
         handleJsonError(error.response);
       } else {
@@ -514,6 +483,21 @@ the \$PUB_HOSTED_URL environment variable.''');
         attestationBytes = readBinaryFile(_withAttestation);
       } on FileSystemException catch (e) {
         dataError('Failed reading attestation file "$_withAttestation": $e');
+      }
+      if (attestationBytes.isEmpty) {
+        dataError('The attestation file "$_withAttestation" is empty.');
+      }
+      try {
+        final decoded = jsonDecode(utf8.decode(attestationBytes));
+        if (decoded is! Map<String, dynamic>) {
+          dataError(
+            'The attestation file "$_withAttestation" must contain a JSON object.',
+          );
+        }
+      } on FormatException catch (e) {
+        dataError(
+          'The attestation file "$_withAttestation" is not valid JSON: ${e.message}',
+        );
       }
     }
 

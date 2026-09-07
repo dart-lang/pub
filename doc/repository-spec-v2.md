@@ -298,15 +298,8 @@ changed.
 
 ```js
 {
-  "url": "<archive-upload-url>",
+  "url": "<multipart-upload-url>",
   "fields": {
-    "<field-1>": "<value-1>",
-    "<field-2>": "<value-2>",
-    ...,
-    "<field-N>": "<value-N>",
-  },
-  "attestationUrl": "<attestation-upload-url>",
-  "attestationFields": {
     "<field-1>": "<value-1>",
     "<field-2>": "<value-2>",
     ...,
@@ -316,74 +309,14 @@ changed.
 ```
 
 To publish a package an HTTP `GET` request for
-`<hosted-url>/api/packages/versions/new` is made. This request returns:
-* `url`: An `<archive-upload-url>` for uploading the package archive.
-* `fields`: A dictionary of form fields required by the storage service for the
-  archive upload.
-* `attestationUrl`: An `<attestation-upload-url>` for uploading a package
-  attestation bundle (such as a Sigstore provenance bundle). Present on
-  repositories that support attestations.
-* `attestationFields`: A dictionary of form fields required by the storage
-  service for the attestation upload. Present if `attestationUrl` is present.
-
-The `attestationUrl` and `attestationFields` properties are returned by
-repositories that support package attestations. If the user requests publishing
-with an attestation and the server response omits `attestationUrl`, the client
-should abort the publication with an informative error message.
-
-### Uploading the Attestation
-
-When publishing with an attestation, the client **MUST** upload the attestation
-bundle to `<attestation-upload-url>` (from `attestationUrl`) **before** uploading
-the package archive to `<archive-upload-url>` (from `url`). This ensures that an
-attestation is never omitted due to partial or interrupted uploads. If not
-publishing with an attestation, this step is skipped.
-
-To upload the attestation bundle, a multi-part `POST` request is made to
-`<attestation-upload-url>` containing all key-value pairs from
-`attestationFields`, along with a `file` part containing the attestation JSON
-bundle:
+`<hosted-url>/api/packages/versions/new` is made. This request returns an
+`<multipart-upload-url>` and a dictionary of fields. To upload the package
+archive a multi-part `POST` request is made to `<multipart-upload-url>` with
+fields and the field `file` containing the gzipped tar archive:
 
 ```http
-POST <path(attestation-upload-url)> HTTP/1.1
-Host: <host(attestation-upload-url)>
-Content-Length: <length>
-Content-Type: multipart/form-data; boundary=<boundary>
-
---<boundary>
-Content-Disposition: form-data; name="<urlencode(field-1)>"
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: binary
-
-<value-1>
-...
---<boundary>
-Content-Disposition: form-data; name="<urlencode(field-N)>"
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: binary
-
-<value-N>
---<boundary>
-Content-Type: application/json; charset=utf-8
-Content-Disposition: form-data; name="file"; filename="attestation.sigstore.json"
-
-<attestation JSON bundle>
---<boundary>--
-```
-
-The storage service may respond with `HTTP 204 No Content` or `HTTP 200 OK`. The
-client must verify that the request succeeded before proceeding to upload the
-package archive.
-
-### Uploading the Package Archive
-
-To upload the package archive a multi-part `POST` request is made to
-`<archive-upload-url>` containing all key-value pairs from `fields`, along with a
-`file` part containing the gzipped tar archive:
-
-```http
-POST <path(archive-upload-url)> HTTP/1.1
-Host: <host(archive-upload-url)>
+POST <path(multipart-upload-url)> HTTP/1.1
+Host: <host(multipart-upload-url)>
 Content-Length: <length>
 Content-Type: multipart/form-data; boundary=<boundary>
 
@@ -414,7 +347,7 @@ Content-Disposition: form-data; name="file"; filename="package.tar.gz"
 --<boundary>--
 ```
 
-The above `POST` request to `<archive-upload-url>` may respond as follows:
+The above `POST` request to `<multipart-upload-url>` may respond as follows:
 
 ```http
 HTTP/1.1 204 No Content
@@ -425,14 +358,31 @@ or with an HTTP `303 See Other` redirect to `<finalize-upload-url>`.
 
 ### Finalizing the Upload
 
-The client shall then issue a `GET` request to `<finalize-upload-url>`. As with
-`archive_url` the client will only attach an `Authorization` if the
+To finalize the publication, the client issues a request to `<finalize-upload-url>`.
+As with `archive_url` the client will only attach an `Authorization` if the
 `<hosted-url>` is a prefix of `<finalize-upload-url>`.
 
+* When publishing **without** an attestation, the client issues an HTTP `GET`
+  request to `<finalize-upload-url>`.
+* When publishing **with** an attestation (such as a Sigstore provenance bundle),
+  the client issues an HTTP `POST` request to `<finalize-upload-url>` with
+  `Content-Type: application/json` and a JSON payload containing the attestation:
+
+```json
+{
+  "attestation": <attestation JSON bundle>
+}
+```
+
+If a package repository does not support publishing with attestations, it should
+respond with `HTTP 405 Method Not Allowed` to `POST` requests at
+`<finalize-upload-url>`. In response to a `405`, the client aborts with an
+informative error message.
+
 During finalization, the server inspects the uploaded archive, along with any
-accompanying attestation that was uploaded prior to the archive. If an
-attestation was uploaded, the server verifies its validity before accepting
-the publication. An attestation may be rejected as invalid if:
+accompanying attestation sent in the finalize request body. If an attestation is
+present, the server verifies its validity before accepting the publication. An
+attestation may be rejected as invalid if:
  * the JSON bundle is malformed or cannot be parsed as a Sigstore bundle,
  * the cryptographic signature cannot be verified against the trusted root,
  * the artifact digest recorded in the attestation does not match the SHA-256
@@ -445,6 +395,7 @@ If the server wants to accept the uploaded package the server should respond:
 ```http
 HTTP/1.1 200 Ok
 Content-Type: application/vnd.pub.v2+json
+
 {
   "success": {
     "message": "<message>",
@@ -452,12 +403,12 @@ Content-Type: application/vnd.pub.v2+json
 }
 ```
 
-The server is allowed to consider the publishing incomplete until the `GET`
-request for `<finalize-upload-url>` has been issued. Once this request has
-succeeded the package is considered successfully published. If the server has
-caches that need to expire before newly published packages become available,
-or it has other out-of-band approvals that need to be given it's reasonable to
-inform the user about this in the `<message>`.
+The server is allowed to consider the publishing incomplete until the request
+for `<finalize-upload-url>` has been issued. Once this request has succeeded
+the package is considered successfully published. If the server has caches that
+need to expire before newly published packages become available, or it has
+other out-of-band approvals that need to be given it's reasonable to inform the
+user about this in the `<message>`.
 
 If the server does not want to accept the uploaded package, it can respond:
 ```http
@@ -475,12 +426,12 @@ This can be used to forbid git dependencies in published packages, limit the
 archive size, reject invalid attestations, or enforce any other
 repository-specific constraints.
 
-This upload flow allows for archives and attestations to be uploaded directly to
-a signed POST URL for [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/HTTPPOSTExamples.html),
+This upload flow allows for archives to be uploaded directly to a signed POST
+URL for [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/HTTPPOSTExamples.html),
 [GCS](https://cloud.google.com/storage/docs/xml-api/post-object-forms) or
-similar blob storage service. Both the `<archive-upload-url>`,
-`<attestation-upload-url>`, and `<finalize-upload-url>` are allowed to contain
-query-string parameters, and all of these URLs need only be temporary.
+similar blob storage service. Both the
+`<multipart-upload-url>` and `<finalize-upload-url>` are allowed to contain
+query-string parameters, and both of these URLs need only be temporary.
 
 
 ## List security advisories for a package
