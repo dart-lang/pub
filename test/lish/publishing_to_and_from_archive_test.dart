@@ -195,7 +195,7 @@ void main() {
   });
 
   test(
-    'Fails when publishing with attestation without github repo in pubspec',
+    'Fails when publishing with attestation without repository in pubspec',
     () async {
       await d.validPackage().create();
       await runPub(
@@ -219,11 +219,74 @@ void main() {
           bundlePath,
         ],
         error: contains(
-          'A GitHub repository must be specified in the "repository" field',
+          'A repository must be specified in the "repository" field',
         ),
         exitCode: DATA,
         workingDirectory: d.sandbox,
       );
+    },
+  );
+
+  test(
+    'Allows publishing from archive with attestation and non-GitHub repository',
+    () async {
+      final server = await servePackages();
+      await d
+          .validPackage(
+            pubspecExtras: {
+              'repository': 'https://gitlab.com/dart-lang/test_pkg',
+            },
+          )
+          .create();
+      await d.credentialsFile(server, 'access-token').create();
+      await runPub(
+        args: [
+          'lish',
+          '--skip-validation',
+          '--to-archive',
+          p.join('..', 'archive.tar.gz'),
+        ],
+      );
+
+      final bundleContent = '{"mediaType": "sigstore"}';
+      final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+      File(bundlePath).writeAsStringSync(bundleContent);
+
+      server.expect('POST', '/create', (request) async {
+        return Response.ok(
+          jsonEncode({
+            'success': {
+              'message': 'Package test_pkg 1.0.0 with attestation uploaded!',
+            },
+          }),
+        );
+      });
+
+      final pub = await startPublish(
+        server,
+        args: [
+          '--from-archive',
+          'archive.tar.gz',
+          '--with-attestation',
+          bundlePath,
+        ],
+        workingDirectory: d.sandbox,
+      );
+
+      expect(
+        pub.stdout,
+        emitsThrough('Publishing from archive: archive.tar.gz'),
+      );
+      await confirmPublish(pub);
+
+      handleUploadForm(server);
+      server.handle('/upload', (request) async {
+        await request.read().drain<void>();
+        return Response.found(Uri.parse(server.url).resolve('/create'));
+      });
+
+      expect(pub.stdout, emitsThrough(startsWith('Uploading...')));
+      await pub.shouldExit(SUCCESS);
     },
   );
 

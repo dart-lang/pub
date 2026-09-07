@@ -466,17 +466,10 @@ the \$PUB_HOSTED_URL environment variable.''');
     Uint8List? attestationBytes;
     if (_withAttestation != null) {
       final repository = pubspec.fields['repository']?.toString();
-      if (repository == null) {
+      if (repository == null || repository.trim().isEmpty) {
         dataError(
-          'A GitHub repository must be specified in the "repository" field of '
+          'A repository must be specified in the "repository" field of '
           'pubspec.yaml when publishing with an attestation.',
-        );
-      }
-      if (!repository.contains('github.com')) {
-        dataError(
-          'A GitHub repository must be specified in the "repository" field of '
-          'pubspec.yaml when publishing with an attestation. The repository '
-          '"$repository" is not a GitHub repository.',
         );
       }
       try {
