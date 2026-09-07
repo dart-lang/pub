@@ -99,10 +99,36 @@ class PubAttestationVerifier {
         if (parts.length >= 2) {
           repo = 'https://github.com/${parts[0]}/${parts[1]}';
         }
+      } else {
+        return AttestationVerificationResult(
+          isValid: false,
+          packageName: packageName,
+          packageVersion: packageVersion,
+          signerIdentity: identity,
+          oidcIssuer: issuer,
+          errors: [
+            'Package attestation verification is currently only supported '
+                'for GitHub repositories (signer identity: "$identity").',
+          ],
+        );
       }
 
       final targetRepo = expectedRepository ?? pubspecRepository;
       if (targetRepo != null && targetRepo.isNotEmpty) {
+        if (!targetRepo.contains('github.com')) {
+          return AttestationVerificationResult(
+            isValid: false,
+            packageName: packageName,
+            packageVersion: packageVersion,
+            repository: repo,
+            signerIdentity: identity,
+            oidcIssuer: issuer,
+            errors: [
+              'Package attestation verification is currently only supported '
+                  'for GitHub repositories (got: "$targetRepo").',
+            ],
+          );
+        }
         if (repo == null || !_repositoriesMatch(repo, targetRepo)) {
           final msg =
               'Attestation identity "$identity" does not match expected '
