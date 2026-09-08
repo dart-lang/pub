@@ -506,6 +506,16 @@ class GitSource extends CachedSource {
               description.url,
             ], workingDir: revisionCachePath);
             await _checkOut(revisionCachePath, resolvedRef);
+            try {
+              _validateSymlinks(
+                revisionCachePath,
+                packageName: id.name,
+                url: description.url,
+              );
+            } catch (_) {
+              tryDeleteEntry(revisionCachePath);
+              rethrow;
+            }
             _writePackageList(revisionCachePath, [path]);
             didUpdate = true;
           } else {
@@ -614,10 +624,15 @@ class GitSource extends CachedSource {
         // Discard all changes to tracked files.
         await git.run(['reset', '--hard', 'HEAD'], workingDir: package.dir);
 
+        final repoRoot = git.repoRoot(package.dir);
+        if (repoRoot != null) {
+          _validateSymlinks(repoRoot, packageName: package.name, url: repoRoot);
+        }
+
         result.add(
           RepairResult(package.name, package.version, this, success: true),
         );
-      } on git.GitException catch (error, stackTrace) {
+      } catch (error, stackTrace) {
         log.error(
           'Failed to reset ${log.bold(package.name)} '
           '${package.version}. Error:\n$error',
@@ -901,6 +916,101 @@ class GitSource extends CachedSource {
     return git
         .run(['checkout', ref], workingDir: repoPath)
         .then((result) => null);
+  }
+
+  /// Validates that no symbolic link in [repoRoot] points outside of
+  /// [repoRoot], including any intermediate symlinks, chained links, or
+  /// directory symlinks.
+  ///
+  /// For every symbolic link found in [repoRoot]:
+  /// - Absolute links (starting with `/`, `\`, or Windows drive letters) are
+  ///   rejected.
+  /// - Relative links are resolved segment-by-segment. If a path segment
+  ///   encounters an intermediate directory symlink, that link is recursively
+  ///   dereferenced and resolved to ensure no combination of symlinks and `..`
+  ///   traversals can escape [repoRoot].
+  /// - Cycles in symlink chains are detected and rejected.
+  /// - If any link or chain resolves to a location outside [repoRoot], a
+  ///   [PackageNotFoundException] is thrown.
+  ///
+  /// Note: Git repositories do not support hardlinks in tree objects or working
+  /// tree checkouts (Git tree entries are limited to regular files, executable
+  /// files, symlinks, and submodules), so only symbolic links need to be
+  /// validated here.
+  void _validateSymlinks(
+    String repoRoot, {
+    required String packageName,
+    required String url,
+  }) {
+    if (!dirExists(repoRoot)) return;
+
+    final normalizedRepoRoot = p.normalize(p.absolute(repoRoot));
+
+    String resolveLinkTarget(String linkPath, {required Set<String> visited}) {
+      final canonicalLinkPath = p.normalize(p.absolute(linkPath));
+      if (!visited.add(canonicalLinkPath)) {
+        final relLinkPath = p.relative(linkPath, from: normalizedRepoRoot);
+        throw PackageNotFoundException(
+          'Package "$packageName" from "${GitDescription.prettyUri(url)}" '
+          'contains a circular symbolic link at "$relLinkPath".',
+        );
+      }
+
+      final target = readLink(linkPath);
+      if (p.isAbsolute(target) ||
+          target.startsWith('/') ||
+          target.startsWith(r'\') ||
+          RegExp(r'^[a-zA-Z]:').hasMatch(target)) {
+        final relLinkPath = p.relative(linkPath, from: normalizedRepoRoot);
+        throw PackageNotFoundException(
+          'Package "$packageName" from "${GitDescription.prettyUri(url)}" '
+          'contains a symbolic link "$relLinkPath" targeting "$target" '
+          'which points outside the repository.',
+        );
+      }
+
+      final segments = target.split(RegExp(r'[/\\]'));
+      var current = p.normalize(p.absolute(p.dirname(linkPath)));
+
+      for (final segment in segments) {
+        if (segment == '' || segment == '.') {
+          continue;
+        } else if (segment == '..') {
+          current = p.dirname(current);
+          if (!p.isWithin(normalizedRepoRoot, current) &&
+              !p.equals(normalizedRepoRoot, current)) {
+            final relLinkPath = p.relative(linkPath, from: normalizedRepoRoot);
+            throw PackageNotFoundException(
+              'Package "$packageName" from "${GitDescription.prettyUri(url)}" '
+              'contains a symbolic link "$relLinkPath" targeting "$target" '
+              'which points outside the repository.',
+            );
+          }
+        } else {
+          final next = p.normalize(p.join(current, segment));
+          if (linkExists(next)) {
+            current = resolveLinkTarget(next, visited: Set.of(visited));
+          } else {
+            current = next;
+          }
+          if (!p.isWithin(normalizedRepoRoot, current) &&
+              !p.equals(normalizedRepoRoot, current)) {
+            final relLinkPath = p.relative(linkPath, from: normalizedRepoRoot);
+            throw PackageNotFoundException(
+              'Package "$packageName" from "${GitDescription.prettyUri(url)}" '
+              'contains a symbolic link "$relLinkPath" targeting "$target" '
+              'which points outside the repository.',
+            );
+          }
+        }
+      }
+
+      return current;
+    }
+
+    for (final linkPath in listSymlinks(repoRoot)) {
+      resolveLinkTarget(linkPath, visited: {});
+    }
   }
 
   String _revisionCachePath(PackageId id, SystemCache cache) => p.join(
