@@ -789,15 +789,20 @@ void main() {
     await servePackages();
     await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
 
-    for (final target in ['foo@', 'foo@Latest', 'foo@not-a-version']) {
+    for (final (target, suffix) in [
+      ('foo@', ''),
+      ('foo@Latest', 'Latest'),
+      ('foo@not-a-version', 'not-a-version'),
+    ]) {
       await pubUpgrade(
         args: [target],
         error: allOf(
-          contains('Unknown upgrade target `$target`.'),
-          contains('Use `<package>`'),
-          contains('`<package>@<constraint>`'),
-          contains('`<package>@latest`'),
-          contains('`<package>@resolvable`.'),
+          contains('Invalid version constraint "$suffix" for "foo":'),
+          contains('Use standard pubspec.yaml constraint syntax'),
+          contains(
+            'Usage: pub upgrade '
+            '[<package>[@<constraint>|@latest|@resolvable] ...]',
+          ),
         ),
         exitCode: exit_codes.USAGE,
       );

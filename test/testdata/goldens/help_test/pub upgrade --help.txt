@@ -4,14 +4,25 @@
 $ pub upgrade --help
 Upgrade the current package's dependencies to latest versions.
 
-Append `@<constraint>` to a dependency to require a version constraint.
+To upgrade specific packages, pass one or more of them as arguments. You can
+optionally specify a target version or constraint after `@`:
+  * Upgrade to the latest compatible version:
+    `dart pub upgrade foo`
+  * Upgrade multiple packages:
+    `dart pub upgrade foo bar`
+    `dart pub upgrade foo 'bar@^2.0.0'`
+  * Upgrade within a version constraint (same syntax as pubspec.yaml):
+    `dart pub upgrade foo@^1.2.3`
+  * Upgrade to a specific version:
+    `dart pub upgrade foo@1.2.3`
+  * Upgrade within a version range (enclose in quotes if using `<`, `>`, or spaces):
+    `dart pub upgrade 'foo@>=1.2.0 <2.0.0'`
+  * Upgrade to the latest available version (even if breaking):
+    `dart pub upgrade foo@latest`
+  * Upgrade to the newest version resolvable with other dependencies:
+    `dart pub upgrade foo@resolvable`
 
-Append `@latest` to a dependency to require the latest available version.
-
-Append `@resolvable` to require the newest version resolvable with the rest of
-the dependencies.
-
-Usage: pub upgrade [dependencies[@<constraint>|@latest|@resolvable]...]
+Usage: pub upgrade [<package>[@<constraint>|@latest|@resolvable] ...]
 -h, --help                 Print this usage information.
     --[no-]offline         Use cached packages instead of accessing the network.
 -n, --dry-run              Report what dependencies would change but don't change any.
