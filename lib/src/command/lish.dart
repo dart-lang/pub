@@ -130,6 +130,18 @@ class LishCommand extends PubCommand {
       help: 'Do not treat warnings as fatal.',
       negatable: false,
     );
+    argParser.addOption(
+      'validation-package',
+      defaultsTo: Validator.defaultValidationPackage,
+      help: 'The validation package to install and run for package validation.',
+      valueHelp: 'package[@descriptor]',
+    );
+    argParser.addOption(
+      'validation-hosted-url',
+      defaultsTo: Validator.defaultValidationHostedUrl,
+      help: 'The package server from which to install the validation package.',
+      valueHelp: 'url',
+    );
   }
 
   Future<void> _publishUsingClient(
@@ -447,11 +459,15 @@ the \$PUB_HOSTED_URL environment variable.''');
       () async => await Validator.runAll(
         entrypoint,
         packageBytes.length,
-        host,
         files,
         hints: hints,
         warnings: warnings,
         errors: errors,
+        validationPackage: argResults.option('validation-package'),
+        validationHostedUrl:
+            argResults.option('validation-hosted-url') != null
+                ? Uri.tryParse(argResults.option('validation-hosted-url')!)
+                : null,
       ),
     );
 
