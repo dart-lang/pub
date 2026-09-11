@@ -165,7 +165,32 @@ class LishCommand extends PubCommand {
         );
         final parameters = parseJsonResponse(parametersResponse);
 
-        /// 2. Upload package
+        /// 2. Upload attestation
+        ///
+        /// The attestation is uploaded before the archive: that way we don't
+        /// spend time uploading the archive to a repository that will not
+        /// accept the attestation anyway.
+        if (attestationBytes != null) {
+          final attestationUrl = parameters['attestationUrl'];
+          if (attestationUrl == null) {
+            dataError(
+              'The package repository $host does not support publishing '
+              'with attestations.',
+            );
+          }
+          if (attestationUrl is! String) {
+            invalidServerResponse(parametersResponse);
+          }
+          await retryForHttp('uploading attestation', () async {
+            final request = http.Request('POST', Uri.parse(attestationUrl));
+            request.attachPubApiHeaders();
+            request.headers[HttpHeaders.contentTypeHeader] = 'application/json';
+            request.bodyBytes = attestationBytes;
+            return await client.fetch(request);
+          });
+        }
+
+        /// 3. Upload package
         final url = _expectField(parameters, 'url', parametersResponse);
         if (url is! String) invalidServerResponse(parametersResponse);
         cloudStorageUrl = Uri.parse(url);
@@ -199,24 +224,14 @@ class LishCommand extends PubCommand {
           },
         );
 
-        /// 3. Finalize publish
+        /// 4. Finalize publish
         final location = uploadResponse.headers['location'];
         if (location == null) throw PubHttpResponseException(uploadResponse);
         final finalizeResponse = await retryForHttp(
           'finalizing publish',
           () async {
-            final request = http.Request(
-              attestationBytes != null ? 'POST' : 'GET',
-              Uri.parse(location),
-            );
+            final request = http.Request('GET', Uri.parse(location));
             request.attachPubApiHeaders();
-            if (attestationBytes != null) {
-              request.headers[HttpHeaders.contentTypeHeader] =
-                  'application/json';
-              request.body = jsonEncode({
-                'attestation': jsonDecode(utf8.decode(attestationBytes)),
-              });
-            }
             return await client.fetch(request);
           },
         );
@@ -245,11 +260,6 @@ class LishCommand extends PubCommand {
       if (url == cloudStorageUrl) {
         handleGCSError(error.response);
         fail(log.red('Failed to upload the package.'));
-      } else if (error.response.statusCode == 405 && attestationBytes != null) {
-        dataError(
-          'The package repository $host does not support publishing '
-          'with attestations.',
-        );
       } else if (Uri.parse(url.origin) == Uri.parse(host.origin)) {
         handleJsonError(error.response);
       } else {

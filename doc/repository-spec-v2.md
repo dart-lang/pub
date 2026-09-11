@@ -305,14 +305,17 @@ changed.
     ...,
     "<field-N>": "<value-N>",
   },
+  "attestationUrl": "<attestation-upload-url>", // optional
 }
 ```
 
 To publish a package an HTTP `GET` request for
 `<hosted-url>/api/packages/versions/new` is made. This request returns an
-`<multipart-upload-url>` and a dictionary of fields. To upload the package
-archive a multi-part `POST` request is made to `<multipart-upload-url>` with
-fields and the field `file` containing the gzipped tar archive:
+`<multipart-upload-url>`, a dictionary of fields, and optionally an
+`<attestation-upload-url>`, see
+[Publishing with an Attestation](#publishing-with-an-attestation). To upload the
+package archive a multi-part `POST` request is made to `<multipart-upload-url>`
+with fields and the field `file` containing the gzipped tar archive:
 
 ```http
 POST <path(multipart-upload-url)> HTTP/1.1
@@ -356,39 +359,68 @@ Location: <finalize-upload-url>
 
 or with an HTTP `303 See Other` redirect to `<finalize-upload-url>`.
 
-### Finalizing the Upload
+### Publishing with an Attestation
 
-To finalize the publication, the client issues a request to `<finalize-upload-url>`.
-As with `archive_url` the client will only attach an `Authorization` if the
-`<hosted-url>` is a prefix of `<finalize-upload-url>`.
+A package may be published together with an attestation, such as a
+[Sigstore](https://www.sigstore.dev/) bundle attesting to the provenance of the
+package archive.
 
-* When publishing **without** an attestation, the client issues an HTTP `GET`
-  request to `<finalize-upload-url>`.
-* When publishing **with** an attestation (such as a Sigstore provenance bundle),
-  the client issues an HTTP `POST` request to `<finalize-upload-url>` with
-  `Content-Type: application/json` and a JSON payload containing the attestation:
+A package repository that supports publishing with attestations must return an
+`<attestation-upload-url>` in the `attestationUrl` property of the response from
+`<hosted-url>/api/packages/versions/new`. A repository that does not support
+publishing with attestations must omit the property. A client that has an
+attestation to publish, but did not get an `attestationUrl`, shall abort the
+publication with an informative error message, without uploading the package
+archive.
 
-```json
-{
-  "attestation": <attestation JSON bundle>
-}
+The client shall upload the attestation with an HTTP `POST` request to
+`<attestation-upload-url>`, before uploading the package archive to
+`<multipart-upload-url>`:
+
+```http
+POST <path(attestation-upload-url)> HTTP/1.1
+Host: <host(attestation-upload-url)>
+Content-Type: application/json
+Content-Length: <length>
+
+<attestation JSON bundle>
 ```
 
-If a package repository does not support publishing with attestations, it should
-respond with `HTTP 405 Method Not Allowed` to `POST` requests at
-`<finalize-upload-url>`. In response to a `405`, the client aborts with an
-informative error message.
+As with `archive_url` the client will only attach an `Authorization` if the
+`<hosted-url>` is a prefix of `<attestation-upload-url>`. The
+`<attestation-upload-url>` may be temporary and is allowed to include
+query-string parameters.
 
-During finalization, the server inspects the uploaded archive, along with any
-accompanying attestation sent in the finalize request body. If an attestation is
-present, the server verifies its validity before accepting the publication. An
-attestation may be rejected as invalid if:
+If the server accepts the attestation for this upload it should respond:
+
+```http
+HTTP/1.1 200 Ok
+```
+
+If the server does not accept the attestation it should respond with an error
+object, as described below, and the client will abort the publication. The
+server is not able to fully validate the attestation at this point, as the
+package archive it refers to has not been uploaded yet; the attestation is
+validated against the archive when the upload is finalized.
+
+### Finalizing the Upload
+
+The client shall then issue a `GET` request to `<finalize-upload-url>`. As with
+`archive_url` the client will only attach an `Authorization` if the
+`<hosted-url>` is a prefix of `<finalize-upload-url>`.
+
+The server is allowed to inspect the uploaded archive, together with the
+attestation uploaded to `<attestation-upload-url>`, if any. If an attestation
+was uploaded, the server must verify it before accepting the publication, and
+must reject the publication if:
  * the JSON bundle is malformed or cannot be parsed as a Sigstore bundle,
- * the cryptographic signature cannot be verified against the trusted root,
+ * the cryptographic signature cannot be verified against the trusted root, or
  * the artifact digest recorded in the attestation does not match the SHA-256
-   hash of the uploaded package archive, or
- * the provenance information (such as the source repository) does not match
-   the `repository` field in `pubspec.yaml`.
+   hash of the uploaded package archive.
+
+The server may also reject the publication based on the contents of the
+attestation, for example if the provenance information (such as the source
+repository) does not match the `repository` field in `pubspec.yaml`.
 
 If the server wants to accept the uploaded package the server should respond:
 

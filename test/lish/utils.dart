@@ -9,6 +9,20 @@ import 'package:test/test.dart';
 
 import '../test_pub.dart';
 
+/// The body of a response to `GET /api/packages/versions/new`.
+///
+/// If [attestation] is `true` the repository advertises support for publishing
+/// with an attestation by including an `attestationUrl`.
+Map<String, Object> uploadFormBody(
+  PackageServer server, {
+  bool attestation = false,
+}) => {
+  'url': Uri.parse(server.url).resolve('/upload').toString(),
+  'fields': {'field1': 'value1', 'field2': 'value2'},
+  if (attestation)
+    'attestationUrl': Uri.parse(server.url).resolve('/attestation').toString(),
+};
+
 void handleUploadForm(PackageServer server, {Map? body, String path = ''}) {
   server.expect('GET', '$path/api/packages/versions/new', (request) {
     expect(
@@ -16,10 +30,7 @@ void handleUploadForm(PackageServer server, {Map? body, String path = ''}) {
       containsPair('authorization', 'Bearer access-token'),
     );
 
-    body ??= {
-      'url': Uri.parse(server.url).resolve('/upload').toString(),
-      'fields': {'field1': 'value1', 'field2': 'value2'},
-    };
+    body ??= uploadFormBody(server);
 
     return shelf.Response.ok(
       jsonEncode(body),
