@@ -95,10 +95,17 @@ void main() {
     final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
     File(bundlePath).writeAsStringSync(bundleContent);
 
-    server.expect('POST', '/create', (request) async {
+    server.expect('POST', '/attestation', (request) async {
+      expect(
+        request.headers,
+        containsPair('authorization', 'Bearer access-token'),
+      );
       expect(request.headers['content-type'], startsWith('application/json'));
-      final body = jsonDecode(await request.readAsString());
-      expect(body, {'attestation': jsonDecode(bundleContent)});
+      expect(await request.readAsString(), bundleContent);
+      return Response.ok('');
+    });
+
+    server.expect('GET', '/create', (request) {
       return Response.ok(
         jsonEncode({
           'success': {
@@ -122,11 +129,8 @@ void main() {
     expect(pub.stdout, emitsThrough('Publishing from archive: archive.tar.gz'));
     await confirmPublish(pub);
 
-    handleUploadForm(server);
-    server.handle('/upload', (request) async {
-      await request.read().drain<void>();
-      return Response.found(Uri.parse(server.url).resolve('/create'));
-    });
+    handleUploadForm(server, body: uploadFormBody(server, attestation: true));
+    handleUpload(server);
 
     expect(pub.stdout, emitsThrough(startsWith('Uploading...')));
     expect(
@@ -137,6 +141,13 @@ void main() {
       ),
     );
     await pub.shouldExit(SUCCESS);
+
+    // The attestation is uploaded before the archive, so that we don't upload
+    // the archive to a repository that rejects the attestation.
+    expect(
+      server.requestedPaths.indexOf('attestation'),
+      lessThan(server.requestedPaths.indexOf('upload')),
+    );
   });
 
   test('Fails when publishing with attestation to a server that does not '
@@ -162,8 +173,67 @@ void main() {
     final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
     File(bundlePath).writeAsStringSync('{"mediaType": "sigstore"}');
 
-    server.expect('POST', '/create', (request) {
-      return Response(405);
+    final pub = await startPublish(
+      server,
+      args: [
+        '--from-archive',
+        'archive.tar.gz',
+        '--with-attestation',
+        bundlePath,
+      ],
+      workingDirectory: d.sandbox,
+    );
+
+    expect(pub.stdout, emitsThrough('Publishing from archive: archive.tar.gz'));
+    await confirmPublish(pub);
+
+    // No `attestationUrl` in the response, hence, the repository does not
+    // support publishing with attestations.
+    handleUploadForm(server);
+
+    expect(pub.stdout, emitsThrough(startsWith('Uploading...')));
+    await pub.shouldExit(DATA);
+    expect(
+      pub.stderr,
+      emitsThrough(contains('does not support publishing with attestations')),
+    );
+
+    // We should fail before uploading the archive.
+    expect(server.requestedPaths, isNot(contains('upload')));
+  });
+
+  test('Fails when the repository rejects the attestation', () async {
+    final server = await servePackages();
+    await d
+        .validPackage(
+          pubspecExtras: {
+            'repository': 'https://github.com/dart-lang/test_pkg',
+          },
+        )
+        .create();
+    await d.credentialsFile(server, 'access-token').create();
+    await runPub(
+      args: [
+        'lish',
+        '--skip-validation',
+        '--to-archive',
+        p.join('..', 'archive.tar.gz'),
+      ],
+    );
+
+    final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+    File(bundlePath).writeAsStringSync('{"mediaType": "sigstore"}');
+
+    server.expect('POST', '/attestation', (request) {
+      return Response.badRequest(
+        body: jsonEncode({
+          'error': {
+            'code': 'PackageRejected',
+            'message': 'Not a valid Sigstore bundle.',
+          },
+        }),
+        headers: {'content-type': 'application/vnd.pub.v2+json'},
+      );
     });
 
     final pub = await startPublish(
@@ -180,18 +250,16 @@ void main() {
     expect(pub.stdout, emitsThrough('Publishing from archive: archive.tar.gz'));
     await confirmPublish(pub);
 
-    handleUploadForm(server);
-    server.handle('/upload', (request) async {
-      await request.read().drain<void>();
-      return Response.found(Uri.parse(server.url).resolve('/create'));
-    });
+    handleUploadForm(server, body: uploadFormBody(server, attestation: true));
 
-    expect(pub.stdout, emitsThrough(startsWith('Uploading...')));
-    await pub.shouldExit(DATA);
     expect(
       pub.stderr,
-      emitsThrough(contains('does not support publishing with attestations')),
+      emits('Message from server: Not a valid Sigstore bundle.'),
     );
+    await pub.shouldExit(1);
+
+    // We should fail before uploading the archive.
+    expect(server.requestedPaths, isNot(contains('upload')));
   });
 
   test(
@@ -252,7 +320,12 @@ void main() {
       final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
       File(bundlePath).writeAsStringSync(bundleContent);
 
-      server.expect('POST', '/create', (request) async {
+      server.expect('POST', '/attestation', (request) async {
+        expect(await request.readAsString(), bundleContent);
+        return Response.ok('');
+      });
+
+      server.expect('GET', '/create', (request) {
         return Response.ok(
           jsonEncode({
             'success': {
@@ -279,11 +352,8 @@ void main() {
       );
       await confirmPublish(pub);
 
-      handleUploadForm(server);
-      server.handle('/upload', (request) async {
-        await request.read().drain<void>();
-        return Response.found(Uri.parse(server.url).resolve('/create'));
-      });
+      handleUploadForm(server, body: uploadFormBody(server, attestation: true));
+      handleUpload(server);
 
       expect(pub.stdout, emitsThrough(startsWith('Uploading...')));
       await pub.shouldExit(SUCCESS);
