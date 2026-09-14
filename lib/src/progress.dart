@@ -64,7 +64,7 @@ final class ProgressGracePeriod {
   Duration get remainingDelay {
     if (_hasShownProgress) return Duration.zero;
     final remaining = _defaultGracePeriod - _stopwatch.elapsed;
-    return remaining < Duration.zero ? Duration.zero : remaining;
+    return remaining.isNegative ? Duration.zero : remaining;
   }
 
   /// Marks that progress has been shown.

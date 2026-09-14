@@ -90,14 +90,25 @@ final class _MockStdout implements Stdout {
   set lineTerminator(String value) {}
 }
 
+Future<void> _runWithMockStdout(
+  FutureOr<void> Function(_MockStdout mockStdout) callback, {
+  bool hasTerminal = true,
+}) async {
+  final mockStdout = _MockStdout(hasTerminal: hasTerminal);
+  await IOOverrides.runZoned(
+    () => callback(mockStdout),
+    stdout: () => mockStdout,
+  );
+}
+
 void main() {
   setUp(resetGracePeriod);
 
   tearDown(resetGracePeriod);
 
-  test('stopAndClear erases line with ANSI escape sequence', () async {
-    final mockStdout = _MockStdout();
-    await IOOverrides.runZoned(() async {
+  test(
+    'stopAndClear erases line with ANSI escape sequence',
+    () => _runWithMockStdout((mockStdout) async {
       forceColors = ForceColorOption.always;
       try {
         final progress = Progress('Resolving dependencies');
@@ -110,12 +121,12 @@ void main() {
       } finally {
         forceColors = ForceColorOption.auto;
       }
-    }, stdout: () => mockStdout);
-  });
+    }),
+  );
 
-  test('transient progress produces no output when ANSI is disabled', () async {
-    final mockStdout = _MockStdout();
-    await IOOverrides.runZoned(() async {
+  test(
+    'transient progress produces no output when ANSI is disabled',
+    () => _runWithMockStdout((mockStdout) async {
       forceColors = ForceColorOption.never;
       try {
         final progress = Progress('Resolving dependencies', transient: true);
@@ -125,40 +136,37 @@ void main() {
       } finally {
         forceColors = ForceColorOption.auto;
       }
-    }, stdout: () => mockStdout);
-  });
+    }),
+  );
 
   test(
     'non-transient progress logs once without animation when ANSI is disabled',
-    () async {
-      final mockStdout = _MockStdout();
-      await IOOverrides.runZoned(() async {
-        forceColors = ForceColorOption.never;
-        try {
-          final progress = Progress('Resolving dependencies');
-          expect(mockStdout.buffer.toString(), 'Resolving dependencies...\n');
-          progress.stop();
-          expect(mockStdout.buffer.toString(), 'Resolving dependencies...\n');
-        } finally {
-          forceColors = ForceColorOption.auto;
-        }
-      }, stdout: () => mockStdout);
-    },
+    () => _runWithMockStdout((mockStdout) async {
+      forceColors = ForceColorOption.never;
+      try {
+        final progress = Progress('Resolving dependencies');
+        expect(mockStdout.buffer.toString(), 'Resolving dependencies...\n');
+        progress.stop();
+        expect(mockStdout.buffer.toString(), 'Resolving dependencies...\n');
+      } finally {
+        forceColors = ForceColorOption.auto;
+      }
+    }),
   );
 
-  test('stop prints completed newline', () async {
-    final mockStdout = _MockStdout();
-    await IOOverrides.runZoned(() async {
+  test(
+    'stop prints completed newline',
+    () => _runWithMockStdout((mockStdout) async {
       final progress = Progress('Resolving dependencies');
       expect(mockStdout.buffer.toString(), 'Resolving dependencies... ');
       progress.stop();
       expect(mockStdout.buffer.toString(), 'Resolving dependencies... \n');
-    }, stdout: () => mockStdout);
-  });
+    }),
+  );
 
-  test('delayed progress writes nothing if stopped before delay', () async {
-    final mockStdout = _MockStdout();
-    await IOOverrides.runZoned(() async {
+  test(
+    'delayed progress writes nothing if stopped before delay',
+    () => _runWithMockStdout((mockStdout) async {
       final progress = Progress(
         'Resolving dependencies',
         delay: const Duration(milliseconds: 200),
@@ -166,12 +174,12 @@ void main() {
       expect(mockStdout.buffer.toString(), isEmpty);
       progress.stopAndClear();
       expect(mockStdout.buffer.toString(), isEmpty);
-    }, stdout: () => mockStdout);
-  });
+    }),
+  );
 
-  test('delayed progress writes and clears if stopped after delay', () async {
-    final mockStdout = _MockStdout();
-    await IOOverrides.runZoned(() async {
+  test(
+    'delayed progress writes and clears if stopped after delay',
+    () => _runWithMockStdout((mockStdout) async {
       forceColors = ForceColorOption.always;
       try {
         final progress = Progress(
@@ -189,34 +197,31 @@ void main() {
       } finally {
         forceColors = ForceColorOption.auto;
       }
-    }, stdout: () => mockStdout);
-  });
+    }),
+  );
 
   test(
     'subsequent spinner starts immediately once progress was shown',
-    () async {
-      final mockStdout = _MockStdout();
-      await IOOverrides.runZoned(() async {
-        forceColors = ForceColorOption.always;
-        try {
-          currentProgressGracePeriod.markProgressShown();
-          final progress = Progress('Downloading packages');
-          expect(mockStdout.buffer.toString(), 'Downloading packages... ');
-          progress.stopAndClear();
-        } finally {
-          forceColors = ForceColorOption.auto;
-          resetGracePeriod();
-        }
-      }, stdout: () => mockStdout);
-    },
-  );
-
-  test('withProgressGracePeriod shares progress state across zone', () async {
-    final mockStdout = _MockStdout();
-    final customGrace = ProgressGracePeriod();
-    await IOOverrides.runZoned(() async {
+    () => _runWithMockStdout((mockStdout) async {
       forceColors = ForceColorOption.always;
       try {
+        currentProgressGracePeriod.markProgressShown();
+        final progress = Progress('Downloading packages');
+        expect(mockStdout.buffer.toString(), 'Downloading packages... ');
+        progress.stopAndClear();
+      } finally {
+        forceColors = ForceColorOption.auto;
+        resetGracePeriod();
+      }
+    }),
+  );
+
+  test(
+    'withProgressGracePeriod shares progress state across zone',
+    () => _runWithMockStdout((mockStdout) async {
+      forceColors = ForceColorOption.always;
+      try {
+        final customGrace = ProgressGracePeriod();
         await withProgressGracePeriod(() async {
           expect(currentProgressGracePeriod, same(customGrace));
           expect(currentProgressGracePeriod.hasShownProgress, isFalse);
@@ -228,12 +233,12 @@ void main() {
       } finally {
         forceColors = ForceColorOption.auto;
       }
-    }, stdout: () => mockStdout);
-  });
+    }),
+  );
 
-  test('progress cleans up and stops timer on synchronous exception', () async {
-    final mockStdout = _MockStdout();
-    await IOOverrides.runZoned(() async {
+  test(
+    'progress cleans up and stops timer on synchronous exception',
+    () => _runWithMockStdout((mockStdout) async {
       forceColors = ForceColorOption.always;
       try {
         expect(
@@ -246,12 +251,12 @@ void main() {
       } finally {
         forceColors = ForceColorOption.auto;
       }
-    }, stdout: () => mockStdout);
-  });
+    }),
+  );
 
-  test('stopAnimating erases elapsed time before newline', () async {
-    final mockStdout = _MockStdout();
-    await IOOverrides.runZoned(() async {
+  test(
+    'stopAnimating erases elapsed time before newline',
+    () => _runWithMockStdout((mockStdout) async {
       forceColors = ForceColorOption.always;
       try {
         final progress = Progress('Animating task', delay: Duration.zero);
@@ -263,12 +268,12 @@ void main() {
       } finally {
         forceColors = ForceColorOption.auto;
       }
-    }, stdout: () => mockStdout);
-  });
+    }),
+  );
 
-  test('stopAnimating erases entire line when transient', () async {
-    final mockStdout = _MockStdout();
-    await IOOverrides.runZoned(() async {
+  test(
+    'stopAnimating erases entire line when transient',
+    () => _runWithMockStdout((mockStdout) async {
       forceColors = ForceColorOption.always;
       try {
         final progress = Progress(
@@ -282,12 +287,12 @@ void main() {
       } finally {
         forceColors = ForceColorOption.auto;
       }
-    }, stdout: () => mockStdout);
-  });
+    }),
+  );
 
-  test('stopAnimating is a no-op when ANSI is disabled', () async {
-    final mockStdout = _MockStdout();
-    await IOOverrides.runZoned(() async {
+  test(
+    'stopAnimating is a no-op when ANSI is disabled',
+    () => _runWithMockStdout((mockStdout) async {
       forceColors = ForceColorOption.never;
       try {
         final progress = Progress('Animating task', delay: Duration.zero);
@@ -297,8 +302,8 @@ void main() {
       } finally {
         forceColors = ForceColorOption.auto;
       }
-    }, stdout: () => mockStdout);
-  });
+    }),
+  );
 
   test('ProgressGracePeriod rejects negative defaultGracePeriod', () {
     expect(
@@ -309,13 +314,13 @@ void main() {
     );
   });
 
-  test('log.progress supports synchronous callbacks', () async {
-    final mockStdout = _MockStdout();
-    await IOOverrides.runZoned(() async {
+  test(
+    'log.progress supports synchronous callbacks',
+    () => _runWithMockStdout((mockStdout) async {
       final result = await log.progress('Sync task', () => 42);
       expect(result, 42);
-    }, stdout: () => mockStdout);
-  });
+    }),
+  );
 
   test('ProgressGracePeriod rejects an unstarted stopwatch', () {
     final stopwatch = Stopwatch();
@@ -336,17 +341,14 @@ void main() {
 
   test(
     'transient progress produces no output when stdout has no terminal',
-    () async {
-      final mockStdout = _MockStdout(hasTerminal: false);
-      await IOOverrides.runZoned(() async {
-        final result = await log.progress(
-          'Transient task',
-          () async => 42,
-          transient: true,
-        );
-        expect(result, 42);
-        expect(mockStdout.buffer.toString(), isEmpty);
-      }, stdout: () => mockStdout);
-    },
+    () => _runWithMockStdout(hasTerminal: false, (mockStdout) async {
+      final result = await log.progress(
+        'Transient task',
+        () async => 42,
+        transient: true,
+      );
+      expect(result, 42);
+      expect(mockStdout.buffer.toString(), isEmpty);
+    }),
   );
 }
