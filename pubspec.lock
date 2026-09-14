@@ -197,10 +197,10 @@ packages:
     dependency: "direct main"
     description:
       name: meta
-      sha256: "9f29b9bcc8ee287b1a31e0d01be0eae99a930dbffdaecf04b3f3d82a969f296f"
+      sha256: "307249ce4ff29d58a18e97f6345f539382eb9c9c29ecda628900f31de0443dd9"
       url: "https://pub.dev"
     source: hosted
-    version: "1.18.1"
+    version: "1.19.0"
   mime:
     dependency: transitive
     description:
