@@ -102,7 +102,7 @@ To remove a dependency override of a package prefix the package name with
         await example.acquireDependencies(
           SolveType.get,
           precompile: argResults.flag('precompile'),
-          summaryOnly: true,
+          reportMode: SolveReportMode.summaryOnly,
         );
       }
     }

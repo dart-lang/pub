@@ -295,7 +295,7 @@ Specify multiple sdk packages with descriptors.''');
         await example.acquireDependencies(
           SolveType.get,
           precompile: argResults.shouldPrecompile,
-          summaryOnly: true,
+          reportMode: SolveReportMode.summaryOnly,
         );
       }
     }

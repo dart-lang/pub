@@ -89,7 +89,7 @@ class GetCommand extends PubCommand {
           SolveType.get,
           dryRun: argResults.flag('dry-run'),
           precompile: argResults.flag('precompile'),
-          summaryOnly: true,
+          reportMode: SolveReportMode.summaryOnly,
           enforceLockfile: argResults.flag('enforce-lockfile'),
         );
       }

@@ -34,6 +34,7 @@ import 'http.dart';
 import 'log.dart' as log;
 import 'path.dart';
 import 'platform_info.dart';
+import 'progress.dart';
 import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;
@@ -1436,12 +1437,38 @@ R withOverrides<R>(
   f.FileSystem? fileSystem,
   Map<String, String>? environment,
   String? platformVersion,
+  ProgressGracePeriod? progressGracePeriod,
   Stream<List<int>>? stdin,
   StreamSink<List<int>>? stdout,
   StreamSink<List<int>>? stderr,
   http.Client? httpClient,
 }) {
-  // If there are no overrides we're done
+  // If there are no overrides at all we're done.
+  //
+  // This deliberately calls [fn] directly rather than falling through to the
+  // check below. Going via [runWithProgressGracePeriod] would add a frame to
+  // every stack trace produced under `pub`, which shows up in crash logs.
+  if (fileSystem == null &&
+      environment == null &&
+      platformVersion == null &&
+      progressGracePeriod == null &&
+      stdin == null &&
+      stdout == null &&
+      stderr == null &&
+      httpClient == null) {
+    return fn();
+  }
+
+  R runWithProgressGracePeriod() {
+    if (progressGracePeriod != null) {
+      return withProgressGracePeriod(
+        fn,
+        progressGracePeriod: progressGracePeriod,
+      );
+    }
+    return fn();
+  }
+
   if (fileSystem == null &&
       environment == null &&
       platformVersion == null &&
@@ -1449,7 +1476,7 @@ R withOverrides<R>(
       stdout == null &&
       stderr == null &&
       httpClient == null) {
-    return fn();
+    return runWithProgressGracePeriod();
   }
 
   fileSystem ??= const f.LocalFileSystem();
@@ -1467,7 +1494,10 @@ R withOverrides<R>(
       return withPlatform(
         () {
           return withHttpClient(() {
-            return withPathContext(fn, pathContext: pathContext);
+            return withPathContext(
+              runWithProgressGracePeriod,
+              pathContext: pathContext,
+            );
           }, client: client);
         },
         platform: PlatformInfo.override(

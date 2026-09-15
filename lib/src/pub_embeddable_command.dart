@@ -7,7 +7,6 @@ import 'dart:async';
 import 'package:file/file.dart' as f;
 import 'package:http/http.dart' as http;
 
-import 'command.dart' show PubCommand, PubTopLevel;
 import 'command.dart';
 import 'command/add.dart';
 import 'command/bump.dart';
@@ -29,7 +28,7 @@ import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'command/workspace.dart';
 import 'log.dart' as log;
-import 'log.dart';
+import 'progress.dart' show ProgressGracePeriod;
 import 'utils.dart';
 
 /// Exposes the `pub` commands as a command to be embedded in another command
@@ -61,6 +60,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   final StreamSink<List<int>>? stdout;
   final StreamSink<List<int>>? stderr;
   final http.Client? httpClient;
+  final ProgressGracePeriod? progressGracePeriod;
 
   PubEmbeddableCommand(
     this.isVerbose,
@@ -72,6 +72,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     this.stdout,
     this.stderr,
     this.httpClient,
+    this.progressGracePeriod,
   }) : super() {
     // This flag was never honored in the embedding but since it was accepted we
     // leave it as a hidden flag to avoid breaking clients that pass it.
@@ -127,7 +128,8 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   bool get captureStackChains => _isVerbose;
 
   @override
-  Verbosity get verbosity => _isVerbose ? Verbosity.all : Verbosity.normal;
+  log.Verbosity get verbosity =>
+      _isVerbose ? log.Verbosity.all : log.Verbosity.normal;
 
   @override
   bool get trace => _isVerbose;

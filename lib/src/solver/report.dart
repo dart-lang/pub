@@ -18,6 +18,18 @@ import '../utils.dart';
 import 'result.dart';
 import 'type.dart';
 
+/// The level of reporting to output upon successful dependency resolution.
+enum SolveReportMode {
+  /// No output on success.
+  none,
+
+  /// Only a single-line summary (e.g. `Got dependencies.`).
+  summaryOnly,
+
+  /// Full report showing package version changes and summary.
+  full,
+}
+
 /// Unlike [SolveResult], which is the static data describing a resolution,
 /// this class contains the mutable state used while generating the report
 /// itself.
@@ -34,8 +46,7 @@ class SolveReport {
   final bool _dryRun;
   final Map<String, PackageRange> _overriddenPackages;
 
-  /// If quiet only a single summary line is output.
-  final bool _quiet;
+  final SolveReportMode _reportMode;
 
   final bool _enforceLockfile;
 
@@ -61,9 +72,9 @@ class SolveReport {
     this._cache, {
     required bool dryRun,
     required bool enforceLockfile,
-    required bool quiet,
+    required SolveReportMode reportMode,
   }) : _dryRun = dryRun,
-       _quiet = quiet,
+       _reportMode = reportMode,
        _enforceLockfile = enforceLockfile;
 
   /// Displays a report of the results of the version resolution in
@@ -160,49 +171,60 @@ $contentHashesDocumentationUrl
       }
     }
 
-    if (_quiet) {
-      if (_dryRun) {
-        log.message('Would get dependencies$suffix.');
-      } else if (_enforceLockfile) {
-        if (changes == 0) {
+    switch (_reportMode) {
+      case SolveReportMode.none:
+        if (_dryRun) {
+          log.fine('Would get dependencies$suffix.');
+        } else if (_enforceLockfile) {
+          if (changes == 0) {
+            log.fine('Got dependencies$suffix.');
+          }
+        } else {
+          log.fine('Got dependencies$suffix.');
+        }
+      case SolveReportMode.summaryOnly:
+        if (_dryRun) {
+          log.message('Would get dependencies$suffix.');
+        } else if (_enforceLockfile) {
+          if (changes == 0) {
+            log.message('Got dependencies$suffix.');
+          }
+        } else {
           log.message('Got dependencies$suffix.');
         }
-      } else {
-        log.message('Got dependencies$suffix.');
-      }
-    } else {
-      if (_dryRun) {
-        if (changes == 0) {
-          log.message('No dependencies would change$suffix.');
-        } else if (changes == 1) {
-          log.message('Would change $changes dependency$suffix.');
-        } else {
-          log.message('Would change $changes dependencies$suffix.');
-        }
-      } else if (_enforceLockfile) {
-        if (changes == 0) {
-          log.message('Got dependencies$suffix!');
-        } else if (changes == 1) {
-          log.message('Would change $changes dependency$suffix.');
-        } else {
-          log.message('Would change $changes dependencies$suffix.');
-        }
-      } else {
-        if (changes == 0) {
-          if (_type == SolveType.get) {
-            log.message('Got dependencies$suffix!');
+      case SolveReportMode.full:
+        if (_dryRun) {
+          if (changes == 0) {
+            log.message('No dependencies would change$suffix.');
+          } else if (changes == 1) {
+            log.message('Would change $changes dependency$suffix.');
           } else {
-            log.message('No dependencies changed$suffix.');
+            log.message('Would change $changes dependencies$suffix.');
           }
-        } else if (changes == 1) {
-          log.message('Changed $changes dependency$suffix!');
+        } else if (_enforceLockfile) {
+          if (changes == 0) {
+            log.message('Got dependencies$suffix!');
+          } else if (changes == 1) {
+            log.message('Would change $changes dependency$suffix.');
+          } else {
+            log.message('Would change $changes dependencies$suffix.');
+          }
         } else {
-          log.message('Changed $changes dependencies$suffix!');
+          if (changes == 0) {
+            if (_type == SolveType.get) {
+              log.message('Got dependencies$suffix!');
+            } else {
+              log.message('No dependencies changed$suffix.');
+            }
+          } else if (changes == 1) {
+            log.message('Changed $changes dependency$suffix!');
+          } else {
+            log.message('Changed $changes dependencies$suffix!');
+          }
         }
-      }
-      await reportDiscontinued();
-      reportAdvisories();
-      reportOutdated();
+        await reportDiscontinued();
+        reportAdvisories();
+        reportOutdated();
     }
   }
 
@@ -572,7 +594,7 @@ $contentHashesDocumentationUrl
   }
 
   void warning(String message) {
-    if (_quiet) {
+    if (_reportMode != SolveReportMode.full) {
       log.fine(message);
     } else {
       log.warning(message);
@@ -580,7 +602,7 @@ $contentHashesDocumentationUrl
   }
 
   void message(String message) {
-    if (_quiet) {
+    if (_reportMode != SolveReportMode.full) {
       log.fine(message);
     } else {
       log.message(message);

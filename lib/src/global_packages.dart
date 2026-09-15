@@ -270,10 +270,11 @@ Follow progress in https://github.com/dart-lang/sdk/issues/60889.
     // Resolve it and download its dependencies.
     SolveResult result;
     try {
-      result = await log.spinner(
+      result = await log.progress(
         'Resolving dependencies',
         () => resolveVersions(SolveType.get, cache, root),
         condition: !silent,
+        transient: true,
       );
     } on SolveFailure catch (error) {
       for (var incompatibility
@@ -329,7 +330,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
           result.availableVersions,
           cache,
           dryRun: false,
-          quiet: false,
+          reportMode: SolveReportMode.full,
           enforceLockfile: false,
         ).show(summary: false);
       }
@@ -554,7 +555,7 @@ try:
         // running them.
         SolveResult result;
         try {
-          result = await log.spinner(
+          result = await log.progress(
             'Resolving dependencies',
             () => resolveVersions(
               SolveType.get,
@@ -562,6 +563,7 @@ try:
               root,
               lockFile: entrypoint.lockFile,
             ),
+            transient: true,
           );
         } on SolveFailure catch (e) {
           log.error(e.message);
@@ -586,7 +588,7 @@ Try reactivating the package.
           cache,
           dryRun: true,
           enforceLockfile: true,
-          quiet: false,
+          reportMode: SolveReportMode.full,
         );
         await report.show(summary: true);
 
