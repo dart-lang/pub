@@ -9,6 +9,7 @@ import 'source.dart';
 import 'source/hosted.dart';
 import 'source/root.dart';
 import 'system_cache.dart';
+import 'utils.dart';
 
 /// A reference to a [Package], but not any particular version(s) of it.
 ///
@@ -158,7 +159,7 @@ class PackageRange {
 
     final buffer = StringBuffer(name);
     if (detail.showVersion ?? _showVersionConstraint) {
-      buffer.write(' $constraint');
+      buffer.write(' ${constraint.asCompatibleWithIfPossible()}');
     }
 
     if (!isRoot && (detail.showSource ?? description is! HostedDescription)) {
@@ -180,19 +181,9 @@ class PackageRange {
   /// Returns a copy of `this` with the same semantics, but with a `^`-style
   /// constraint if possible.
   PackageRange withTerseConstraint() {
-    if (constraint is! VersionRange) return this;
-    if (constraint.toString().startsWith('^')) return this;
-
-    final range = constraint as VersionRange;
-    if (!range.includeMin) return this;
-    if (range.includeMax) return this;
-    final min = range.min;
-    if (min == null) return this;
-    if (range.max == min.nextBreaking.firstPreRelease) {
-      return PackageRange(_ref, VersionConstraint.compatibleWith(min));
-    } else {
-      return this;
-    }
+    final terse = constraint.asCompatibleWithIfPossible();
+    if (identical(terse, constraint)) return this;
+    return PackageRange(_ref, terse);
   }
 
   /// Whether [id] satisfies this dependency.

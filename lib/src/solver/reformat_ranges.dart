@@ -49,7 +49,9 @@ Term _reformatTerm(Map<PackageRef, PackageLister> packageListers, Term term) {
   final min = _reformatMin(versions, range);
   final maxInfo = reformatMax(versions, range);
 
-  if (min == null && maxInfo == null) return term;
+  if (min == null && maxInfo == null) {
+    return Term(term.package.withTerseConstraint(), term.isPositive);
+  }
 
   final (max, includeMax) = maxInfo ?? (range.max, range.includeMax);
 
