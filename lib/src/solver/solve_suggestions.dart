@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' show max;
 
 import 'package:pub_semver/pub_semver.dart';
 
@@ -9,9 +10,12 @@ import '../flutter_releases.dart';
 import '../io.dart';
 import '../package.dart';
 import '../package_name.dart';
+import '../path.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
+import '../source.dart';
 import '../source/hosted.dart';
+import '../source/root.dart';
 import '../system_cache.dart';
 import 'incompatibility.dart';
 import 'incompatibility_cause.dart';
@@ -32,10 +36,6 @@ Future<String?> suggestResolutionAlternatives(
   Iterable<String> unlock,
   SystemCache cache,
 ) async {
-  if (entrypoint.workspaceRoot.workspaceChildren.isNotEmpty) {
-    // TODO(https://github.com/dart-lang/pub/issues/4227): handle workspaces.
-    return null;
-  }
   final resolutionContext = _ResolutionContext(
     entrypoint: entrypoint,
     type: type,
@@ -62,6 +62,21 @@ Future<String?> suggestResolutionAlternatives(
     } else {
       for (final term in externalIncompatibility.terms) {
         final name = term.package.name;
+
+        // If a package cannot be resolved because versions are blocked by
+        // cooldown policy, suggest adding an exclusion so the user has an
+        // actionable resolution path if they trust the newer release.
+        if (cause is PackageVersionForbiddenCause &&
+            cause.reason != null &&
+            cause.reason!.contains('cooldown policy')) {
+          suggestions.add(
+            _ResolutionSuggestion(
+              '* Consider excluding "$name" from the cooldown policy in '
+              'your pubspec.yaml.',
+              priority: 1,
+            ),
+          );
+        }
 
         if (!visited.add(name)) {
           continue;
@@ -98,33 +113,96 @@ class _ResolutionSuggestion {
   _ResolutionSuggestion(this.suggestion, {this.priority = 0});
 }
 
-String packageAddDescription(Entrypoint entrypoint, PackageId id) {
+String? packageAddDescription(
+  Package package,
+  PackageId id, {
+  PackageRange? originalRange,
+  required bool isDev,
+}) {
   final name = id.name;
-  final isDev = entrypoint.workspaceRoot.pubspec.devDependencies.containsKey(
-    name,
-  );
-  final resolvedDescription = id.description;
+  final resolvedDescription = id.description.description;
+
+  final Description? descriptionToSerialize;
+  if (resolvedDescription is RootDescription) {
+    final originalDescription = originalRange?.description;
+    if (originalDescription == null || originalDescription is RootDescription) {
+      descriptionToSerialize = null;
+    } else if (originalDescription is! HostedDescription) {
+      return null;
+    } else {
+      descriptionToSerialize = originalDescription;
+    }
+  } else {
+    descriptionToSerialize = resolvedDescription;
+  }
+
   final String descriptor;
-  final d = resolvedDescription.description.serializeForPubspec(
-    containingDir:
-        Directory
-            .current
-            .path, // The add command will resolve file names relative to CWD.
-    // This currently should have no implications as we don't create suggestions
-    // for path-packages.
-    languageVersion: entrypoint.workspaceRoot.pubspec.languageVersion,
-  );
-  if (d == null) {
+  if (descriptionToSerialize == null) {
     descriptor = VersionConstraint.compatibleWith(id.version).toString();
   } else {
-    descriptor = json.encode({
-      'version': VersionConstraint.compatibleWith(id.version).toString(),
-      id.source.name: d,
-    });
+    final d = descriptionToSerialize.serializeForPubspec(
+      containingDir: Directory.current.path,
+      languageVersion: package.pubspec.languageVersion,
+    );
+    if (d == null) {
+      descriptor = VersionConstraint.compatibleWith(id.version).toString();
+    } else {
+      descriptor = json.encode({
+        'version': VersionConstraint.compatibleWith(id.version).toString(),
+        descriptionToSerialize.source.name: d,
+      });
+    }
   }
 
   final devPart = isDev ? 'dev:' : '';
   return '$devPart$name:${escapeShellArgument(descriptor)}';
+}
+
+String _packageAddCommand(
+  Entrypoint entrypoint,
+  Package package,
+  Iterable<String> addDescriptions,
+) {
+  final command = StringBuffer('$topLevelProgram pub add');
+  if (_needsDirectoryOption(package)) {
+    final packageDir = escapeShellArgument(
+      p.normalize(p.relative(package.dir)),
+    );
+    command.write(' --directory $packageDir');
+  }
+  command.write(' ${addDescriptions.join(' ')}');
+  return command.toString();
+}
+
+String _upgradeMajorVersionsCommand(Entrypoint entrypoint, [String? package]) {
+  final command = StringBuffer('$topLevelProgram pub upgrade');
+  final currentDir = p.canonicalize(p.current);
+  final workspaceDir = p.canonicalize(p.absolute(entrypoint.workspaceRoot.dir));
+  if (!p.equals(currentDir, workspaceDir)) {
+    final relativeWorkspaceDir = escapeShellArgument(
+      p.normalize(p.relative(entrypoint.workspaceRoot.dir)),
+    );
+    command.write(' --directory $relativeWorkspaceDir');
+  }
+  command.write(' --major-versions');
+  if (package != null) {
+    command.write(' $package');
+  }
+  return command.toString();
+}
+
+bool _needsDirectoryOption(Package package) {
+  final currentDir = p.canonicalize(p.current);
+  final packageDir = p.canonicalize(p.absolute(package.dir));
+  return !p.equals(currentDir, packageDir) &&
+      !p.isWithin(packageDir, currentDir);
+}
+
+bool _samePackage(Package a, Package b) {
+  return p.equals(
+    p.canonicalize(p.absolute(a.dir)),
+    p.canonicalize(p.absolute(b.dir)),
+  );
 }
 
 class _ResolutionContext {
@@ -182,59 +260,112 @@ class _ResolutionContext {
   /// Attempt another resolution with a relaxed constraint on [name]. If that
   /// resolves, suggest upgrading to that version.
   Future<_ResolutionSuggestion?> suggestSinglePackageUpdate(String name) async {
-    // TODO(https://github.com/dart-lang/pub/issues/4127): This should
-    // operate on all packages in workspace.
-    final originalRange =
-        entrypoint.workspaceRoot.dependencies[name] ??
-        entrypoint.workspaceRoot.devDependencies[name];
-    if (originalRange == null ||
-        originalRange.description is! HostedDescription) {
-      // We can only relax constraints on hosted dependencies.
+    final ranges = _workspaceDependencyRanges(name).toList();
+    if (ranges.isEmpty) return null;
+
+    if (ranges.any((r) => r.range.description is! HostedDescription)) {
       return null;
     }
-    final originalConstraint = originalRange.constraint;
-    final relaxedPubspec = stripVersionBounds(
-      entrypoint.workspaceRoot.pubspec,
-      stripOnly: [name],
-      stripLowerBound: true,
+
+    final packagesToRelax = ranges.map((r) => r.package).toSet();
+    final relaxedWorkspace = entrypoint.workspaceRoot.transformWorkspace(
+      (workspacePackage) =>
+          packagesToRelax.any((p) => _samePackage(p, workspacePackage))
+              ? stripVersionBounds(
+                workspacePackage.pubspec,
+                stripOnly: [name],
+                stripLowerBound: true,
+              )
+              : workspacePackage.pubspec,
     );
 
-    final result = await _tryResolve(
-      Package(
-        relaxedPubspec,
-        entrypoint.workspaceRoot.dir,
-        entrypoint.workspaceRoot.workspaceChildren,
-      ),
-    );
+    final result = await _tryResolve(relaxedWorkspace);
     if (result == null) {
       return null;
     }
     final resolvingPackage = result.packages.firstWhere((p) => p.name == name);
 
-    final addDescription = packageAddDescription(entrypoint, resolvingPackage);
-
+    final suggestions =
+        <({String command, String action, Package package, bool isDev})>[];
     var priority = 1;
-    var suggestion =
-        '* Try updating your constraint on $name: '
-        '$topLevelProgram pub add $addDescription';
-    if (originalConstraint is VersionRange) {
-      final min = originalConstraint.min;
-      if (min != null) {
-        if (resolvingPackage.version < min) {
-          priority = 3;
-          suggestion =
-              '* Consider downgrading your constraint on $name: '
-              '$topLevelProgram pub add $addDescription';
-        } else {
-          priority = 2;
-          suggestion =
-              '* Try upgrading your constraint on $name: '
-              '$topLevelProgram pub add $addDescription';
+
+    for (final (:package, :range, :isDev) in ranges) {
+      if (range.constraint.allows(resolvingPackage.version)) {
+        continue;
+      }
+
+      final addDescription = packageAddDescription(
+        package,
+        resolvingPackage,
+        originalRange: range,
+        isDev: isDev,
+      );
+      if (addDescription == null) return null;
+
+      final command = _packageAddCommand(entrypoint, package, [addDescription]);
+
+      var action = 'updating';
+      final originalConstraint = range.constraint;
+      if (originalConstraint is VersionRange) {
+        final min = originalConstraint.min;
+        if (min != null) {
+          if (resolvingPackage.version < min) {
+            priority = max(priority, 3);
+            action = 'downgrading';
+          } else {
+            priority = max(priority, 2);
+            action = 'upgrading';
+          }
         }
       }
+      suggestions.add((
+        command: command,
+        action: action,
+        package: package,
+        isDev: isDev,
+      ));
     }
 
-    return _ResolutionSuggestion(suggestion, priority: priority);
+    if (suggestions.isEmpty) return null;
+
+    if (suggestions.length == 1) {
+      final suggestion = suggestions.first;
+      final lead =
+          suggestion.action == 'downgrading'
+              ? 'Consider downgrading your constraint'
+              : suggestion.action == 'upgrading'
+              ? 'Try upgrading your constraint'
+              : 'Try updating your constraint';
+      return _ResolutionSuggestion(
+        '* $lead on $name: ${suggestion.command}',
+        priority: priority,
+      );
+    }
+
+    final anyDowngrade = suggestions.any((s) => s.action == 'downgrading');
+    if (anyDowngrade) {
+      final buffer = StringBuffer(
+        '* Try manually updating your constraints on $name:',
+      );
+      for (final s in suggestions) {
+        final relativePubspec = p.normalize(p.relative(s.package.pubspecPath));
+        final depKey = s.isDev ? 'dev_dependencies' : 'dependencies';
+        final newConstraint = VersionConstraint.compatibleWith(
+          resolvingPackage.version,
+        );
+        buffer.writeln();
+        buffer.write(
+          '  In $relativePubspec: set $depKey -> $name to $newConstraint',
+        );
+      }
+      return _ResolutionSuggestion(buffer.toString(), priority: priority);
+    } else {
+      return _ResolutionSuggestion(
+        '* Try upgrading your constraints on $name: '
+        '${_upgradeMajorVersionsCommand(entrypoint, name)}',
+        priority: priority,
+      );
+    }
   }
 
   /// Attempt resolving with all version constraints relaxed. If that resolves,
@@ -242,30 +373,37 @@ class _ResolutionContext {
   Future<_ResolutionSuggestion?> suggestUnlockingAll({
     required bool stripLowerBound,
   }) async {
-    final originalPubspec = entrypoint.workspaceRoot.pubspec;
-    final relaxedPubspec = stripVersionBounds(
-      originalPubspec,
-      stripLowerBound: stripLowerBound,
+    final originalWorkspace = entrypoint.workspaceRoot.transitiveWorkspace;
+    final relaxedWorkspace = entrypoint.workspaceRoot.transformWorkspace(
+      (package) =>
+          stripVersionBounds(package.pubspec, stripLowerBound: stripLowerBound),
     );
 
-    final result = await _tryResolve(
-      Package(
-        relaxedPubspec,
-        entrypoint.workspaceRoot.dir,
-        entrypoint.workspaceRoot.workspaceChildren,
-      ),
-    );
+    final result = await _tryResolve(relaxedWorkspace);
     if (result == null) {
       return null;
     }
-    final updatedPackageVersions = <PackageId>[];
-    for (final id in result.packages) {
-      final originalConstraint =
-          (originalPubspec.dependencies[id.name] ??
-                  originalPubspec.devDependencies[id.name])
-              ?.constraint;
-      if (originalConstraint != null) {
-        updatedPackageVersions.add(id);
+    final resolvedPackages = {for (final id in result.packages) id.name: id};
+    final updatedPackageVersions =
+        <({Package package, PackageRange range, PackageId id, bool isDev})>[];
+    for (final package in originalWorkspace) {
+      void addUpdate(PackageRange range, {required bool isDev}) {
+        final id = resolvedPackages[range.name];
+        if (id != null) {
+          updatedPackageVersions.add((
+            package: package,
+            range: range,
+            id: id,
+            isDev: isDev,
+          ));
+        }
+      }
+
+      for (final range in package.dependencies.values) {
+        addUpdate(range, isDev: false);
+      }
+      for (final range in package.devDependencies.values) {
+        addUpdate(range, isDev: true);
       }
     }
     if (stripLowerBound && updatedPackageVersions.length > 5) {
@@ -273,19 +411,38 @@ class _ResolutionContext {
       return null;
     }
     if (stripLowerBound) {
-      updatedPackageVersions.sort((a, b) => a.name.compareTo(b.name));
-      final formattedConstraints = updatedPackageVersions
-          .map((e) => packageAddDescription(entrypoint, e))
-          .join(' ');
+      if (updatedPackageVersions.isEmpty) return null;
+      final package = updatedPackageVersions.first.package;
+      if (updatedPackageVersions.any((update) {
+        return !_samePackage(update.package, package);
+      })) {
+        return null;
+      }
+      updatedPackageVersions.sort((a, b) => a.id.name.compareTo(b.id.name));
+      final formattedConstraints = <String>[];
+      for (final update in updatedPackageVersions) {
+        final description = packageAddDescription(
+          package,
+          update.id,
+          originalRange: update.range,
+          isDev: update.isDev,
+        );
+        if (description == null) return null;
+        formattedConstraints.add(description);
+      }
+      final command = _packageAddCommand(
+        entrypoint,
+        package,
+        formattedConstraints,
+      );
       return _ResolutionSuggestion(
-        '* Try updating the following constraints: '
-        '$topLevelProgram pub add $formattedConstraints',
+        '* Try updating the following constraints: $command',
         priority: 4,
       );
     } else {
       return _ResolutionSuggestion(
         '* Try an upgrade of your constraints: '
-        '$topLevelProgram pub upgrade --major-versions',
+        '${_upgradeMajorVersionsCommand(entrypoint)}',
         priority: 4,
       );
     }
@@ -307,6 +464,20 @@ class _ResolutionContext {
       );
     } on SolveFailure {
       return null;
+    }
+  }
+
+  Iterable<({Package package, PackageRange range, bool isDev})>
+  _workspaceDependencyRanges(String name) sync* {
+    for (final package in entrypoint.workspaceRoot.transitiveWorkspace) {
+      final dependency = package.dependencies[name];
+      if (dependency != null) {
+        yield (package: package, range: dependency, isDev: false);
+      }
+      final devDependency = package.devDependencies[name];
+      if (devDependency != null) {
+        yield (package: package, range: devDependency, isDev: true);
+      }
     }
   }
 }

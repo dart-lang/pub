@@ -111,6 +111,8 @@ class PackageServer {
               'archive_url':
                   '${server.url}/packages/$name/versions/${version.version}.tar.gz',
               if (version.isRetracted) 'retracted': true,
+              if (version.published != null)
+                'published': version.published!.toUtc().toIso8601String(),
               if (version.sha256 != null || server.serveContentHashes)
                 'archive_sha256':
                     version.sha256 ??
@@ -302,6 +304,7 @@ class PackageServer {
     List<d.Descriptor>? contents,
     String? sdk,
     Map<String, List<String>>? headers,
+    DateTime? published,
   }) {
     final pubspecFields = <String, dynamic>{
       'name': name,
@@ -319,6 +322,7 @@ class PackageServer {
       pubspecFields,
       headers: headers,
       contents: () => tarFromDescriptors(contents ?? []),
+      published: published,
     );
   }
 
@@ -426,10 +430,16 @@ class _ServedPackageVersion {
   bool isRetracted = false;
   // Overrides the calculated sha256.
   String? sha256;
+  DateTime? published;
 
   Version get version => Version.parse(pubspec['version'] as String);
 
-  _ServedPackageVersion(this.pubspec, {required this.contents, this.headers});
+  _ServedPackageVersion(
+    this.pubspec, {
+    required this.contents,
+    this.headers,
+    this.published,
+  });
 
   Future<int> computeArchiveCrc32c() async {
     return await Crc32c.computeByConsumingStream(contents());
