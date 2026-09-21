@@ -41,7 +41,6 @@ Usage: pub add [options] [<section>:]<package>[@<descriptor>] [<section>:]<packa
 -h, --help               Print this usage information.
     --[no-]offline       Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change any.
-    --[no-]precompile    Build executables in immediate dependencies.
 -C, --directory=<dir>    Run this in the directory <dir>.
     --[no-]example       Also update dependencies in `example/` after modifying pubspec.yaml in the root package (if it exists).
                          (defaults to on)
