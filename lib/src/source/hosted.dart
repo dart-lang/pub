@@ -446,7 +446,11 @@ class HostedSource extends CachedSource {
         isRetracted: retracted,
         advisoriesUpdated: advisoriesDate,
       );
-      final slsaLevel = map['slsaLevel'] as int?;
+      final slsaLevelField = map['slsa_level'];
+      if (slsaLevelField != null && slsaLevelField is! int) {
+        throw FormatException('slsa_level must be an int', map);
+      }
+      final slsaLevel = slsaLevelField as int?;
       return HostedVersionInfo(
         pubspec.version,
         pubspec,
@@ -1339,6 +1343,51 @@ class HostedSource extends CachedSource {
     final path = provenancePath(id, cache);
     ensureDir(p.dirname(path));
     writeTextFile(path, provenance);
+    // Also remember, independently of the version, that this package was
+    // attested at least once. See [packageProvenancePath].
+    final packagePath = packageProvenancePath(
+      id.description.description as HostedDescription,
+      cache,
+    );
+    ensureDir(p.dirname(packagePath));
+    writeTextFile(packagePath, provenance);
+  }
+
+  /// Next to the per-version provenance files there is a per-package file
+  /// recording the repository the package was last attested from.
+  ///
+  /// Whether an archive is verified must not be decided by the package
+  /// repository alone: a compromised repository could simply stop reporting
+  /// `slsa_level` for a package. Once we have seen an attestation for any
+  /// version of a package, we keep requiring one.
+  ///
+  /// Package names cannot contain `-`, so this never collides with the
+  /// `<name>-<version>.provenance` files.
+  String packageProvenancePath(
+    HostedDescription description,
+    SystemCache cache,
+  ) {
+    return p.join(
+      cache.rootDir,
+      'hosted-provenance',
+      _urlToDirectory(description.url),
+      '${description.packageName}.provenance',
+    );
+  }
+
+  /// Loads the repository of the last attestation seen for the package
+  /// described by [description], or `null` if it was never attested.
+  String? packageProvenanceFromCache(
+    HostedDescription description,
+    SystemCache cache,
+  ) {
+    try {
+      final text =
+          readTextFile(packageProvenancePath(description, cache)).trim();
+      return text.isEmpty ? null : text;
+    } on io.IOException {
+      return null;
+    }
   }
 
   /// Re-downloads all packages that have been previously downloaded into the
@@ -1583,7 +1632,17 @@ class HostedSource extends CachedSource {
     }
 
     Uint8List? contentHash;
-    String? verifiedProvenance;
+    String? attestationJson;
+
+    // The repository we have previously seen an attestation from for this
+    // package, if any.
+    final previousProvenance = packageProvenanceFromCache(description, cache);
+    // Attestations are fetched when the repository says there is one, but also
+    // when we have seen one before: the repository must not be able to skip
+    // verification by simply not reporting `slsa_level`.
+    final expectAttestation =
+        versionInfo.slsaLevel != null || previousProvenance != null;
+
     final archiveUrl = versionInfo.archiveUrl;
     log.io('Get package from $archiveUrl.');
     log.fine('Downloading ${log.bold(id.name)} ${id.version}...');
@@ -1618,8 +1677,9 @@ This indicates a problem on the package repository: `${description.url}`.
 See $contentHashesDocumentationUrl.
 ''');
         }
-        contentHash = Uint8List.fromList(actualHash.bytes);
-        writeHash(id, cache, contentHash!);
+        final hash = Uint8List.fromList(actualHash.bytes);
+        contentHash = hash;
+        writeHash(id, cache, hash);
       }
 
       // It is important that we do not compare against id.description.sha256,
@@ -1661,58 +1721,28 @@ See $contentHashesDocumentationUrl.
             // ways around this, and we might revisit this later.
             await createFileFromStream(stream, archivePath);
 
-            // Fetch and verify Sigstore attestation if available
-            if (versionInfo.slsaLevel != null) {
+            // Fetch the Sigstore attestation. It is verified below, once the
+            // archive has been extracted and we can read the `repository`
+            // field of the pubspec it contains.
+            if (expectAttestation) {
               final attestationUri = Uri.parse(description.url).resolve(
                 'api/packages/${id.name}/versions/${id.version}/attestation',
               );
               try {
                 final attRequest = http.Request('GET', attestationUri);
-                final attResponse = await client.fetch(attRequest);
-                if (attResponse.statusCode == 200) {
-                  SigstoreBundle bundle;
-                  try {
-                    bundle = SigstoreBundle.fromJson(attResponse.body);
-                  } catch (e) {
-                    throw PackageIntegrityException('''
-Downloaded attestation for ${id.name}-${id.version} is malformed: $e
-
-This indicates a problem on the package repository: `${description.url}`.
-''');
-                  }
-                  final archiveBytes = readBinaryFile(archivePath);
-                  final verifier = PubAttestationVerifier(cache: cache);
-                  final result = verifier.verify(
-                    packageName: id.name,
-                    packageVersion: id.version,
-                    archiveBytes: archiveBytes,
-                    bundle: bundle,
-                  );
-                  if (!result.isValid) {
-                    throw PackageIntegrityException('''
-Downloaded archive for ${id.name}-${id.version} failed Sigstore attestation verification:
-${result.errors.map((e) => '  * $e').join('\n')}
-
-This indicates a problem on the package repository: `${description.url}`.
-''');
-                  }
-                  verifiedProvenance = result.repository;
-                  if (verifiedProvenance != null) {
-                    writeProvenance(id, cache, verifiedProvenance!);
-                  }
-                  log.fine(
-                    'Verified Sigstore attestation for '
-                    '${id.name}-${id.version} '
-                    'from repository ${result.repository}.',
-                  );
+                attestationJson = (await client.fetch(attRequest)).body;
+              } on PubHttpResponseException catch (e) {
+                if (e.response.statusCode != HttpStatus.notFound) {
+                  // Do not swallow errors here: an unverified package must not
+                  // be the result of a failed request. Intermittent failures
+                  // are retried by [retryForHttp].
+                  rethrow;
                 }
-              } on PackageIntegrityException {
-                rethrow;
-              } catch (e) {
                 log.fine(
-                  'No attestation found or error fetching attestation for '
-                  '${id.name}-${id.version}: $e',
+                  'No attestation served for ${id.name}-${id.version} '
+                  'at $attestationUri.',
                 );
+                attestationJson = null;
               }
             }
           });
@@ -1726,8 +1756,105 @@ This indicates a problem on the package repository: `${description.url}`.
       } on FormatException catch (e) {
         dataError('Failed to extract `$archivePath`: ${e.message}.');
       }
+
+      final verifiedProvenance = _verifyAttestation(
+        id,
+        description,
+        cache,
+        attestationJson: attestationJson,
+        archivePath: archivePath,
+        extractedPath: destPath,
+        slsaLevel: versionInfo.slsaLevel,
+        previousProvenance: previousProvenance,
+      );
+      if (verifiedProvenance != null) {
+        writeProvenance(id, cache, verifiedProvenance);
+      }
       return (contentHash!, verifiedProvenance);
     });
+  }
+
+  /// Verifies [attestationJson] against the archive at [archivePath], which has
+  /// been extracted to [extractedPath], and returns the repository the package
+  /// was built from.
+  ///
+  /// Returns `null` if the package is not attested, and throws if it should
+  /// have been.
+  String? _verifyAttestation(
+    PackageId id,
+    HostedDescription description,
+    SystemCache cache, {
+    required String? attestationJson,
+    required String archivePath,
+    required String extractedPath,
+    required int? slsaLevel,
+    required String? previousProvenance,
+  }) {
+    AttestationVerificationResult? result;
+    if (attestationJson != null) {
+      // The `repository` of the version listing is served by the package
+      // repository and therefore not trustworthy. The pubspec inside the
+      // archive is covered by the attested digest.
+      final pubspecPath = p.join(extractedPath, 'pubspec.yaml');
+      final Pubspec pubspec;
+      try {
+        pubspec = Pubspec.parse(
+          readTextFile(pubspecPath),
+          cache.sources,
+          containingDescription: ResolvedRootDescription.fromDir('.'),
+        );
+      } on Exception catch (e) {
+        throw PackageIntegrityException('''
+Could not read the pubspec of the attested archive for ${id.name}-${id.version}: $e
+
+This indicates a problem on the package repository: `${description.url}`.
+''');
+      }
+      final declaredRepository = pubspec.fields['repository']?.toString();
+
+      result = PubAttestationVerifier(cache: cache).verify(
+        packageName: id.name,
+        packageVersion: id.version,
+        archiveBytes: readBinaryFile(archivePath),
+        bundleJson: attestationJson,
+        declaredPackageName: pubspec.name,
+        declaredPackageVersion: pubspec.version,
+        expectedRepository: declaredRepository,
+      );
+      if (!result.isValid) {
+        throw PackageIntegrityException('''
+Downloaded archive for ${id.name}-${id.version} failed Sigstore attestation verification:
+${result.errors.map((e) => '  * $e').join('\n')}
+
+This indicates a problem on the package repository: `${description.url}`.
+''');
+      }
+      log.fine(
+        'Verified Sigstore attestation for ${id.name}-${id.version} '
+        'from repository ${result.repository}.',
+      );
+    } else if (slsaLevel != null) {
+      throw PackageIntegrityException('''
+The package repository reports that ${id.name}-${id.version} has SLSA level $slsaLevel,
+but served no attestation for it.
+
+This indicates a problem on the package repository: `${description.url}`.
+''');
+    }
+
+    // Throws if a previously attested package is no longer attested, and warns
+    // if it changed repository.
+    ProvenancePolicy.enforcePolicy(
+      packageName: id.name,
+      version: id.version,
+      currentProvenance: result?.provenance,
+      previousLockedProvenance:
+          previousProvenance == null
+              ? null
+              : ProvenanceInfo(repository: previousProvenance),
+      onWarning: log.warning,
+    );
+    return result?.repository;
   }
 
   /// Writes the contenthash for [id] in the cache.
@@ -2058,14 +2185,17 @@ class ResolvedHostedDescription extends ResolvedDescription {
   }
 
   @override
-  // We do not include the sha256 in the hashCode because of the equality
-  // semantics.
-  int get hashCode => Object.hash(description, provenance);
+  // We do not include the sha256 or the provenance in the hashCode because of
+  // the equality semantics: a `null` value compares equal to any other value,
+  // so including them would break the hashCode/== contract.
+  int get hashCode => description.hashCode;
 
   @override
   bool operator ==(Object other) {
     return other is ResolvedHostedDescription &&
         other.description == description &&
+        // A [provenance] of `null` means that we don't know the provenance
+        // yet. Therefore we have to assume it is equal to any known value.
         (provenance == null ||
             other.provenance == null ||
             provenance == other.provenance) &&
@@ -2083,6 +2213,10 @@ class ResolvedHostedDescription extends ResolvedDescription {
         provenance: provenance,
       );
 
+  /// Returns a description with [newProvenance], if it is not `null`.
+  ///
+  /// A known provenance is never cleared: that would silently drop the
+  /// repository binding of an already verified package.
   ResolvedHostedDescription withProvenance(String? newProvenance) =>
       ResolvedHostedDescription(
         description,

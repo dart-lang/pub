@@ -4,13 +4,12 @@
 
 import 'package:pub_semver/pub_semver.dart';
 
-/// Exception thrown when package integrity or provenance policies fail.
-class PackageProvenanceException implements Exception {
-  final String message;
-  PackageProvenanceException(this.message);
+import '../exceptions.dart';
+import 'provenance.dart';
 
-  @override
-  String toString() => message;
+/// Exception thrown when package integrity or provenance policies fail.
+class PackageProvenanceException extends DataException {
+  PackageProvenanceException(super.message);
 }
 
 /// Compact provenance summary stored in memory or lockfile.
@@ -106,16 +105,10 @@ Downgrading from a signed package to an unsigned package is prohibited.
   }
 
   static bool _repositoriesMatch(String a, String b) {
-    final normA = a
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'\.git$'), '')
-        .replaceAll(RegExp(r'/+$'), '');
-    final normB = b
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'\.git$'), '')
-        .replaceAll(RegExp(r'/+$'), '');
-    return normA == normB || normA.endsWith(normB) || normB.endsWith(normA);
+    final repoA = GitHubRepository.tryParse(a);
+    final repoB = GitHubRepository.tryParse(b);
+    if (repoA != null && repoB != null) return repoA == repoB;
+    // Not (both) GitHub repositories - fall back to exact comparison.
+    return a.trim().toLowerCase() == b.trim().toLowerCase();
   }
 }

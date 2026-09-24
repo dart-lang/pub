@@ -4,6 +4,14 @@
 
 /// Stub classes for `package:sigstore` when compiling for platforms without
 /// `dart:ffi`.
+library;
+
+/// Mirrors the error thrown by `package:sigstore`.
+///
+/// Note that this is a plain enum: it implements neither `Exception` nor
+/// `Error`, so it is only caught by `on SigstoreError` or by a catch-all.
+enum SigstoreError { invalidBundle, verificationFailed, internalError }
+
 class SigstoreBundle {
   static SigstoreBundle fromJson(String json) =>
       throw UnsupportedError('Sigstore is not supported on this platform.');
