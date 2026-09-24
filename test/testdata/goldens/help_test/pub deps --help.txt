@@ -7,7 +7,7 @@ Print package dependencies.
 Usage: pub deps [arguments...]
 -h, --help               Print this usage information.
 -s, --style              How output should be displayed.
-                         [compact, tree (default), list]
+                         [compact, tree (default), list, mermaid]
     --[no-]dev           Whether to include dev dependencies.
                          (defaults to on)
     --executables        List all available executables.
