@@ -14,33 +14,91 @@ import 'package:test/test.dart';
 import 'test_fixtures.dart';
 
 void main() {
-  test('successfully verifies valid package and attestation', () {
+  test('verifies a real signed package attestation (helpful 0.1.5)', () {
     final verifier = PubAttestationVerifier();
-    final bundle = SigstoreBundle.fromJson(sampleBundleJson);
+
+    final result = verifier.verify(
+      packageName: 'helpful',
+      packageVersion: Version(0, 1, 5),
+      archiveBytes: helpfulArchiveBytes,
+      bundleJson: helpfulBundleJson,
+      declaredPackageName: 'helpful',
+      declaredPackageVersion: Version(0, 1, 5),
+      expectedRepository: 'https://github.com/mosuem/helpful',
+    );
+
+    expect(result.errors, isEmpty);
+    expect(result.isValid, isTrue);
+    expect(result.repository, 'https://github.com/mosuem/helpful');
+    expect(
+      result.provenance?.commitSha,
+      '63216a3022ed606538399634cd1c525f8bd4657f',
+    );
+  });
+
+  test('rejects a real attestation when served for another package', () {
+    final verifier = PubAttestationVerifier();
+
+    final result = verifier.verify(
+      packageName: 'evil',
+      packageVersion: Version(0, 1, 5),
+      archiveBytes: helpfulArchiveBytes,
+      bundleJson: helpfulBundleJson,
+      declaredPackageName: 'helpful',
+      declaredPackageVersion: Version(0, 1, 5),
+      expectedRepository: 'https://github.com/mosuem/helpful',
+    );
+
+    expect(result.isValid, isFalse);
+    expect(
+      result.errors.single,
+      contains('declares `name: helpful`, expected `evil`'),
+    );
+  });
+
+  test(
+    'rejects a real attestation when pubspec declares another repository',
+    () {
+      final verifier = PubAttestationVerifier();
+
+      final result = verifier.verify(
+        packageName: 'helpful',
+        packageVersion: Version(0, 1, 5),
+        archiveBytes: helpfulArchiveBytes,
+        bundleJson: helpfulBundleJson,
+        declaredPackageName: 'helpful',
+        declaredPackageVersion: Version(0, 1, 5),
+        expectedRepository: 'https://github.com/evil/helpful',
+      );
+
+      expect(result.isValid, isFalse);
+      expect(result.errors.single, contains('was built from'));
+    },
+  );
+
+  test('rejects a bundle that carries no build provenance', () {
+    // This bundle is cryptographically valid, and was produced by a GitHub
+    // Actions workflow - but it is a plain artifact signature over some other
+    // file, made by an unrelated repository. Accepting it would mean accepting
+    // any valid bundle from any workflow as the attestation of any package.
+    final verifier = PubAttestationVerifier();
 
     final result = verifier.verify(
       packageName: 'sample',
       packageVersion: Version(1, 0, 0),
       archiveBytes: sampleArtifactBytes,
-      bundle: bundle,
+      bundleJson: sampleBundleJson,
       expectedRepository:
-          'https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon',
+          'https://github.com/sigstore-conformance/'
+          'extremely-dangerous-public-oidc-beacon',
     );
 
-    expect(result.isValid, isTrue);
-    expect(result.errors, isEmpty);
-    expect(result.packageName, equals('sample'));
-    expect(
-      result.repository,
-      equals(
-        'https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon',
-      ),
-    );
+    expect(result.isValid, isFalse);
+    expect(result.errors.single, contains('carries no build provenance'));
   });
 
   test('fails when archive bytes do not match attestation', () {
     final verifier = PubAttestationVerifier();
-    final bundle = SigstoreBundle.fromJson(sampleBundleJson);
 
     final tamperedBytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
@@ -48,45 +106,42 @@ void main() {
       packageName: 'sample',
       packageVersion: Version(1, 0, 0),
       archiveBytes: tamperedBytes,
-      bundle: bundle,
+      bundleJson: sampleBundleJson,
     );
 
     expect(result.isValid, isFalse);
     expect(result.errors, isNotEmpty);
   });
 
-  test('fails when repository does not match expected repository', () {
+  test('fails when the attestation is not a Sigstore bundle', () {
     final verifier = PubAttestationVerifier();
-    final bundle = SigstoreBundle.fromJson(sampleBundleJson);
 
     final result = verifier.verify(
       packageName: 'sample',
       packageVersion: Version(1, 0, 0),
       archiveBytes: sampleArtifactBytes,
-      bundle: bundle,
-      expectedRepository: 'https://github.com/unexpected-owner/unexpected-repo',
+      bundleJson: '{"not": "a bundle"}',
     );
 
     expect(result.isValid, isFalse);
-    expect(result.errors.first, contains('does not match expected repository'));
+    expect(result.errors, isNotEmpty);
   });
 
-  test('fails when expected repository is not on GitHub', () {
+  test('fails on an unsigned provenance statement', () {
+    // `buildProvenanceBundleJson` produces a well-formed statement with a
+    // bogus signature: the policy must never be reached.
     final verifier = PubAttestationVerifier();
-    final bundle = SigstoreBundle.fromJson(sampleBundleJson);
 
     final result = verifier.verify(
-      packageName: 'sample',
+      packageName: 'helpful',
       packageVersion: Version(1, 0, 0),
       archiveBytes: sampleArtifactBytes,
-      bundle: bundle,
-      expectedRepository: 'https://gitlab.com/unexpected-owner/unexpected-repo',
+      bundleJson: buildProvenanceBundleJson(
+        subjectName: 'helpful-1.0.0.tar.gz',
+      ),
+      expectedRepository: 'https://github.com/dieter/helpful',
     );
 
     expect(result.isValid, isFalse);
-    expect(
-      result.errors.first,
-      contains('currently only supported for GitHub repositories'),
-    );
   });
 }
