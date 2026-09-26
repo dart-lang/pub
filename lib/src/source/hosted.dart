@@ -37,6 +37,8 @@ import 'root.dart';
 
 const contentHashesDocumentationUrl = 'https://dart.dev/go/content-hashes';
 
+const bool _isDart2Wasm = bool.fromEnvironment('dart.tool.dart2wasm');
+
 /// Validates and normalizes a [hostedUrl] which is pointing to a pub server.
 ///
 /// A [hostedUrl] is a URL pointing to a _hosted pub server_ as defined by the
@@ -1674,14 +1676,12 @@ See $contentHashesDocumentationUrl.
             final response = await client.fetchAsStream(request);
 
             Stream<List<int>> stream = response.stream;
+            if (_isDart2Wasm) {
+              stream = stream.map(Uint8List.fromList);
+            }
             final expectedCrc32c = _parseCrc32c(response.headers, fileName);
             if (expectedCrc32c != null) {
-              stream = _validateCrc32c(
-                response.stream,
-                expectedCrc32c,
-                id,
-                archiveUrl,
-              );
+              stream = _validateCrc32c(stream, expectedCrc32c, id, archiveUrl);
             }
             stream = validateSha256(
               stream,
