@@ -901,9 +901,6 @@ Future<Validator> validatePackage(ValidatorCreator fn, int? size) async {
   validator.context = ValidationContext(
     entrypoint,
     await Future.value(size ?? 100),
-    _globalServer == null
-        ? Uri.parse('https://pub.dev')
-        : Uri.parse(globalServer.url),
     entrypoint.workspaceRoot.listFiles(),
   );
   await validator.validate();

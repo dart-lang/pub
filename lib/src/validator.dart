@@ -3,70 +3,36 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'entrypoint.dart';
+import 'io.dart';
 import 'log.dart' as log;
 import 'package.dart';
 import 'path.dart';
+import 'platform_info.dart';
 import 'sdk.dart';
 import 'system_cache.dart';
-import 'validator/analyze.dart';
-import 'validator/changelog.dart';
-import 'validator/compiled_dartdoc.dart';
-import 'validator/dependency.dart';
-import 'validator/dependency_override.dart';
-import 'validator/deprecated_fields.dart';
-import 'validator/devtools_extension.dart';
-import 'validator/directory.dart';
-import 'validator/executable.dart';
-import 'validator/file_case.dart';
-import 'validator/flutter_constraint.dart';
-import 'validator/flutter_plugin_format.dart';
-import 'validator/git_status.dart';
-import 'validator/gitignore.dart';
-import 'validator/leak_detection.dart';
-import 'validator/license.dart';
-import 'validator/name.dart';
-import 'validator/pubspec.dart';
-import 'validator/pubspec_field.dart';
-import 'validator/pubspec_typo.dart';
-import 'validator/readme.dart';
-import 'validator/relative_version_numbering.dart';
-import 'validator/sdk_constraint.dart';
-import 'validator/size.dart';
-import 'validator/strict_dependencies.dart';
 
 /// The base class for validators that check whether a package is fit for
 /// uploading.
-///
-/// Each validator should override [errors], [warnings], or both to return
-/// lists of errors or warnings to display to the user. Errors will cause the
-/// package not to be uploaded; warnings will require the user to confirm the
-/// upload.
 abstract class Validator {
   /// The accumulated errors for this validator.
-  ///
-  /// Filled by calling [validate].
   final errors = <String>[];
 
   /// The accumulated warnings for this validator.
-  ///
-  /// Filled by calling [validate].
   final warnings = <String>[];
 
   /// The accumulated hints for this validator.
-  ///
-  /// Filled by calling [validate].
   final hints = <String>[];
 
   late ValidationContext context;
   Package get package => context.entrypoint.workPackage;
   SystemCache get cache => context.entrypoint.cache;
   int get packageSize => context.packageSize;
-  Uri get serverUrl => context.serverUrl;
   List<String> get files => context.files;
 
   /// Validates the entrypoint, adding any errors and warnings to [errors] and
@@ -77,8 +43,6 @@ abstract class Validator {
   /// versions older than [firstSdkVersion].
   @protected
   void validateSdkConstraint(Version firstSdkVersion, String message) {
-    // If the SDK constraint disallowed all versions before [firstSdkVersion],
-    // no error is necessary.
     if (package.pubspec.dartSdkConstraint.originalConstraint
         .intersect(VersionRange(max: firstSdkVersion))
         .isEmpty) {
@@ -87,9 +51,6 @@ abstract class Validator {
 
     if (firstSdkVersion.isPreRelease &&
         !_isSamePreRelease(firstSdkVersion, sdk.version)) {
-      // Unless the user is using a dev SDK themselves, suggest that they use a
-      // non-dev SDK constraint, even if there were some dev versions that are
-      // allowed.
       firstSdkVersion = firstSdkVersion.nextPatch;
     }
 
@@ -115,8 +76,6 @@ abstract class Validator {
     );
   }
 
-  /// Returns whether [version1] and [version2] are pre-releases of the same
-  /// version.
   bool _isSamePreRelease(Version version1, Version version2) =>
       version1.isPreRelease &&
       version2.isPreRelease &&
@@ -124,97 +83,143 @@ abstract class Validator {
       version1.minor == version2.minor &&
       version1.major == version2.major;
 
-  /// Run all validators on the [entrypoint] package and print their results.
+  /// The default package descriptor used for package validation.
+  static const defaultValidationPackage = 'pub_validation@^0.1.0-dev';
+
+  /// The default trusted repository URL for installing validation tools.
+  static const defaultValidationHostedUrl = 'https://pub.dev';
+
+  /// Run package validation on the [entrypoint] package via `pub_validation`
+  /// and print results.
   ///
-  /// [files] should be the result of `entrypoint.root.listFiles()`.
-  ///
-  /// When the future completes [hints] [warnings] amd [errors] will have been
-  /// appended with the reported hints warnings and errors respectively.
-  ///
-  /// [packageSize], if passed, should complete to the size of the tarred
-  /// package, in bytes. This is used to validate that it's not too big to
-  /// upload to the server.
+  /// Installs `pub_validation` using `dart install` and executes the
+  /// validator CLI.
   static Future<void> runAll(
     Entrypoint entrypoint,
     int packageSize,
-    Uri serverUrl,
     List<String> files, {
     required List<String> hints,
     required List<String> warnings,
     required List<String> errors,
+    String? validationPackage,
+    Uri? validationHostedUrl,
   }) async {
-    final validators = [
-      FileCaseValidator(),
-      AnalyzeValidator(),
-      GitignoreValidator(),
-      GitStatusValidator(),
-      PubspecValidator(),
-      LicenseValidator(),
-      NameValidator(),
-      PubspecFieldValidator(),
-      DependencyValidator(),
-      DependencyOverrideValidator(),
-      DeprecatedFieldsValidator(),
-      DirectoryValidator(),
-      ExecutableValidator(),
-      CompiledDartdocValidator(),
-      ReadmeValidator(),
-      ChangelogValidator(),
-      SdkConstraintValidator(),
-      StrictDependenciesValidator(),
-      FlutterConstraintValidator(),
-      FlutterPluginFormatValidator(),
-      RelativeVersionNumberingValidator(),
-      PubspecTypoValidator(),
-      LeakDetectionValidator(),
-      SizeValidator(),
-      DevtoolsExtensionValidator(),
-    ];
+    final pkgDescriptor = validationPackage ?? defaultValidationPackage;
+    final pkgName = pkgDescriptor.split('@').first;
 
-    final context = ValidationContext(
-      entrypoint,
-      packageSize,
-      serverUrl,
-      files,
-    );
-    return await Future.wait(
-      validators.map((validator) async {
-        validator.context = context;
-        await validator.validate();
-      }),
-    ).then((_) {
-      hints.addAll([for (final validator in validators) ...validator.hints]);
-      warnings.addAll([
-        for (final validator in validators) ...validator.warnings,
+    final pubspec = entrypoint.workPackage.pubspec;
+    final isLocalDep =
+        pubspec.dependencies.containsKey(pkgName) ||
+        pubspec.devDependencies.containsKey(pkgName) ||
+        pubspec.dependencyOverrides.containsKey(pkgName);
+
+    StringProcessResult result;
+    if (isLocalDep) {
+      // Run the local version resolved in the workspace.
+      result = await runProcess(platform.resolvedExecutable, [
+        'run',
+        '$pkgName:$pkgName',
+        '-C',
+        entrypoint.workPackage.dir,
+        '--package-size',
+        packageSize.toString(),
+        '--json',
       ]);
-      errors.addAll([for (final validator in validators) ...validator.errors]);
+    } else {
+      final hostedUrl =
+          validationHostedUrl?.toString() ?? defaultValidationHostedUrl;
 
-      String presentDiagnostics(List<String> diagnostics) => diagnostics
-          .map((diagnostic) => "* ${diagnostic.split('\n').join('\n  ')}\n")
-          .join('\n');
-      final sections = <String>[];
-
-      for (final (kind, diagnostics) in [
-        ('error', errors),
-        ('potential issue', warnings),
-        ('hint', hints),
-      ]) {
-        if (diagnostics.isNotEmpty) {
-          final s = diagnostics.length > 1 ? 's' : '';
-          final count = diagnostics.length > 1 ? '${diagnostics.length} ' : '';
-          sections.add(
-            'Package validation found the following $count$kind$s:\n'
-            '${presentDiagnostics(diagnostics)}',
-          );
-        }
+      var installTarget = pkgDescriptor;
+      if (hostedUrl != defaultValidationHostedUrl &&
+          !pkgDescriptor.contains('{') &&
+          pkgDescriptor.contains('@')) {
+        final parts = pkgDescriptor.split('@');
+        installTarget =
+            '${parts[0]}@{hosted: $hostedUrl, version: ${parts[1]}}';
       }
+
+      // Install the validation package via `dart install`.
+      try {
+        final installResult = await runProcess(platform.resolvedExecutable, [
+          'install',
+          installTarget,
+        ]);
+        if (installResult.exitCode != 0) {
+          log.fine('dart install $installTarget: ${installResult.stderr}');
+        }
+      } catch (e) {
+        log.fine('Failed to run dart install $installTarget: $e');
+      }
+
+      final executable = _installedExecutablePath(pkgName);
+
+      try {
+        result = await runProcess(executable, [
+          '-C',
+          entrypoint.workPackage.dir,
+          '--package-size',
+          packageSize.toString(),
+          '--json',
+        ]);
+      } catch (_) {
+        result = await runProcess(pkgName, [
+          '-C',
+          entrypoint.workPackage.dir,
+          '--package-size',
+          packageSize.toString(),
+          '--json',
+        ]);
+      }
+    }
+
+    try {
+      final stdout = result.stdout;
+      final jsonStart = stdout.indexOf('{');
+      if (jsonStart != -1) {
+        final jsonStr = stdout.substring(jsonStart);
+        final decoded = json.decode(jsonStr) as Map<String, dynamic>;
+        if (decoded['errors'] is List) {
+          errors.addAll((decoded['errors'] as List).cast<String>());
+        }
+        if (decoded['warnings'] is List) {
+          warnings.addAll((decoded['warnings'] as List).cast<String>());
+        }
+        if (decoded['hints'] is List) {
+          hints.addAll((decoded['hints'] as List).cast<String>());
+        }
+      } else if (result.exitCode != 0) {
+        errors.add(stdout.isNotEmpty ? stdout : result.stderr);
+      }
+    } catch (e) {
+      log.fine('Failed to parse pub_validation output: $e');
+    }
+
+    String presentDiagnostics(List<String> diagnostics) => diagnostics
+        .map((diagnostic) => "* ${diagnostic.split('\n').join('\n  ')}\n")
+        .join('\n');
+    final sections = <String>[];
+
+    for (final (kind, diagnostics) in [
+      ('error', errors),
+      ('potential issue', warnings),
+      ('hint', hints),
+    ]) {
+      if (diagnostics.isNotEmpty) {
+        final s = diagnostics.length > 1 ? 's' : '';
+        final count = diagnostics.length > 1 ? '${diagnostics.length} ' : '';
+        sections.add(
+          'Package validation found the following $count$kind$s:\n'
+          '${presentDiagnostics(diagnostics)}',
+        );
+      }
+    }
+    if (sections.isNotEmpty) {
       log.message(sections.join('\n'));
-    });
+    }
   }
 
   /// Returns the [files] that are [path] or inside [path] (relative to the
   /// package entrypoint).
-  // TODO(sigurdm): Consider moving this to a more central location.
   List<String> filesBeneath(String path, {required bool recursive}) {
     final base = p.canonicalize(p.join(package.dir, path));
     return files
@@ -232,13 +237,31 @@ abstract class Validator {
 class ValidationContext {
   final Entrypoint entrypoint;
   final int packageSize;
-  final Uri serverUrl;
   final List<String> files;
 
-  ValidationContext(
-    this.entrypoint,
-    this.packageSize,
-    this.serverUrl,
-    this.files,
-  );
+  ValidationContext(this.entrypoint, this.packageSize, this.files);
+}
+
+/// Resolves the file path of a globally installed tool executable.
+String _installedExecutablePath(String pkgName) {
+  if (platform.isWindows) {
+    final localAppData = platform.environment['LOCALAPPDATA'] ?? '';
+    final installBinDir = p.join(localAppData, 'Dart', 'install', 'bin');
+    final bat = p.join(installBinDir, '$pkgName.bat');
+    if (fileExists(bat)) return bat;
+    final exe = p.join(installBinDir, '$pkgName.exe');
+    if (fileExists(exe)) return exe;
+  } else {
+    final xdgStateHome = platform.environment['XDG_STATE_HOME'];
+    final String installBinDir;
+    if (xdgStateHome != null && xdgStateHome.isNotEmpty) {
+      installBinDir = p.join(xdgStateHome, 'Dart', 'install', 'bin');
+    } else {
+      final home = platform.environment['HOME'] ?? '';
+      installBinDir = p.join(home, '.local', 'state', 'Dart', 'install', 'bin');
+    }
+    final exe = p.join(installBinDir, pkgName);
+    if (fileExists(exe)) return exe;
+  }
+  return pkgName;
 }
