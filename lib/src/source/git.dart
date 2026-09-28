@@ -645,13 +645,18 @@ class GitSource extends CachedSource {
   ///
   /// Throws a [PackageNotFoundException] if [revision] doesn't exist in the
   /// repository even after updating the cache.
+  ///
+  /// Returns `true` if it had to update anything.
   Future<bool> _ensureRevision(
     GitDescription description,
     String revision,
     SystemCache cache,
   ) async {
     final path = _repoCachePath(description, cache);
-    if (cache.gitCache.updatedRepos.contains(path)) return false;
+    if (cache.gitCache.updatedRepos.contains(path)) {
+      await _firstRevision(path, revision);
+      return false;
+    }
 
     await _deleteGitRepoIfInvalid(path);
 
