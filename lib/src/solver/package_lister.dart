@@ -280,8 +280,21 @@ class PackageLister {
       compare:
           (PackageId id1, PackageId id2) => id1.version.compareTo(id2.version),
     );
-    assert(index < versions.length);
-    assert(versions[index].version == id.version);
+    if (index >= versions.length || versions[index].version != id.version) {
+      // Every [id] passed to [incompatibilitiesFor] comes either from
+      // [_versions] or from [_locked]. If [id.version] is not in [versions],
+      // [id] must be [_locked] and its version is no longer among the versions
+      // listed by the source (for example, a Git dependency locked to a commit
+      // whose pubspec version differs from the current branch HEAD, or a cached
+      // hosted version removed from the server listing).
+      //
+      // When called from [generalizeLockedIncompatibilities], narrow
+      // incompatibilities for [_locked] itself have already been emitted. Since
+      // [id.version] is not in [versions], those incompatibilities cannot be
+      // generalized across neighboring versions, so we return an empty list and
+      // let the solver fall back to a no-versions incompatibility.
+      return const [];
+    }
 
     for (var sdk in sdks.values) {
       final sdkIncompatibility = await _checkSdkConstraint(index, sdk);
@@ -322,6 +335,16 @@ class PackageLister {
         dependencies[package]!,
       );
     }).toList();
+  }
+
+  /// If incompatibilities were previously emitted only for [_locked] without
+  /// generalizing across all versions, returns the generalized
+  /// incompatibilities for [_locked].
+  Future<List<Incompatibility>> generalizeLockedIncompatibilities() async {
+    final locked = _locked;
+    if (!_listedLockedVersion || locked == null) return const [];
+    _listedLockedVersion = false;
+    return await incompatibilitiesFor(locked);
   }
 
   /// Returns an [Incompatibility] that represents a dependency from [depender]
