@@ -1677,6 +1677,10 @@ See $contentHashesDocumentationUrl.
 
             Stream<List<int>> stream = response.stream;
             if (_isDart2Wasm) {
+              // On dart2wasm, `BrowserClient` emits JS-backed
+              // `JSUint8ArrayImpl` chunks where every element read crosses FFI.
+              // Copy each chunk into a WasmGC `Uint8List` once before CRC32C,
+              // SHA-256, and file writing.
               stream = stream.map(Uint8List.fromList);
             }
             final expectedCrc32c = _parseCrc32c(response.headers, fileName);

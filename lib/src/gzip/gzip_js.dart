@@ -62,6 +62,9 @@ class BrowserGZipDecoder extends Converter<List<int>, List<int>> {
           final result = await reader.read().toDart;
           if (result.done) break;
           final value = (result.value as JSUint8Array).toDart;
+          // On dart2wasm, `JSUint8Array.toDart` returns a JS-backed
+          // `JSUint8ArrayImpl` where every element read crosses FFI. Copy it
+          // into a WasmGC `Uint8List` once before `package:tar` processes it.
           controller.add(_isDart2Wasm ? Uint8List.fromList(value) : value);
         }
       } catch (e, st) {
