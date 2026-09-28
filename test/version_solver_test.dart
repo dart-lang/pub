@@ -218,6 +218,26 @@ Because myapp depends on foo any which depends on bar >=2.0.0, bar >=2.0.0 is re
 So, because myapp depends on bar <2.0.0, version solving failed.'''),
     );
   });
+
+  test('fails when a constraint excludes the only version of a locked '
+      'package', () async {
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('bar', '1.0.0', deps: {'foo': '<1.0.0'})
+      ..serve('bar', '2.0.0', deps: {'foo': '>1.0.0'});
+
+    await d.appDir(dependencies: {'foo': 'any'}).create();
+    await expectResolves(result: {'foo': '1.0.0'});
+
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
+    await expectResolves(
+      error: contains(
+        '''
+Because bar <2.0.0 depends on foo <1.0.0 and bar >=2.0.0 depends on foo >1.0.0, every version of bar requires foo <1.0.0 or >1.0.0.
+So, because no versions of foo match <1.0.0 or >1.0.0 and myapp depends on bar any, version solving failed.''',
+      ),
+    );
+  });
 }
 
 void rootDependency() {

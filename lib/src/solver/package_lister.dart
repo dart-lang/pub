@@ -280,8 +280,9 @@ class PackageLister {
       compare:
           (PackageId id1, PackageId id2) => id1.version.compareTo(id2.version),
     );
-    assert(index < versions.length);
-    assert(versions[index].version == id.version);
+    if (index >= versions.length || versions[index].version != id.version) {
+      return const [];
+    }
 
     for (var sdk in sdks.values) {
       final sdkIncompatibility = await _checkSdkConstraint(index, sdk);
@@ -322,6 +323,16 @@ class PackageLister {
         dependencies[package]!,
       );
     }).toList();
+  }
+
+  /// If incompatibilities were previously emitted only for [_locked] without
+  /// generalizing across all versions, returns the generalized
+  /// incompatibilities for [_locked].
+  Future<List<Incompatibility>> generalizeLockedIncompatibilities() async {
+    final locked = _locked;
+    if (!_listedLockedVersion || locked == null) return const [];
+    _listedLockedVersion = false;
+    return await incompatibilitiesFor(locked);
   }
 
   /// Returns an [Incompatibility] that represents a dependency from [depender]
