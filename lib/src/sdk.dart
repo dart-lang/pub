@@ -122,14 +122,14 @@ final Map<String, Experiment> availableExperiments = {
     ...sdk.experiments,
 };
 
-/// The names of the experiments that are enabled without being listed in a
-/// pubspec.
+/// The names of the experiments that don't require opting in, because they
+/// are enabled by default or expired.
 ///
 /// Listing such an experiment in a dependency's `experiments` is harmless, so
 /// the solver always allows them.
-Set<String> get experimentsEnabledByDefault => {
+Set<String> get experimentsNotRequiringOptIn => {
   for (final experiment in availableExperiments.values)
-    if (experiment.isEnabledByDefault) experiment.name,
+    if (!experiment.requiresOptIn) experiment.name,
 };
 
 /// The core Dart SDK.

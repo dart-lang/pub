@@ -105,6 +105,12 @@ final class Experiment {
   /// Whether the experiment is enabled without being listed in `experiments`.
   bool get isEnabledByDefault => enabledIn != null;
 
+  /// Whether listing the experiment in `experiments` has any effect.
+  ///
+  /// Experiments that are enabled by default or expired are not passed on to
+  /// the tools, and any package may list them.
+  bool get requiresOptIn => !isEnabledByDefault && !expired;
+
   /// Whether the experiment can be enabled on the SDK release [channel].
   ///
   /// If [channel] is `null` (unknown) the experiment is assumed available.

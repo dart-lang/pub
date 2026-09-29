@@ -58,15 +58,29 @@ class SolveResult {
   /// For each experiment that some package in the solution opts in to, the
   /// sorted names of those packages.
   ///
-  /// Experiments that are enabled by default are left out.
+  /// Experiments that don't require opting in are left out.
   Map<String, List<String>> get experimentUsers {
     final result = SplayTreeMap<String, List<String>>();
     for (final name in pubspecs.keys.sorted()) {
       for (final experiment in pubspecs[name]!.experiments) {
-        if (availableExperiments[experiment]?.isEnabledByDefault == true) {
+        if (availableExperiments[experiment]?.requiresOptIn == false) {
           continue;
         }
         (result[experiment] ??= []).add(name);
+      }
+    }
+    return result;
+  }
+
+  /// For each expired experiment that some workspace package lists, the
+  /// sorted names of those packages.
+  Map<String, List<String>> get expiredExperimentUsers {
+    final result = SplayTreeMap<String, List<String>>();
+    for (final package in _root.transitiveWorkspace.sortedBy((p) => p.name)) {
+      for (final experiment in package.pubspec.experiments) {
+        if (availableExperiments[experiment]?.expired == true) {
+          (result[experiment] ??= []).add(package.name);
+        }
       }
     }
     return result;

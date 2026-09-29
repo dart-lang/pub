@@ -66,6 +66,10 @@ class SolveReport {
   /// names of the packages opting in to it.
   final Map<String, List<String>> experimentUsers;
 
+  /// For each expired experiment listed by some workspace package, the names
+  /// of those packages.
+  final Map<String, List<String>> expiredExperimentUsers;
+
   SolveReport(
     this._type,
     this._location,
@@ -79,6 +83,7 @@ class SolveReport {
     required bool dryRun,
     required bool enforceLockfile,
     required SolveReportMode reportMode,
+    this.expiredExperimentUsers = const {},
   }) : _dryRun = dryRun,
        _reportMode = reportMode,
        _enforceLockfile = enforceLockfile;
@@ -344,6 +349,18 @@ $contentHashesDocumentationUrl
   }
 
   void reportExperiments() {
+    for (final MapEntry(key: name, value: packages)
+        in expiredExperimentUsers.entries) {
+      final enabledIn = availableExperiments[name]?.enabledIn;
+      final status =
+          enabledIn == null
+              ? 'has been retired and no longer has any effect'
+              : 'has been enabled by default since Dart $enabledIn';
+      warning(
+        'The experiment `$name` $status. Remove it from `experiments` in the '
+        'pubspec.yaml of ${packages.join(', ')}.',
+      );
+    }
     if (experimentUsers.isEmpty) return;
     message('Experiments enabled:');
     for (final MapEntry(key: name, value: packages)

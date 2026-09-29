@@ -111,7 +111,7 @@ class VersionSolver {
        _unlock = {...unlock},
        _allowedExperiments = {
          ..._root.allExperimentsInWorkspace,
-         ...experimentsEnabledByDefault,
+         ...experimentsNotRequiringOptIn,
        };
 
   /// Prime the solver with [constraints].

@@ -565,10 +565,10 @@ See $workspacesDocUrl for more information.''',
 
   /// The experiments of [pubspec] that tools must be told about.
   ///
-  /// Experiments that are enabled by default need no opt-in and are left out.
+  /// Experiments that don't require opting in are left out.
   static List<String> _experimentsNeedingOptIn(Pubspec pubspec) => [
     for (final name in pubspec.experiments)
-      if (availableExperiments[name]?.isEnabledByDefault != true) name,
+      if (availableExperiments[name]?.requiresOptIn != false) name,
   ];
 
   /// Gets all dependencies of the [workspaceRoot] package.
@@ -671,6 +671,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       dryRun: dryRun,
       enforceLockfile: enforceLockfile,
       reportMode: reportMode,
+      expiredExperimentUsers: result.expiredExperimentUsers,
     );
 
     await report.show(summary: true);

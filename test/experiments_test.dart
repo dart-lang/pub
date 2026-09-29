@@ -404,6 +404,68 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
     );
   });
 
+  test('warns about expired experiments and does not pass them on', () async {
+    final server = await servePackages();
+    await _setupSdks(
+      dartExperiments: [
+        {
+          'name': 'shipped-and-expired',
+          'description': 'Shipped a while ago',
+          'enabledIn': '3.0.0',
+          'expired': true,
+        },
+        {'name': 'abandoned', 'description': 'Never shipped', 'expired': true},
+      ],
+    );
+    // Dependencies may list expired experiments that the root doesn't, and
+    // pub doesn't warn about them.
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'experiments': ['abandoned'],
+      },
+    );
+    await d
+        .appDir(
+          dependencies: {'foo': '^1.0.0'},
+          pubspec: {
+            'experiments': ['shipped-and-expired'],
+          },
+        )
+        .create();
+
+    await pubGet(
+      warning: allOf(
+        contains(
+          'The experiment `shipped-and-expired` has been enabled by default '
+          'since Dart 3.0.0. Remove it from `experiments` in the pubspec.yaml '
+          'of myapp.',
+        ),
+        isNot(contains('`abandoned`')),
+      ),
+      environment: _environment,
+    );
+    expect(_experimentsByPackage(_readPackageConfig()), isEmpty);
+
+    await d
+        .appDir(
+          dependencies: {'foo': '^1.0.0'},
+          pubspec: {
+            'experiments': ['abandoned'],
+          },
+        )
+        .create();
+    await pubGet(
+      warning: contains(
+        'The experiment `abandoned` has been retired and no longer has any '
+        'effect. Remove it from `experiments` in the pubspec.yaml of myapp.',
+      ),
+      environment: _environment,
+    );
+    expect(_experimentsByPackage(_readPackageConfig()), isEmpty);
+  });
+
   test('Can global activate a package using experiments', () async {
     final server = await servePackages();
     server.serve(
