@@ -73,6 +73,18 @@ abstract class Sdk {
     } on FormatException catch (e) {
       fail('Failed to parse $experimentsPath. $e');
     }
+    if (json is! Map<String, Object?>) {
+      fail('Malformed experiments file $experimentsPath');
+    }
+    // Files written before the format was versioned have no `version`.
+    final version = json['version'] ?? 1;
+    if (version != _experimentsFileVersion) {
+      fail(
+        'The experiments file $experimentsPath has version $version. '
+        'This version of pub only understands version '
+        '$_experimentsFileVersion.',
+      );
+    }
     final result = <String, Experiment>{};
     if (json case {'experiments': final List<Object?> experiments}) {
       for (final entry in experiments) {
@@ -88,6 +100,9 @@ abstract class Sdk {
     }
     return result;
   }
+
+  /// The version of the experiments file format that pub understands.
+  static const _experimentsFileVersion = 1;
 
   @override
   String toString() => name;
