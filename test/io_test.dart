@@ -429,7 +429,7 @@ void main() {
       testOn: 'linux || mac-os',
     );
 
-    test('extracts files and links', () {
+    test('extracts regular files and ignores symlinks and hardlinks', () {
       return withTempDir((tempDir) async {
         final entries = Stream<TarEntry>.fromIterable([
           TarEntry.data(
@@ -453,7 +453,6 @@ void main() {
             TarHeader(
               name: 'test/main.txt',
               typeFlag: TypeFlag.link,
-              // TypeFlag.link is resolved against the root of the tar file
               linkName: 'lib/main.txt',
               mode: _defaultMode,
             ),
@@ -469,8 +468,8 @@ void main() {
         await d
             .dir('.', [
               d.file('lib/main.txt', 'text content'),
-              d.file('bin/main.txt', 'text content'),
-              d.file('test/main.txt', 'text content'),
+              d.nothing('bin/main.txt'),
+              d.nothing('test/main.txt'),
             ])
             .validate(tempDir);
       });
@@ -532,9 +531,134 @@ void main() {
       });
     });
 
-    test('skips symlinks escaping the tar file', () {
+    test('throws on backslash path traversal in entry name', () {
       return withTempDir((tempDir) async {
         final entry = Stream<TarEntry>.value(
+          TarEntry.data(
+            TarHeader(
+              name: r'nested\..\..\outside.txt',
+              typeFlag: TypeFlag.reg,
+              mode: _defaultMode,
+            ),
+            utf8.encode('payload'),
+          ),
+        );
+
+        await expectLater(
+          extractTarGz(
+            entry.transform(tarWriter).transform(gzip.encoder),
+            tempDir,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
+    });
+
+    test('throws on colon in entry name', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream<TarEntry>.value(
+          TarEntry.data(
+            TarHeader(
+              name: 'lib/file.dart:stream',
+              typeFlag: TypeFlag.reg,
+              mode: _defaultMode,
+            ),
+            utf8.encode('payload'),
+          ),
+        );
+
+        await expectLater(
+          extractTarGz(
+            entry.transform(tarWriter).transform(gzip.encoder),
+            tempDir,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
+    });
+
+    test('throws on Windows reserved DOS device names', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream<TarEntry>.value(
+          TarEntry.data(
+            TarHeader(
+              name: 'lib/aux.dart',
+              typeFlag: TypeFlag.reg,
+              mode: _defaultMode,
+            ),
+            utf8.encode('payload'),
+          ),
+        );
+
+        await expectLater(
+          extractTarGz(
+            entry.transform(tarWriter).transform(gzip.encoder),
+            tempDir,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
+    });
+
+    test('throws on trailing dot or space in segment', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream<TarEntry>.value(
+          TarEntry.data(
+            TarHeader(
+              name: 'lib/file.dart.',
+              typeFlag: TypeFlag.reg,
+              mode: _defaultMode,
+            ),
+            utf8.encode('payload'),
+          ),
+        );
+
+        await expectLater(
+          extractTarGz(
+            entry.transform(tarWriter).transform(gzip.encoder),
+            tempDir,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
+    });
+
+    test('throws on case collision on case-insensitive platforms', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream<TarEntry>.fromIterable([
+          TarEntry.data(
+            TarHeader(
+              name: 'lib/FILE.dart',
+              typeFlag: TypeFlag.reg,
+              mode: _defaultMode,
+            ),
+            utf8.encode('content 1'),
+          ),
+          TarEntry.data(
+            TarHeader(
+              name: 'lib/file.dart',
+              typeFlag: TypeFlag.reg,
+              mode: _defaultMode,
+            ),
+            utf8.encode('content 2'),
+          ),
+        ]);
+
+        if (Platform.isWindows || Platform.isMacOS) {
+          await expectLater(
+            extractTarGz(
+              entry.transform(tarWriter).transform(gzip.encoder),
+              tempDir,
+            ),
+            throwsA(isA<FormatException>()),
+          );
+        }
+      });
+    });
+
+    test('skips symlinks and hardlinks', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream<TarEntry>.fromIterable([
           TarEntry.data(
             TarHeader(
               name: 'nested/bad_link',
@@ -544,7 +668,16 @@ void main() {
             ),
             const [],
           ),
-        );
+          TarEntry.data(
+            TarHeader(
+              name: 'nested/bad_hardlink',
+              typeFlag: TypeFlag.link,
+              linkName: '../outside.txt',
+              mode: _defaultMode,
+            ),
+            const [],
+          ),
+        ]);
 
         await extractTarGz(
           entry.transform(tarWriter).transform(gzip.encoder),
@@ -555,21 +688,30 @@ void main() {
       });
     });
 
-    test('avoid zip slip using combined symlink and ../', () {
+    test('disallows symlink depth confusion and directory symlink escape', () {
       return withTempDir((tempDir) async {
         final entry = Stream<TarEntry>.fromIterable([
           TarEntry.data(
             TarHeader(
-              name: 'nested/bad_link',
+              name: 'd1/d2/d3/sym_up',
               typeFlag: TypeFlag.symlink,
-              linkName: '../nested',
+              linkName: '../..',
               mode: _defaultMode,
             ),
             const [],
           ),
           TarEntry.data(
             TarHeader(
-              name: 'nested/bad_link/../../payload.txt',
+              name: 'd1/d2/d3/sym_up/escape',
+              typeFlag: TypeFlag.symlink,
+              linkName: '../../../outside',
+              mode: _defaultMode,
+            ),
+            const [],
+          ),
+          TarEntry.data(
+            TarHeader(
+              name: 'd1/d2/d3/sym_up/escape/pwned.txt',
               typeFlag: TypeFlag.reg,
               mode: _defaultMode,
             ),
@@ -581,35 +723,13 @@ void main() {
           entry.transform(tarWriter).transform(gzip.encoder),
           tempDir,
         );
-        // Make sure that the payload did not slip outside the destination via
-        // the symlink.
+
+        // Directory symlinks are not created, and files are not written
+        // outside tempDir.
         expect(
-          Directory(tempDir).listSync().map((x) => x.path),
-          contains(endsWith('payload.txt')),
+          linkExists(p.join(tempDir, 'd1', 'd2', 'd3', 'sym_up')),
+          isFalse,
         );
-      });
-    });
-
-    test('skips hardlinks escaping the tar file', () {
-      return withTempDir((tempDir) async {
-        final entry = Stream<TarEntry>.value(
-          TarEntry.data(
-            TarHeader(
-              name: 'nested/bad_link',
-              typeFlag: TypeFlag.link,
-              linkName: '../outside.txt',
-              mode: _defaultMode,
-            ),
-            const [],
-          ),
-        );
-
-        await extractTarGz(
-          entry.transform(tarWriter).transform(gzip.encoder),
-          tempDir,
-        );
-
-        await expectLater(Directory(tempDir).list(), emitsDone);
       });
     });
   });
