@@ -2,6 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+@TestOn('vm')
+library;
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -16,7 +19,7 @@ import 'test_pub.dart';
 Future<void> main() async {
   test('allows experiments that are enabled in the root', () async {
     final server = await servePackages();
-    await _setupFlutterRootWithExperiment();
+    await _setupSdks();
 
     server.serve(
       'foo',
@@ -36,25 +39,71 @@ Future<void> main() async {
 
     await pubGet(
       output: contains('''
-The following experiments have been enabled:
-* abc (see https://dart.dev/experiments/abc)
-'''),
-      environment: {'FLUTTER_ROOT': p.join(sandbox, 'flutter')},
+Experiments enabled:
+* `abc` for foo, myapp - New alphabetical feature
+See https://dart.dev/go/experiments for more information.'''),
+      environment: _environment,
     );
 
-    final packageConfig =
-        json.decode(
-              File(
-                p.join(sandbox, appPath, '.dart_tool', 'package_config.json'),
-              ).readAsStringSync(),
-            )
-            as Map<String, Object?>;
-    expect(packageConfig['experiments'], ['abc']);
+    final packageConfig = _readPackageConfig();
+    expect(packageConfig.containsKey('experiments'), isFalse);
+    expect(_experimentsByPackage(packageConfig), {
+      'foo': ['abc'],
+      'myapp': ['abc'],
+    });
+  });
+
+  test('writes the experiments of each workspace package to its own '
+      'package_config entry', () async {
+    final server = await servePackages();
+    await _setupSdks();
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'experiments': ['abc'],
+      },
+    );
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myapp',
+        '1.0.0',
+        sdk: '^3.5.0',
+        extras: {
+          'workspace': ['pkgs/a', 'pkgs/b'],
+        },
+      ),
+      d.dir('pkgs', [
+        d.dir('a', [
+          d.libPubspec(
+            'a',
+            '1.0.0',
+            deps: {'foo': '^1.0.0'},
+            resolutionWorkspace: true,
+            extras: {
+              'experiments': ['abc'],
+            },
+          ),
+        ]),
+        d.dir('b', [d.libPubspec('b', '1.0.0', resolutionWorkspace: true)]),
+      ]),
+    ]).create();
+
+    await pubGet(
+      output: contains('* `abc` for a, foo - New alphabetical feature'),
+      environment: {..._environment, '_PUB_TEST_SDK_VERSION': '3.5.0'},
+    );
+
+    // `b` and `myapp` don't opt in, so tools must not enable `abc` for them.
+    expect(_experimentsByPackage(_readPackageConfig()), {
+      'a': ['abc'],
+      'foo': ['abc'],
+    });
   });
 
   test('Finds the version with the right experiments enabled', () async {
     final server = await servePackages();
-    await _setupFlutterRootWithExperiment();
+    await _setupSdks();
     server.serve(
       'foo',
       '1.0.0-dev',
@@ -80,13 +129,13 @@ The following experiments have been enabled:
 
     await pubGet(
       output: contains('+ foo 1.0.0-dev'),
-      environment: {'FLUTTER_ROOT': p.join(sandbox, 'flutter')},
+      environment: _environment,
     );
   });
 
   test('disallows experiments that are not enabled in the root', () async {
     final server = await servePackages();
-    await _setupFlutterRootWithExperiment();
+    await _setupSdks();
     server.serve(
       'foo',
       '1.1.0-dev',
@@ -112,13 +161,63 @@ experiments:
 ```
 
 Read more about experiments at https://dart.dev/go/experiments.''',
-      environment: {'FLUTTER_ROOT': p.join(sandbox, 'flutter')},
+      environment: _environment,
     );
+  });
+
+  test('disallows path dependencies using experiments that are not enabled '
+      'in the root', () async {
+    await servePackages();
+    await _setupSdks();
+    await d.dir('foo', [
+      d.libPubspec(
+        'foo',
+        '1.0.0',
+        extras: {
+          'experiments': ['abc'],
+        },
+      ),
+    ]).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'path': '../foo'},
+          },
+        )
+        .create();
+
+    await pubGet(
+      error: contains('The experiment `abc` has not been enabled.'),
+      environment: _environment,
+    );
+  });
+
+  test('allows dependencies to use experiments that are enabled by '
+      'default', () async {
+    final server = await servePackages();
+    await _setupSdks();
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'experiments': ['shipped'],
+      },
+    );
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+
+    await pubGet(
+      output: allOf(
+        contains('+ foo 1.0.0'),
+        isNot(contains('Experiments enabled')),
+      ),
+      environment: _environment,
+    );
+    expect(_experimentsByPackage(_readPackageConfig()), isEmpty);
   });
 
   test('disallows experiments that are not enabled in the sdk', () async {
     await servePackages();
-    await _setupFlutterRootWithExperiment();
+    await _setupSdks();
     await d
         .appDir(
           pubspec: {
@@ -129,15 +228,88 @@ Read more about experiments at https://dart.dev/go/experiments.''',
 
     await pubGet(
       error: contains('''
-abcd is not a known experiment.
+`abcd` is not a known experiment.
 
 Available experiments are:
-* abc: New alphabetical feature, https://dart.dev/experiments/abc
+* `abc`: New alphabetical feature (https://dart.dev/experiments/abc)
+* `main-only`: Only on main
+* `shipped`: Already shipped
 
 Read more about experiments at https://dart.dev/go/experiments.'''),
-      environment: {'FLUTTER_ROOT': p.join(sandbox, 'flutter')},
+      environment: _environment,
       exitCode: DATA,
     );
+  });
+
+  test('disallows experiments listed more than once', () async {
+    await servePackages();
+    await _setupSdks();
+    await d
+        .appDir(
+          pubspec: {
+            'experiments': ['abc', 'abc'],
+          },
+        )
+        .create();
+
+    await pubGet(
+      error: contains('The experiment `abc` is listed more than once.'),
+      environment: _environment,
+      exitCode: DATA,
+    );
+  });
+
+  test('disallows experiments that are not available on the channel of the '
+      'sdk', () async {
+    await servePackages();
+    await _setupSdks();
+    await d
+        .appDir(
+          pubspec: {
+            'experiments': ['main-only'],
+          },
+        )
+        .create();
+
+    await pubGet(
+      error: contains(
+        'The experiment `main-only` is only available on the main channel(s). '
+        'This SDK is on the stable channel.',
+      ),
+      environment: {..._environment, '_PUB_TEST_SDK_CHANNEL': 'stable'},
+      exitCode: DATA,
+    );
+
+    await pubGet(
+      environment: {..._environment, '_PUB_TEST_SDK_CHANNEL': 'main'},
+    );
+    expect(_experimentsByPackage(_readPackageConfig()), {
+      'myapp': ['main-only'],
+    });
+  });
+
+  test('reads the experiments known by the Dart SDK', () async {
+    await servePackages();
+    await _setupSdks(
+      dartExperiments: [
+        {'name': 'dart-feature', 'description': 'A Dart feature'},
+      ],
+    );
+    await d
+        .appDir(
+          pubspec: {
+            'experiments': ['dart-feature'],
+          },
+        )
+        .create();
+
+    await pubGet(
+      output: contains('* `dart-feature` for myapp - A Dart feature'),
+      environment: _environment,
+    );
+    expect(_experimentsByPackage(_readPackageConfig()), {
+      'myapp': ['dart-feature'],
+    });
   });
 
   test('Can global activate a package using experiments', () async {
@@ -149,27 +321,31 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
         'experiments': ['abc'],
       },
     );
-    await _setupFlutterRootWithExperiment();
-    await d
-        .appDir(
-          pubspec: {
-            'experiments': <String>['abcd'],
-          },
-        )
-        .create();
+    await _setupSdks();
 
     await runPub(
       args: ['global', 'activate', 'foo', '--experiments', 'abc'],
-      output: contains('''
-The following experiments have been enabled:
-* abc (see https://dart.dev/experiments/abc)
-'''),
-      environment: {'FLUTTER_ROOT': p.join(sandbox, 'flutter')},
+      output: contains('* `abc` for foo - New alphabetical feature'),
+      environment: _environment,
     );
   });
 }
 
-Future<void> _setupFlutterRootWithExperiment() async {
+/// The environment making pub use the SDKs created by [_setupSdks].
+Map<String, String> get _environment => {
+  'FLUTTER_ROOT': p.join(sandbox, 'flutter'),
+  'DART_ROOT': p.join(sandbox, 'dart-sdk'),
+};
+
+/// Creates a fake Flutter SDK and a fake Dart SDK, each with an experiments
+/// file.
+///
+/// The Flutter SDK knows the experiments `abc`, `main-only` (only on the main
+/// channel) and `shipped` (enabled by default). The Dart SDK knows
+/// [dartExperiments].
+Future<void> _setupSdks({
+  List<Map<String, Object?>> dartExperiments = const [],
+}) async {
   await d.dir('flutter', [
     d.flutterVersion('1.2.3'),
     d.file(
@@ -181,8 +357,46 @@ Future<void> _setupFlutterRootWithExperiment() async {
             'description': 'New alphabetical feature',
             'docUrl': 'https://dart.dev/experiments/abc',
           },
+          {
+            'name': 'main-only',
+            'description': 'Only on main',
+            'channels': ['main'],
+          },
+          {
+            'name': 'shipped',
+            'description': 'Already shipped',
+            'enabledIn': '3.0.0',
+          },
         ],
       }),
     ),
   ]).create();
+  await d.dir('dart-sdk', [
+    d.dir('lib', [
+      d.dir('_internal', [
+        d.file(
+          'sdk_experiments.json',
+          jsonEncode({'experiments': dartExperiments}),
+        ),
+      ]),
+    ]),
+  ]).create();
 }
+
+Map<String, Object?> _readPackageConfig() =>
+    json.decode(
+          File(
+            p.join(sandbox, appPath, '.dart_tool', 'package_config.json'),
+          ).readAsStringSync(),
+        )
+        as Map<String, Object?>;
+
+/// The `experiments` of the entries in [packageConfig] that have any, keyed by
+/// package name.
+Map<String, Object?> _experimentsByPackage(
+  Map<String, Object?> packageConfig,
+) => {
+  for (final entry in (packageConfig['packages']! as List).cast<Map>())
+    if (entry['experiments'] case final Object experiments)
+      entry['name'] as String: experiments,
+};

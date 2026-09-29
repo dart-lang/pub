@@ -338,7 +338,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
           originalLockFile ?? LockFile.empty(),
           lockFile,
           result.availableVersions,
-          result.experiments,
+          _experimentUsers(result),
           cache,
           dryRun: false,
           reportMode: SolveReportMode.full,
@@ -365,7 +365,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
         solveResult: result,
       );
 
-      await entrypoint.writePackageConfigFiles(experiments: result.experiments);
+      await entrypoint.writePackageConfigFiles();
 
       await entrypoint.precompileExecutables();
     }
@@ -600,7 +600,7 @@ Try reactivating the package.
           entrypoint.lockFile,
           newLockFile,
           result.availableVersions,
-          result.experiments,
+          _experimentUsers(result),
           cache,
           dryRun: true,
           enforceLockfile: true,
@@ -1190,3 +1190,19 @@ Package activatedPackage(Entrypoint entrypoint) {
     return entrypoint.workPackage;
   }
 }
+
+/// The [SolveResult.experimentUsers] of [result], leaving out the synthetic
+/// `pub global activate` root package.
+///
+/// The experiments of that package are the ones allowed by `--experiments`, not
+/// ones it uses.
+Map<String, List<String>> _experimentUsers(SolveResult result) => {
+  for (final MapEntry(key: experiment, value: users)
+      in result.experimentUsers.entries)
+    if ([
+          for (final user in users)
+            if (user != 'pub global activate') user,
+        ]
+        case final packages when packages.isNotEmpty)
+      experiment: packages,
+};

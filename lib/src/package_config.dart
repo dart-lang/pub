@@ -38,14 +38,11 @@ class PackageConfig {
   /// `.dart_tool/package_config.json` file.
   Map<String, dynamic> additionalProperties;
 
-  List<String> experiments;
-
   PackageConfig({
     required this.configVersion,
     required this.packages,
     this.generator,
     this.generatorVersion,
-    required this.experiments,
     Map<String, dynamic>? additionalProperties,
   }) : additionalProperties = additionalProperties ?? {} {
     final names = <String>{};
@@ -103,21 +100,6 @@ class PackageConfig {
       );
     }
 
-    // Read the 'experiments' property
-    final experiments = root['experiments'] ?? <String>[];
-    if (experiments is! List) {
-      throw const FormatException(
-        '"experiments" in package_config.json must be a list, if given',
-      );
-    }
-    for (final experiment in experiments) {
-      if (experiment is! String) {
-        throw const FormatException(
-          '"experiments" in package_config.json must all be strings',
-        );
-      }
-    }
-
     // Read the 'generatorVersion' property
     Version? generatorVersion;
     final generatorVersionRaw = root['generatorVersion'];
@@ -140,7 +122,6 @@ class PackageConfig {
       packages: packages,
       generator: generator,
       generatorVersion: generatorVersion,
-      experiments: experiments.cast<String>(),
       additionalProperties: Map.fromEntries(
         root.entries.where(
           (e) =>
@@ -150,7 +131,6 @@ class PackageConfig {
                 'generated',
                 'generator',
                 'generatorVersion',
-                'experiments',
               }.contains(e.key),
         ),
       ),
@@ -161,7 +141,6 @@ class PackageConfig {
   Map<String, Object?> toJson() => {
     'configVersion': configVersion,
     'packages': packages.map((p) => p.toJson()).toList(),
-    'experiments': experiments,
     'generator': generator,
     'generatorVersion': generatorVersion?.toString(),
   }..addAll(additionalProperties);
@@ -192,6 +171,12 @@ class PackageConfigEntry {
   /// in the `pubspec.yaml` for the given package.
   LanguageVersion? languageVersion;
 
+  /// The experiments the package opts in to.
+  ///
+  /// Taken from the `experiments` field of the package's `pubspec.yaml`. Tools
+  /// enable these experiments for the libraries of this package only.
+  List<String> experiments;
+
   /// Additional properties not in the specification for the
   /// `.dart_tool/package_config.json` file.
   Map<String, dynamic>? additionalProperties;
@@ -201,6 +186,7 @@ class PackageConfigEntry {
     required this.rootUri,
     this.packageUri,
     this.languageVersion,
+    this.experiments = const [],
     this.additionalProperties = const {},
   });
 
@@ -269,11 +255,19 @@ class PackageConfigEntry {
       }
     }
 
+    final experiments = switch (root['experiments']) {
+      null => const <String>[],
+      final List<Object?> list when list.every((e) => e is String) =>
+        list.cast<String>(),
+      _ => throwFormatException('experiments', 'must be a list of strings'),
+    };
+
     return PackageConfigEntry(
       name: name,
       rootUri: rootUri,
       packageUri: packageUri,
       languageVersion: languageVersion,
+      experiments: experiments,
     );
   }
 
@@ -283,6 +277,7 @@ class PackageConfigEntry {
     'rootUri': rootUri.toString(),
     if (packageUri != null) 'packageUri': packageUri.toString(),
     if (languageVersion != null) 'languageVersion': '$languageVersion',
+    if (experiments.isNotEmpty) 'experiments': experiments,
   }..addAll(additionalProperties ?? {});
 
   @override

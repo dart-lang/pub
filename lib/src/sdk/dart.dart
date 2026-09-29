@@ -40,7 +40,20 @@ class DartSdk extends Sdk {
   }();
 
   @override
-  String get experimentsPath => p.join(_rootDirectory, '.sdk_experiments.json');
+  String get experimentsPath =>
+      p.join(_rootDirectory, 'lib', '_internal', 'sdk_experiments.json');
+
+  /// The release channel of the running SDK (`main`, `dev`, `beta` or
+  /// `stable`), parsed from `Platform.version` the same way `dart` does.
+  ///
+  /// `null` if the version string doesn't have the expected
+  /// `<version> (<channel>) ...` format.
+  static final String? channel = () {
+    if (platform.environment['_PUB_TEST_SDK_CHANNEL'] case final channel?) {
+      return channel;
+    }
+    return RegExp(r'^\S+ \((\w+)\)').firstMatch(platform.version)?[1];
+  }();
 
   /// The loaded `sdk_packages.yaml` file if present.
   static final SdkPackageConfig? _sdkPackages = () {

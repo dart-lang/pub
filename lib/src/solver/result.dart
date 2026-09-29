@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:collection';
+
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -10,6 +12,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
+import '../sdk.dart';
 import '../source/cached.dart';
 import '../system_cache.dart';
 
@@ -47,8 +50,27 @@ class SolveResult {
   /// The wall clock time the resolution took.
   final Duration resolutionTime;
 
-  /// The experiments enabled for this solve.
+  /// The experiments that packages in this solve are allowed to use.
+  ///
+  /// That is the union of the experiments listed by the workspace packages.
   List<String> get experiments => _root.allExperimentsInWorkspace.toList();
+
+  /// For each experiment that some package in the solution opts in to, the
+  /// sorted names of those packages.
+  ///
+  /// Experiments that are enabled by default are left out.
+  Map<String, List<String>> get experimentUsers {
+    final result = SplayTreeMap<String, List<String>>();
+    for (final name in pubspecs.keys.sorted()) {
+      for (final experiment in pubspecs[name]!.experiments) {
+        if (availableExperiments[experiment]?.isEnabledByDefault == true) {
+          continue;
+        }
+        (result[experiment] ??= []).add(name);
+      }
+    }
+    return result;
+  }
 
   /// Downloads all the cached packages selected by this version resolution.
   ///

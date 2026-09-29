@@ -68,8 +68,11 @@ class NoVersionsIncompatibilityCause extends IncompatibilityCause {
   const NoVersionsIncompatibilityCause._();
 }
 
-/// The incompatibility indicates that the uses an experiment not allowed by the
-/// roots.
+/// The incompatibility indicates that a package version opts in to an
+/// experiment that the workspace doesn't allow.
+///
+/// A dependency may only use experiments that some workspace package opts in
+/// to (or that are enabled by default).
 class ExperimentIncompatibilityCause extends IncompatibilityCause {
   final String experiment;
   final Iterable<String> allowedExperiments;
@@ -79,25 +82,21 @@ class ExperimentIncompatibilityCause extends IncompatibilityCause {
   @override
   String? get hint {
     if (!availableExperiments.containsKey(experiment)) {
-      final availableExperimentsDescription =
-          availableExperiments.isEmpty
-              ? '''There are no available experiments.'''
-              : '''
-Available experiments are:
-${availableExperiments.values.map((experiment) => '* ${experiment.name}: ${experiment.description}, ${experiment.docUrl}').join('\n')}''';
       return '''
-$experiment is not a known experiment.
-
-$availableExperimentsDescription
+`$experiment` is not an experiment known by this SDK (${sdk.version}), it may require a newer SDK.
 
 Read more about experiments at https://dart.dev/go/experiments.''';
-    } else {
-      final enabledExperimentsDescription =
-          allowedExperiments.isEmpty
-              ? 'Currently no experiments are enabled.'
-              : 'Currently the following experiments are enabled: '
-                  '${allowedExperiments.join(', ')}';
-      return '''
+    }
+    final optedIn =
+        allowedExperiments
+            .where((e) => availableExperiments[e]?.isEnabledByDefault != true)
+            .toList();
+    final enabledExperimentsDescription =
+        optedIn.isEmpty
+            ? 'Currently no experiments are enabled.'
+            : 'Currently the following experiments are enabled: '
+                '${optedIn.join(', ')}';
+    return '''
 The experiment `$experiment` has not been enabled.
 
 $enabledExperimentsDescription
@@ -110,7 +109,6 @@ experiments:
 ```
 
 Read more about experiments at https://dart.dev/go/experiments.''';
-    }
   }
 }
 

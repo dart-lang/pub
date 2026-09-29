@@ -423,9 +423,7 @@ See $workspacesDocUrl for more information.''',
   /// package dir.
   ///
   /// Also marks the package active in `PUB_CACHE/active_roots/`.
-  Future<void> writePackageConfigFiles({
-    required List<String> experiments,
-  }) async {
+  Future<void> writePackageConfigFiles() async {
     ensureDir(p.dirname(packageConfigPath));
 
     writeTextFileIfDifferent(
@@ -437,7 +435,6 @@ See $workspacesDocUrl for more information.''',
                 .pubspec
                 .sdkConstraints[sdk.identifier]
                 ?.effectiveConstraint,
-        experiments: experiments,
       ),
       dependencies: [lockFilePath],
     );
@@ -497,11 +494,13 @@ See $workspacesDocUrl for more information.''',
   /// Returns the contents of the `.dart_tool/package_config` file generated
   /// from this entrypoint based on [lockFile].
   ///
+  /// Each entry lists the experiments its package opts in to, see
+  /// [Pubspec.experiments].
+  ///
   /// If [isCachedGlobal] no entry will be created for [workspaceRoot].
   Future<String> _packageConfigFile(
     SystemCache cache, {
     VersionConstraint? entrypointSdkConstraint,
-    required List<String> experiments,
   }) async {
     final entries = <PackageConfigEntry>[];
     if (lockFile.packages.isNotEmpty) {
@@ -516,6 +515,7 @@ See $workspacesDocUrl for more information.''',
             rootUri: p.toUri(rootPath),
             packageUri: p.toUri('lib/'),
             languageVersion: pubspec.languageVersion,
+            experiments: _experimentsNeedingOptIn(pubspec),
           ),
         );
       }
@@ -536,6 +536,7 @@ See $workspacesDocUrl for more information.''',
             ),
             packageUri: p.toUri('lib/'),
             languageVersion: package.pubspec.languageVersion,
+            experiments: _experimentsNeedingOptIn(package.pubspec),
           ),
         );
       }
@@ -546,7 +547,6 @@ See $workspacesDocUrl for more information.''',
       packages: entries,
       generator: 'pub',
       generatorVersion: sdk.version,
-      experiments: experiments,
       additionalProperties: {
         if (FlutterSdk().isAvailable) ...{
           'flutterRoot':
@@ -562,6 +562,14 @@ See $workspacesDocUrl for more information.''',
     ).convert(packageConfig.toJson());
     return '$jsonText\n';
   }
+
+  /// The experiments of [pubspec] that tools must be told about.
+  ///
+  /// Experiments that are enabled by default need no opt-in and are left out.
+  static List<String> _experimentsNeedingOptIn(Pubspec pubspec) => [
+    for (final name in pubspec.experiments)
+      if (availableExperiments[name]?.isEnabledByDefault != true) name,
+  ];
 
   /// Gets all dependencies of the [workspaceRoot] package.
   ///
@@ -658,7 +666,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       lockFile,
       newLockFile,
       result.availableVersions,
-      result.experiments,
+      result.experimentUsers,
       cache,
       dryRun: dryRun,
       enforceLockfile: enforceLockfile,
@@ -692,7 +700,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       /// have to reload and reparse all the pubspecs.
       _packageGraph = Future.value(packageGraph);
 
-      await writePackageConfigFiles(experiments: result.experiments);
+      await writePackageConfigFiles();
 
       try {
         if (precompile) {

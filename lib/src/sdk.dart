@@ -53,33 +53,34 @@ abstract class Sdk {
   /// package with the given name.
   String? packagePath(String name);
 
+  /// The path of the file describing the experiments this SDK supports.
   String get experimentsPath;
 
+  /// The experiments known to this SDK, keyed by name.
+  ///
+  /// Empty if the SDK isn't available or has no experiments file.
   late final Map<String, Experiment> experiments = _loadExperiments();
 
   Map<String, Experiment> _loadExperiments() {
-    if (!isAvailable) return {};
+    // SDKs predating experiments in pubspecs have no experiments file.
+    if (!isAvailable || !fileExists(experimentsPath)) return {};
     final Object? json;
     try {
       json = jsonDecode(readTextFile(experimentsPath));
     } on IOException catch (e) {
       fine('Could not load $experimentsPath $e');
-      // Most likely the file doesn't exist, return empty map.
       return {};
     } on FormatException catch (e) {
       fail('Failed to parse $experimentsPath. $e');
     }
     final result = <String, Experiment>{};
     if (json case {'experiments': final List<Object?> experiments}) {
-      for (final experiment in experiments) {
-        if (experiment case {
-          'name': final String name,
-          'description': final String description,
-          'docUrl': final String url,
-        }) {
-          result[name] = Experiment(name, description, url);
-        } else {
-          fail('Malformed experiments file $experimentsPath');
+      for (final entry in experiments) {
+        try {
+          final experiment = Experiment.fromJson(entry);
+          result[experiment.name] = experiment;
+        } on FormatException catch (e) {
+          fail('Malformed experiments file $experimentsPath: ${e.message}');
         }
       }
     } else {
@@ -100,10 +101,20 @@ final sdks = UnmodifiableMapView<String, Sdk>({
   'fuchsia': FuchsiaSdk(),
 });
 
-/// The experiments available
+/// The experiments known to the available SDKs, keyed by name.
 final Map<String, Experiment> availableExperiments = {
   for (final sdk in sdks.values.where((sdk) => sdk.isAvailable))
     ...sdk.experiments,
+};
+
+/// The names of the experiments that are enabled without being listed in a
+/// pubspec.
+///
+/// Listing such an experiment in a dependency's `experiments` is harmless, so
+/// the solver always allows them.
+Set<String> get experimentsEnabledByDefault => {
+  for (final experiment in availableExperiments.values)
+    if (experiment.isEnabledByDefault) experiment.name,
 };
 
 /// The core Dart SDK.

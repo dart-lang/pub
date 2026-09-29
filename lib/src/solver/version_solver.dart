@@ -14,6 +14,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
+import '../sdk.dart';
 import '../source/hosted.dart';
 import '../source/unknown.dart';
 import '../system_cache.dart';
@@ -108,7 +109,10 @@ class VersionSolver {
   }) : _sdkOverrides = sdkOverrides,
        _dependencyOverrides = _root.allOverridesInWorkspace,
        _unlock = {...unlock},
-       _allowedExperiments = _root.allExperimentsInWorkspace;
+       _allowedExperiments = {
+         ..._root.allExperimentsInWorkspace,
+         ...experimentsEnabledByDefault,
+       };
 
   /// Prime the solver with [constraints].
   void addConstraints(Iterable<ConstraintAndCause> constraints) {
@@ -549,7 +553,7 @@ class VersionSolver {
           _systemCache,
           overriddenPackages: _overriddenPackages,
           sdkOverrides: _sdkOverrides,
-          allowedExperiments: _root.allExperimentsInWorkspace,
+          allowedExperiments: _allowedExperiments,
         );
       }
 

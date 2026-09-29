@@ -62,7 +62,9 @@ class SolveReport {
   static const maxAdvisoryFootnotesPerLine = 5;
   final advisoryDisplayHandles = <String>[];
 
-  final List<String> experiments;
+  /// For each experiment enabled by some package in the new resolution, the
+  /// names of the packages opting in to it.
+  final Map<String, List<String>> experimentUsers;
 
   SolveReport(
     this._type,
@@ -72,7 +74,7 @@ class SolveReport {
     this._previousLockFile,
     this._newLockFile,
     this._availableVersions,
-    this.experiments,
+    this.experimentUsers,
     this._cache, {
     required bool dryRun,
     required bool enforceLockfile,
@@ -342,16 +344,17 @@ $contentHashesDocumentationUrl
   }
 
   void reportExperiments() {
-    if (experiments.isNotEmpty) {
-      message('The following experiments have been enabled:');
-
-      for (final experimentName in experiments) {
-        final experiment = availableExperiments[experimentName]!;
-        message('* ${experiment.name} (see ${experiment.docUrl})');
-      }
-
-      message('See (https://dart.dev/go/experiments for more information).');
+    if (experimentUsers.isEmpty) return;
+    message('Experiments enabled:');
+    for (final MapEntry(key: name, value: packages)
+        in experimentUsers.entries) {
+      final description = availableExperiments[name]?.description;
+      message(
+        '* `$name` for ${packages.join(', ')}'
+        '${description == null ? '' : ' - $description'}',
+      );
     }
+    message('See https://dart.dev/go/experiments for more information.');
   }
 
   static DependencyType dependencyType(LockFile lockFile, String name) =>

@@ -15,6 +15,7 @@ import 'package_name.dart';
 import 'path.dart';
 import 'pubspec_parse.dart';
 import 'sdk.dart';
+import 'sdk/dart.dart';
 import 'source.dart';
 import 'source/root.dart';
 import 'system_cache.dart';
@@ -144,6 +145,11 @@ environment:
       );
 
   List<String>? _experiments;
+
+  /// The experiments this package opts in to via the `experiments` field.
+  ///
+  /// Each package gets its own list in `.dart_tool/package_config.json`, and
+  /// tools enable the experiments only for libraries in that package.
   List<String> get experiments => _experiments ??= parseExperiments();
 
   List<String> parseExperiments() {
@@ -160,30 +166,42 @@ environment:
       if (value is! String) {
         _error('`experiments` must be a list of strings', e.span);
       }
+      if (result.contains(value)) {
+        _error('The experiment `$value` is listed more than once.', e.span);
+      }
 
-      /// For root packages, validate that all experiments are known by at least
-      /// one of the current sdks.
-      ///
-      /// Dependencies will only be chosen by the solver if their experiments
-      /// are a subset of those of the root packages, so we don't filter here.
-      if (_containingDescription is ResolvedRootDescription &&
-          !availableExperiments.containsKey(value)) {
-        final availableExperimentsDescription =
-            availableExperiments.isEmpty
-                ? '''There are no available experiments.'''
-                : '''
+      // For root packages, validate that all experiments are known by at
+      // least one of the current SDKs and available on this channel.
+      //
+      // Dependencies will only be chosen by the solver if their experiments
+      // are allowed by the workspace, so we don't validate them here.
+      if (_containingDescription is ResolvedRootDescription) {
+        final experiment = availableExperiments[value];
+        if (experiment == null) {
+          final availableExperimentsDescription =
+              availableExperiments.isEmpty
+                  ? 'There are no available experiments.'
+                  : '''
 Available experiments are:
-${availableExperiments.values.map((experiment) => '* ${experiment.name}: ${experiment.description}, ${experiment.docUrl}').join('\n')}''';
-        _error('''
-$value is not a known experiment.
+${availableExperiments.values.where((e) => !e.expired).map((e) => '* ${e.summary}').join('\n')}''';
+          _error('''
+`$value` is not a known experiment.
 
 $availableExperimentsDescription
 
 Read more about experiments at https://dart.dev/go/experiments.
 ''', e.span);
-      } else {
-        result.add(value);
+        }
+        if (!experiment.isAvailableOnChannel(DartSdk.channel)) {
+          _error(
+            'The experiment `$value` is only available on the '
+            '${experiment.channels!.join(', ')} channel(s). '
+            'This SDK is on the ${DartSdk.channel} channel.',
+            e.span,
+          );
+        }
       }
+      result.add(value);
     }
     return result;
   }
