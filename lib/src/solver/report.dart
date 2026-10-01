@@ -70,6 +70,11 @@ class SolveReport {
   /// of those packages.
   final Map<String, List<String>> expiredExperimentUsers;
 
+  /// For each package-scoped experiment (`<package>.<experiment>`) listed by
+  /// some workspace package where `<package>` is not in the resolution, the
+  /// names of those workspace packages.
+  final Map<String, List<String>> unknownPackageExperimentUsers;
+
   SolveReport(
     this._type,
     this._location,
@@ -84,6 +89,7 @@ class SolveReport {
     required bool enforceLockfile,
     required SolveReportMode reportMode,
     this.expiredExperimentUsers = const {},
+    this.unknownPackageExperimentUsers = const {},
   }) : _dryRun = dryRun,
        _reportMode = reportMode,
        _enforceLockfile = enforceLockfile;
@@ -365,6 +371,15 @@ $contentHashesDocumentationUrl
       warning(
         'The experiment `$name` $status. Remove $target from `experiments` in '
         'the pubspec.yaml of ${packages.join(', ')}.',
+      );
+    }
+    for (final MapEntry(key: experiment, value: packages)
+        in unknownPackageExperimentUsers.entries) {
+      final targetPackage = experiment.split('.').first;
+      warning(
+        'The experiment `$experiment` in the pubspec.yaml of '
+        '${packages.join(', ')} refers to package `$targetPackage`, which is '
+        'not in the dependency graph.',
       );
     }
     if (experimentUsers.isEmpty) return;

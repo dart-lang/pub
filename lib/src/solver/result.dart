@@ -88,6 +88,25 @@ class SolveResult {
     return result;
   }
 
+  /// For each package-scoped experiment (`<package>.<experiment>`) that some
+  /// workspace package lists where `<package>` is not in the resolution, the
+  /// sorted names of those workspace packages.
+  Map<String, List<String>> get unknownPackageExperimentUsers {
+    final result = SplayTreeMap<String, List<String>>();
+    for (final package in _root.transitiveWorkspace.sortedBy((p) => p.name)) {
+      for (final experiment in package.pubspec.experiments) {
+        final dotIndex = experiment.indexOf('.');
+        if (dotIndex != -1) {
+          final targetPackage = experiment.substring(0, dotIndex);
+          if (!pubspecs.containsKey(targetPackage)) {
+            (result[experiment] ??= []).add(package.name);
+          }
+        }
+      }
+    }
+    return result;
+  }
+
   /// Downloads all the cached packages selected by this version resolution.
   ///
   /// If some already cached package differs from what is provided by the server

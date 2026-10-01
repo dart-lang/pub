@@ -553,6 +553,91 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
       environment: _environment,
     );
   });
+
+  test(
+    'supports package-scoped experiments (<package>.<experiment>)',
+    () async {
+      final server = await servePackages();
+      await _setupSdks();
+      server.serve('foo', '1.0.0');
+      server.serve(
+        'bar',
+        '1.0.0-dev',
+        deps: {'foo': '^1.0.0'},
+        pubspec: {
+          'experiments': ['foo.new_api'],
+        },
+      );
+
+      // Fails when `bar` requires `foo.new_api` and root does not opt in.
+      await d.appDir(dependencies: {'bar': '^1.0.0-dev'}).create();
+      await pubGet(
+        error: contains('The experiment `foo.new_api` has not been enabled.'),
+        environment: _environment,
+      );
+
+      // Succeeds when root opts into `foo.new_api`.
+      await d
+          .appDir(
+            dependencies: {'bar': '^1.0.0-dev'},
+            pubspec: {
+              'experiments': ['foo.new_api'],
+            },
+          )
+          .create();
+      await pubGet(
+        output: contains('* `foo.new_api` for bar, myapp'),
+        environment: _environment,
+      );
+      expect(_experimentsByPackage(_readPackageConfig()), {
+        'bar': ['foo.new_api'],
+        'myapp': ['foo.new_api'],
+      });
+    },
+  );
+
+  test('warns when a package-scoped experiment references a package not in the '
+      'dependency graph', () async {
+    await servePackages();
+    await _setupSdks();
+    await d
+        .appDir(
+          pubspec: {
+            'experiments': ['missing_pkg.new_api'],
+          },
+        )
+        .create();
+
+    await pubGet(
+      warning: contains(
+        'The experiment `missing_pkg.new_api` in the pubspec.yaml of myapp '
+        'refers to package `missing_pkg`, which is not in the dependency '
+        'graph.',
+      ),
+      environment: _environment,
+    );
+  });
+
+  test('rejects malformed package-scoped experiment names', () async {
+    await _setupSdks();
+    for (final bad in ['no-foo.bar', 'foo.', '.bar', 'foo.bar.baz']) {
+      await d
+          .appDir(
+            pubspec: {
+              'experiments': [bad],
+            },
+          )
+          .create();
+      await pubGet(
+        error: contains(
+          'Package experiment `$bad` must have the form '
+          '`<package>.<experiment>`.',
+        ),
+        environment: _environment,
+        exitCode: DATA,
+      );
+    }
+  });
 }
 
 /// The environment making pub use the SDKs created by [_setupSdks].

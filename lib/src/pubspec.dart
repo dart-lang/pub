@@ -19,8 +19,12 @@ import 'sdk/dart.dart';
 import 'source.dart';
 import 'source/root.dart';
 import 'system_cache.dart';
+import 'utils.dart' show identifierRegExp;
 
 export 'pubspec_parse.dart' hide PubspecBase;
+
+/// Matches the `<experiment>` part of a `<package>.<experiment>` flag.
+final _packageExperimentNameRegExp = RegExp(r'^[a-zA-Z0-9_-]+$');
 
 /// The default SDK upper bound constraint for packages that don't declare one.
 ///
@@ -179,11 +183,24 @@ environment:
       }
 
       // For root packages, validate that all experiments are known by at
-      // least one of the current SDKs and available on this channel.
+      // least one of the current SDKs and available on this channel, or are
+      // package-scoped experiments (`<package>.<experiment>`).
       //
       // Dependencies will only be chosen by the solver if their experiments
       // are allowed by the workspace, so we don't validate them here.
-      if (_containingDescription is ResolvedRootDescription) {
+      if (value.contains('.')) {
+        final parts = value.split('.');
+        if (isOptOut ||
+            parts.length != 2 ||
+            !identifierRegExp.hasMatch(parts[0]) ||
+            !_packageExperimentNameRegExp.hasMatch(parts[1])) {
+          _error(
+            'Package experiment `$value` must have the form '
+            '`<package>.<experiment>`.',
+            e.span,
+          );
+        }
+      } else if (_containingDescription is ResolvedRootDescription) {
         final experiment = availableExperiments[name];
         if (experiment == null) {
           final availableExperimentsDescription =

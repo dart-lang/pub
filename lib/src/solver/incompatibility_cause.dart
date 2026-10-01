@@ -81,7 +81,8 @@ class ExperimentIncompatibilityCause extends IncompatibilityCause {
 
   @override
   String? get hint {
-    if (!availableExperiments.containsKey(experiment)) {
+    if (!experiment.contains('.') &&
+        !availableExperiments.containsKey(experiment)) {
       return '''
 `$experiment` is not an experiment known by this SDK (${sdk.version}), it may require a newer SDK.
 

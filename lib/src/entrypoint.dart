@@ -673,6 +673,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       enforceLockfile: enforceLockfile,
       reportMode: reportMode,
       expiredExperimentUsers: result.expiredExperimentUsers,
+      unknownPackageExperimentUsers: result.unknownPackageExperimentUsers,
     );
 
     await report.show(summary: true);
