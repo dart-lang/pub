@@ -110,9 +110,13 @@ class VersionSolver {
   /// Prime the solver with [constraints].
   void addConstraints(Iterable<ConstraintAndCause> constraints) {
     for (final constraint in constraints) {
+      final forbidden = VersionConstraint.any.difference(
+        constraint.range.constraint,
+      );
+      if (forbidden.isEmpty) continue;
       _addIncompatibility(
         Incompatibility([
-          Term(constraint.range, false),
+          Term(constraint.range.toRef().withConstraint(forbidden), true),
         ], PackageVersionForbiddenCause(reason: constraint.cause)),
       );
     }

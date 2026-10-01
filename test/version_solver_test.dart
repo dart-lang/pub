@@ -238,6 +238,33 @@ So, because no versions of foo match <1.0.0 or >1.0.0 and myapp depends on bar a
       ),
     );
   });
+
+  test('fails gracefully when locked version is cached locally '
+      'but removed from the server', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
+    server.serve('bar', '1.0.0');
+    server.serve('bar', '2.0.0');
+
+    await d.appDir(dependencies: {'foo': 'any'}).create();
+    await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
+
+    // Replace the server's versions of foo so 1.0.0 is no longer listed,
+    // while foo 1.0.0 remains in the local cache and lockfile.
+    server.clearPackages();
+    server.serve('foo', '2.0.0', deps: {'bar': '1.0.0'});
+    server.serve('bar', '1.0.0');
+    server.serve('bar', '2.0.0');
+
+    await d.appDir(dependencies: {'foo': '^1.0.0', 'bar': '2.0.0'}).create();
+    await expectResolves(
+      error: contains(
+        '''
+Because foo 1.0.0 depends on bar 1.0.0 and no versions of foo match >1.0.0 <2.0.0, foo ^1.0.0 requires bar 1.0.0.
+So, because myapp depends on both foo ^1.0.0 and bar 2.0.0, version solving failed.''',
+      ),
+    );
+  });
 }
 
 void rootDependency() {
