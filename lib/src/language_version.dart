@@ -75,6 +75,9 @@ class LanguageVersion implements Comparable<LanguageVersion> {
   bool get respectsFlutterBoundInRoots =>
       this >= firstVersionRespectingFlutterBoundInRoots;
 
+  /// Whether the `policies` block with cooldown configuration is supported.
+  bool get supportsCooldown => this >= firstVersionWithCooldown;
+
   /// Minimum language version at which short hosted syntax is supported.
   ///
   /// This allows `hosted` dependencies to be expressed as:
@@ -122,6 +125,9 @@ class LanguageVersion implements Comparable<LanguageVersion> {
     3,
     9,
   );
+
+  /// Language version where cooldown policies were introduced.
+  static const firstVersionWithCooldown = LanguageVersion(3, 14);
 
   /// Transform language version to string that can be parsed with
   /// [LanguageVersion.parse].

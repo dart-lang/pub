@@ -132,6 +132,192 @@ environment:
     };
   }();
 
+  /// The workspace [Policies] configured in this pubspec, or `null` if none
+  /// are defined.
+  ///
+  /// Parsed lazily on first access.
+  Policies? get policies => _policies ??= _parsePolicies();
+  Policies? _policies;
+
+  Policies? _parsePolicies() {
+    final policiesNode = fields.nodes['policies'];
+    if (policiesNode == null || policiesNode.value == null) return null;
+
+    if (!languageVersion.supportsCooldown) {
+      _error(
+        'The "policies" field requires at least language version '
+        '${LanguageVersion.firstVersionWithCooldown}, '
+        'current is $languageVersion.',
+        policiesNode.span,
+      );
+    }
+
+    if (policiesNode is! YamlMap) {
+      _error('"policies" must be a map', policiesNode.span);
+    }
+
+    const knownPolicies = {'cooldown'};
+    for (final keyNode in policiesNode.nodes.keys) {
+      if (keyNode case YamlNode(value: final String value)) {
+        if (!knownPolicies.contains(value)) {
+          _error(
+            'Invalid policies field "$value". '
+            'Only ${knownPolicies.map((e) => '"$e"').join(', ')} is supported.',
+            keyNode.span,
+          );
+        }
+      }
+    }
+
+    final cooldownNode = policiesNode.nodes['cooldown'];
+    final cooldown =
+        cooldownNode == null || cooldownNode.value == null
+            ? null
+            : _parseCooldownPolicy(cooldownNode);
+
+    return Policies(cooldown: cooldown, span: policiesNode.span);
+  }
+
+  CooldownPolicy _parseCooldownPolicy(YamlNode cooldownNode) {
+    if (cooldownNode is! YamlMap) {
+      _error('"cooldown" must be a map', cooldownNode.span);
+    }
+
+    final minAgeNode = cooldownNode.nodes['min_age'];
+    final beforeNode = cooldownNode.nodes['before'];
+
+    if (minAgeNode != null && beforeNode != null) {
+      _error(
+        'Only one of "min_age" and "before" can be specified.',
+        cooldownNode.span,
+      );
+    }
+    if (minAgeNode == null && beforeNode == null) {
+      _error(
+        'One of "min_age" or "before" must be specified.',
+        cooldownNode.span,
+      );
+    }
+
+    final excludeNode = cooldownNode.nodes['exclude'];
+    final exclude =
+        excludeNode != null
+            ? _parseExclude(excludeNode)
+            : const <String, VersionConstraint>{};
+
+    final stabilityNode = cooldownNode.nodes['stability'];
+    if (stabilityNode != null && beforeNode != null) {
+      _error(
+        '"stability" is only supported when "min_age" is specified.',
+        stabilityNode.span,
+      );
+    }
+    final stability =
+        stabilityNode != null ? _parseStability(stabilityNode) : false;
+
+    if (minAgeNode != null) {
+      return CooldownPolicy.minAge(
+        minAge: _parseMinAge(minAgeNode),
+        exclude: exclude,
+        stability: stability,
+      );
+    } else {
+      return CooldownPolicy.before(
+        before: _parseBefore(beforeNode!),
+        exclude: exclude,
+      );
+    }
+  }
+
+  Duration _parseMinAge(YamlNode node) {
+    if (node case YamlScalar(value: final String value)) {
+      try {
+        return _parseDuration(value);
+      } on FormatException catch (e) {
+        _error('Invalid "min_age": ${e.message}', node.span);
+      }
+    }
+    _error('"min_age" must be a string', node.span);
+  }
+
+  DateTime _parseBefore(YamlNode node) {
+    if (node case YamlScalar(value: final String value)) {
+      if (!_utcIso8601RegExp.hasMatch(value)) {
+        _error(
+          '"before" must be a UTC timestamp in ISO 8601 format '
+          '(e.g. "2026-05-28T09:09:29Z")',
+          node.span,
+        );
+      }
+      final parsed = DateTime.tryParse(value);
+      if (parsed == null || !parsed.isUtc) {
+        _error(
+          '"before" must be a valid UTC timestamp in ISO 8601 format',
+          node.span,
+        );
+      }
+      return parsed;
+    }
+    _error('"before" must be a string', node.span);
+  }
+
+  Map<String, VersionConstraint> _parseExclude(YamlNode node) {
+    if (node is! YamlMap) {
+      _error('"exclude" must be a map', node.span);
+    }
+    final exclude = <String, VersionConstraint>{};
+    for (final MapEntry(:key, :value) in node.nodes.entries) {
+      final keyNode = key as YamlNode;
+      final packageName = keyNode.value;
+      if (packageName is! String) {
+        _error('Exclude keys must be package names (strings).', keyNode.span);
+      }
+      if (!packageNameRegExp.hasMatch(packageName)) {
+        _error('Not a valid package name.', keyNode.span);
+      }
+      exclude[packageName] = _parseVersionConstraint(
+        value as YamlNode?,
+        _packageName,
+        _FileType.pubspec,
+      );
+    }
+    return exclude;
+  }
+
+  bool _parseStability(YamlNode node) {
+    if (node case YamlScalar(value: final bool value)) {
+      return value;
+    }
+    _error('"stability" must be a boolean', node.span);
+  }
+
+  Duration _parseDuration(String s) {
+    final match = _durationRegExp.firstMatch(s);
+    if (match == null) {
+      throw const FormatException(
+        'Invalid duration format. Expected e.g. "7d" or "2w"',
+      );
+    }
+    final value = int.parse(match.group(1)!);
+    final unit = match.group(2)!;
+    if (unit == 'd') {
+      return Duration(days: value);
+    } else if (unit == 'w') {
+      return Duration(days: value * 7);
+    }
+    throw const FormatException('Invalid duration unit');
+  }
+
+  /// Matches a UTC timestamp in ISO 8601 format ending with 'Z'
+  /// (e.g. "2026-05-28T09:09:29Z" or "2026-05-28Z").
+  static final _utcIso8601RegExp = RegExp(
+    r'^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?)?Z$',
+  );
+
+  /// Matches a duration string of digits followed by 'd' (days) or 'w' (weeks),
+  /// such as "7d" or "2w".
+  static final _durationRegExp = RegExp(r'^(\d+)([dw])$');
+
   /// The additional packages this package depends on.
   Map<String, PackageRange> get dependencies =>
       _dependencies ??= _parseDependencies(
@@ -341,7 +527,9 @@ environment:
     this.workspace = const <String>[],
     this.dependencyOverridesFromOverridesFile = false,
     this.resolution = Resolution.none,
-  }) : _dependencies =
+    Policies? policies,
+  }) : _policies = policies,
+       _dependencies =
            dependencies == null
                ? null
                : {for (final d in dependencies) d.name: d},
@@ -465,6 +653,7 @@ environment:
     List<String>? workspace,
     //this.dependencyOverridesFromOverridesFile = false,
     Resolution? resolution,
+    Policies? policies,
   }) {
     return Pubspec(
       name ?? this.name,
@@ -476,6 +665,7 @@ environment:
       sdkConstraints: sdkConstraints ?? this.sdkConstraints,
       workspace: workspace ?? this.workspace,
       resolution: resolution ?? this.resolution,
+      policies: policies ?? this.policies,
     );
   }
 
@@ -864,4 +1054,140 @@ enum Resolution {
   local,
   // This package is at the root of a workspace.
   none,
+}
+
+/// Represents workspace policies specified under the `policies` key in
+/// `pubspec.yaml`.
+///
+/// For example:
+/// ```yaml
+/// policies:
+///   cooldown:
+///     min_age: 7d
+///     stability: true
+///     exclude:
+///       foo: ^1.0.0
+/// ```
+final class Policies {
+  /// The cooldown policy configuration, if defined.
+  final CooldownPolicy? cooldown;
+
+  /// The source span where the policy was declared in `pubspec.yaml`.
+  final SourceSpan span;
+
+  Policies({this.cooldown, required this.span});
+}
+
+/// A policy that restricts dependency versions based on publication age or an
+/// absolute cutoff timestamp.
+///
+/// Cooldown policies mitigate supply-chain risks by delaying the adoption of
+/// newly published versions, giving repositories and ecosystem tooling time to
+/// detect and yank compromised or broken releases.
+///
+/// A [CooldownPolicy] is configured either with a relative minimum age via
+/// [CooldownPolicy.minAge] or an absolute UTC cutoff date via
+/// [CooldownPolicy.before].
+final class CooldownPolicy {
+  /// The minimum age a package release must have before it can be resolved.
+  ///
+  /// Exactly one of [minAge] and [before] is non-null.
+  final Duration? minAge;
+
+  /// The cutoff UTC timestamp after which package releases cannot be resolved.
+  ///
+  /// Exactly one of [minAge] and [before] is non-null.
+  final DateTime? before;
+
+  /// A map from package names to version constraints that are exempt from the
+  /// cooldown policy.
+  final Map<String, VersionConstraint> exclude;
+
+  /// Whether to block releases that were followed by another release within the
+  /// cooldown window (indicating an unstable release).
+  final bool stability;
+
+  /// Creates a cooldown policy requiring package releases to be at least
+  /// [minAge] old.
+  ///
+  /// Packages matching [exclude] constraints are exempt from this policy.
+  /// If [stability] is `true`, versions that were quickly superseded by newer
+  /// releases within [minAge] will also be blocked.
+  CooldownPolicy.minAge({
+    required Duration this.minAge,
+    required this.exclude,
+    this.stability = false,
+  }) : before = null;
+
+  /// Creates a cooldown policy blocking package releases published after
+  /// [before].
+  ///
+  /// Packages matching [exclude] constraints are exempt from this policy.
+  CooldownPolicy.before({required DateTime this.before, required this.exclude})
+    : minAge = null,
+      stability = false;
+
+  /// Returns `true` if the given package [version] is blocked by this policy.
+  ///
+  /// [packageName] is the name of the package.
+  /// [version] is the version being evaluated.
+  /// [published] is the publication date of the version, or `null` if unknown.
+  /// [statusMap] contains status information (including publication dates) for
+  /// all known versions of the package, used for evaluating stability rules.
+  ///
+  /// Packages exempt under [exclude] for the given [version] are never blocked.
+  /// Versions without a [published] date are considered blocked unless
+  /// excluded.
+  bool isBlocked(
+    String packageName,
+    Version version,
+    DateTime? published, [
+    Map<Version, PackageStatus> statusMap = const {},
+  ]) {
+    final constraint = exclude[packageName];
+    if (constraint != null && constraint.allows(version)) return false;
+    if (published == null) return true;
+
+    if (minAge case final minAge?) {
+      final age = DateTime.now().difference(published);
+      if (age < minAge) return true;
+
+      if (stability) {
+        for (final entry in statusMap.entries) {
+          final v = entry.key;
+          final pubDate = entry.value.published;
+          if (v > version) {
+            if (pubDate != null) {
+              final diff = pubDate.difference(published);
+              // We only care if the newer version was published *after* this
+              // version (i.e., diff >= Duration.zero).
+              //
+              // If the newer version was published *before* this version,
+              // diff is negative (which is always less than minAge). This can
+              // happen if we publish a backported patch version for an older
+              // release line long after a newer major version was already
+              // released.
+              //
+              // For example, if 2.0.0 was published 30 days ago, and we publish
+              // a backport 1.0.1 today (0 days ago), then:
+              //   pubDate(2.0.0) - published(1.0.1) = -30 days.
+              // Since -30 days < 7 days (minAge), 1.0.1 would be incorrectly
+              // blocked by stability without the diff >= 0 check.
+              if (diff >= Duration.zero && diff < minAge) {
+                return true; // Blocked by stability!
+              }
+            } else {
+              // If a newer version has no published date, it is considered
+              // "too new" and thus breaks stability of older versions.
+              return true;
+            }
+          }
+        }
+      }
+    } else if (before case final before?) {
+      if (published.isAfter(before)) return true;
+    }
+
+    return false;
+  }
 }
