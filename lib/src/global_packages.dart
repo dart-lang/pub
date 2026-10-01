@@ -862,7 +862,7 @@ Try reactivating the package.
         isRefreshingBinstub: false,
         snapshot:
             entrypoint.isCachedGlobal
-                ? entrypoint.pathOfSnapshot(
+                ? entrypoint.pathOfGlobalSnapshot(
                   exec.Executable.adaptProgramName(package.name, script),
                 )
                 : null,
