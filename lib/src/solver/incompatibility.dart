@@ -408,6 +408,7 @@ class Incompatibility {
 
     final negative = prior._singleTermWhere((term) => !term.isPositive);
     if (negative == null) return null;
+    if (!latter.terms.first.isPositive) return null;
     if (!negative.inverse.satisfies(latter.terms.first)) return null;
 
     final positives = prior.terms.where((term) => term.isPositive);
@@ -436,7 +437,11 @@ class Incompatibility {
       return buffer.toString();
     }
 
-    buffer.write('${_terse(latter.terms.first, details)} ');
+    final targetTerm =
+        latter.cause is PackageVersionForbiddenCause
+            ? negative
+            : latter.terms.first;
+    buffer.write('${_terse(targetTerm, details)} ');
     if (priorLine != null) buffer.write('($priorLine) ');
 
     final latterCause = latter.cause;
