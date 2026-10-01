@@ -463,7 +463,77 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
       ),
       environment: _environment,
     );
+    await d
+        .appDir(
+          dependencies: {'foo': '^1.0.0'},
+          pubspec: {
+            'experiments': ['no-shipped-and-expired'],
+          },
+        )
+        .create();
+    await pubGet(
+      warning: contains(
+        'The experiment `shipped-and-expired` has been enabled by default '
+        'since Dart 3.0.0 and can no longer be disabled. Remove '
+        '`no-shipped-and-expired` from `experiments` in the pubspec.yaml of '
+        'myapp.',
+      ),
+      environment: _environment,
+    );
     expect(_experimentsByPackage(_readPackageConfig()), isEmpty);
+  });
+
+  test('can opt out of an experiment enabled by default', () async {
+    final server = await servePackages();
+    await _setupSdks();
+    // A dependency can opt out of a default-enabled experiment without the
+    // root package having to list it.
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'experiments': ['no-shipped'],
+      },
+    );
+    await d
+        .appDir(
+          dependencies: {'foo': '^1.0.0'},
+          pubspec: {
+            'experiments': ['no-shipped', 'no-abc'],
+          },
+        )
+        .create();
+
+    await pubGet(
+      output: allOf(
+        contains('* `no-shipped` for foo, myapp - Already shipped'),
+        isNot(contains('no-abc')),
+      ),
+      environment: _environment,
+    );
+    expect(_experimentsByPackage(_readPackageConfig()), {
+      'foo': ['no-shipped'],
+      'myapp': ['no-shipped'],
+    });
+  });
+
+  test('rejects enabling and disabling the same experiment', () async {
+    await _setupSdks();
+    await d
+        .appDir(
+          pubspec: {
+            'experiments': ['shipped', 'no-shipped'],
+          },
+        )
+        .create();
+
+    await pubGet(
+      error: contains(
+        'The experiment `shipped` cannot be both enabled and disabled.',
+      ),
+      environment: _environment,
+      exitCode: DATA,
+    );
   });
 
   test('Can global activate a package using experiments', () async {

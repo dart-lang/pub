@@ -169,6 +169,14 @@ environment:
       if (result.contains(value)) {
         _error('The experiment `$value` is listed more than once.', e.span);
       }
+      final isOptOut = value.startsWith('no-');
+      final name = isOptOut ? value.substring(3) : value;
+      if (result.contains(name) || result.contains('no-$name')) {
+        _error(
+          'The experiment `$name` cannot be both enabled and disabled.',
+          e.span,
+        );
+      }
 
       // For root packages, validate that all experiments are known by at
       // least one of the current SDKs and available on this channel.
@@ -176,7 +184,7 @@ environment:
       // Dependencies will only be chosen by the solver if their experiments
       // are allowed by the workspace, so we don't validate them here.
       if (_containingDescription is ResolvedRootDescription) {
-        final experiment = availableExperiments[value];
+        final experiment = availableExperiments[name];
         if (experiment == null) {
           final availableExperimentsDescription =
               availableExperiments.isEmpty
@@ -194,7 +202,7 @@ Read more about experiments at https://dart.dev/go/experiments.
         }
         if (!experiment.isAvailableOnChannel(DartSdk.channel)) {
           _error(
-            'The experiment `$value` is only available on the '
+            'The experiment `$name` is only available on the '
             '${experiment.channels!.join(', ')} channel(s). '
             'This SDK is on the ${DartSdk.channel} channel.',
             e.span,

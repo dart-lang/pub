@@ -55,15 +55,15 @@ class SolveResult {
   /// That is the union of the experiments listed by the workspace packages.
   List<String> get experiments => _root.allExperimentsInWorkspace.toList();
 
-  /// For each experiment that some package in the solution opts in to, the
-  /// sorted names of those packages.
+  /// For each experiment that some package in the solution opts in to or out
+  /// of, the sorted names of those packages.
   ///
-  /// Experiments that don't require opting in are left out.
+  /// Experiments that have no effect are left out.
   Map<String, List<String>> get experimentUsers {
     final result = SplayTreeMap<String, List<String>>();
     for (final name in pubspecs.keys.sorted()) {
       for (final experiment in pubspecs[name]!.experiments) {
-        if (availableExperiments[experiment]?.requiresOptIn == false) {
+        if (!isEffectiveExperimentFlag(experiment)) {
           continue;
         }
         (result[experiment] ??= []).add(name);
@@ -78,7 +78,9 @@ class SolveResult {
     final result = SplayTreeMap<String, List<String>>();
     for (final package in _root.transitiveWorkspace.sortedBy((p) => p.name)) {
       for (final experiment in package.pubspec.experiments) {
-        if (availableExperiments[experiment]?.expired == true) {
+        final experimentName =
+            experiment.startsWith('no-') ? experiment.substring(3) : experiment;
+        if (availableExperiments[experimentName]?.expired == true) {
           (result[experiment] ??= []).add(package.name);
         }
       }

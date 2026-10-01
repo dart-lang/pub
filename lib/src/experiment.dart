@@ -111,6 +111,12 @@ final class Experiment {
   /// the tools, and any package may list them.
   bool get requiresOptIn => !isEnabledByDefault && !expired;
 
+  /// Whether listing `no-$name` in `experiments` has any effect.
+  ///
+  /// Only experiments that are enabled by default and not yet expired can be
+  /// disabled.
+  bool get canBeDisabled => isEnabledByDefault && !expired;
+
   /// Whether the experiment can be enabled on the SDK release [channel].
   ///
   /// If [channel] is `null` (unknown) the experiment is assumed available.

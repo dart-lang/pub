@@ -89,7 +89,7 @@ Read more about experiments at https://dart.dev/go/experiments.''';
     }
     final optedIn =
         allowedExperiments
-            .where((e) => availableExperiments[e]?.requiresOptIn != false)
+            .where((e) => !experimentsNotRequiringOptIn.contains(e))
             .toList();
     final enabledExperimentsDescription =
         optedIn.isEmpty

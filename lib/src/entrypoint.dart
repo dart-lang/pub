@@ -565,10 +565,11 @@ See $workspacesDocUrl for more information.''',
 
   /// The experiments of [pubspec] that tools must be told about.
   ///
-  /// Experiments that don't require opting in are left out.
+  /// Experiments that don't require opting in (or can't be disabled) are left
+  /// out.
   static List<String> _experimentsNeedingOptIn(Pubspec pubspec) => [
     for (final name in pubspec.experiments)
-      if (availableExperiments[name]?.requiresOptIn != false) name,
+      if (isEffectiveExperimentFlag(name)) name,
   ];
 
   /// Gets all dependencies of the [workspaceRoot] package.

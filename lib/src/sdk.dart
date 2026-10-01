@@ -122,15 +122,28 @@ final Map<String, Experiment> availableExperiments = {
     ...sdk.experiments,
 };
 
-/// The names of the experiments that don't require opting in, because they
-/// are enabled by default or expired.
+/// The experiment entries that don't require workspace opt-in, because they
+/// are enabled by default, expired, or opt-outs (`no-<name>`).
 ///
-/// Listing such an experiment in a dependency's `experiments` is harmless, so
-/// the solver always allows them.
+/// Listing such an entry in a dependency's `experiments` does not opt in to an
+/// unshipped feature, so the solver always allows them.
 Set<String> get experimentsNotRequiringOptIn => {
-  for (final experiment in availableExperiments.values)
+  for (final experiment in availableExperiments.values) ...[
     if (!experiment.requiresOptIn) experiment.name,
+    'no-${experiment.name}',
+  ],
 };
+
+/// Whether [flag] (an `<experiment>` or `no-<experiment>` entry from
+/// `experiments`) has an effect and should be passed on to tools.
+bool isEffectiveExperimentFlag(String flag) {
+  if (flag.startsWith('no-')) {
+    final experiment = availableExperiments[flag.substring(3)];
+    return experiment == null || experiment.canBeDisabled;
+  }
+  final experiment = availableExperiments[flag];
+  return experiment == null || experiment.requiresOptIn;
+}
 
 /// The core Dart SDK.
 final sdk = DartSdk();

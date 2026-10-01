@@ -349,25 +349,32 @@ $contentHashesDocumentationUrl
   }
 
   void reportExperiments() {
-    for (final MapEntry(key: name, value: packages)
+    for (final MapEntry(key: rawName, value: packages)
         in expiredExperimentUsers.entries) {
+      final isOptOut = rawName.startsWith('no-');
+      final name = isOptOut ? rawName.substring(3) : rawName;
       final enabledIn = availableExperiments[name]?.enabledIn;
       final status =
           enabledIn == null
               ? 'has been retired and no longer has any effect'
+              : isOptOut
+              ? 'has been enabled by default since Dart $enabledIn and can no '
+                  'longer be disabled'
               : 'has been enabled by default since Dart $enabledIn';
+      final target = isOptOut ? '`$rawName`' : 'it';
       warning(
-        'The experiment `$name` $status. Remove it from `experiments` in the '
-        'pubspec.yaml of ${packages.join(', ')}.',
+        'The experiment `$name` $status. Remove $target from `experiments` in '
+        'the pubspec.yaml of ${packages.join(', ')}.',
       );
     }
     if (experimentUsers.isEmpty) return;
     message('Experiments enabled:');
-    for (final MapEntry(key: name, value: packages)
+    for (final MapEntry(key: rawName, value: packages)
         in experimentUsers.entries) {
+      final name = rawName.startsWith('no-') ? rawName.substring(3) : rawName;
       final description = availableExperiments[name]?.description;
       message(
-        '* `$name` for ${packages.join(', ')}'
+        '* `$rawName` for ${packages.join(', ')}'
         '${description == null ? '' : ' - $description'}',
       );
     }
