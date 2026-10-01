@@ -155,6 +155,7 @@ For example (follow the same format including spaces):
     argParser.addFlag(
       'precompile',
       help: 'Build executables in immediate dependencies.',
+      hide: true,
     );
     argParser.addOption(
       'directory',
@@ -172,6 +173,11 @@ For example (follow the same format including spaces):
 
   @override
   Future<void> runProtected() async {
+    if (argResults.wasParsed('precompile')) {
+      log.warning(
+        log.yellow('The --precompile flag is no longer used and does nothing.'),
+      );
+    }
     if (argResults.rest.length > 1) {
       if (argResults.gitUrl != null) {
         usageException('''
@@ -284,17 +290,12 @@ Specify multiple sdk packages with descriptors.''');
             ),
           ),
         )
-        .acquireDependencies(
-          SolveType.get,
-          dryRun: argResults.isDryRun,
-          precompile: !argResults.isDryRun && argResults.shouldPrecompile,
-        );
+        .acquireDependencies(SolveType.get, dryRun: argResults.isDryRun);
 
     if (!argResults.isDryRun && argResults.example) {
       for (final example in entrypoint.examples) {
         await example.acquireDependencies(
           SolveType.get,
-          precompile: argResults.shouldPrecompile,
           reportMode: SolveReportMode.summaryOnly,
         );
       }
@@ -812,7 +813,6 @@ extension on ArgResults {
       sdk != null ||
       hostedUrl != null ||
       isDev;
-  bool get shouldPrecompile => flag('precompile');
   bool get example => flag('example');
   bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;
 }

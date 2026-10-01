@@ -70,6 +70,7 @@ optionally specify a target version or constraint after `@`:
     argParser.addFlag(
       'precompile',
       help: 'Precompile executables in immediate dependencies.',
+      hide: true,
     );
 
     argParser.addFlag(
@@ -126,8 +127,6 @@ optionally specify a target version or constraint after `@`:
   bool get _dryRun => argResults.flag('dry-run');
 
   bool get _tighten => argResults.flag('tighten');
-
-  bool get _precompile => argResults.flag('precompile');
 
   late final Future<List<String>> _rootPackagesToUpgrade =
       _computePackagesToUpgrade(entrypoint);
@@ -189,6 +188,11 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         ),
       );
     }
+    if (argResults.wasParsed('precompile')) {
+      log.warning(
+        log.yellow('The --precompile flag is no longer used and does nothing.'),
+      );
+    }
     final hasUpgradeTargetConstraints = _upgradeTargets.any(
       (target) => target.kind != null,
     );
@@ -246,7 +250,6 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       unlock: await _packagesToUpgrade(e),
       additionalConstraints: await _upgradeTargetConstraints(e),
       dryRun: _dryRun,
-      precompile: _precompile,
       reportMode:
           onlySummary ? SolveReportMode.summaryOnly : SolveReportMode.full,
     );
@@ -656,7 +659,6 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         .acquireDependencies(
           solveType,
           dryRun: _dryRun,
-          precompile: !_dryRun && _precompile,
           unlock: await _rootPackagesToUpgrade,
           additionalConstraints: upgradeTargetConstraints,
         );

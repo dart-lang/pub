@@ -27,13 +27,7 @@ Future<void> testGetExecutable(
 }) async {
   final buffer = StringBuffer();
   await runEmbeddingToBuffer(
-    [
-      'pub',
-      '--verbose',
-      'get-executable-for-command',
-      command,
-      if (allowSnapshot) '--allow-snapshot' else '--no-allow-snapshot',
-    ],
+    ['pub', '--verbose', 'get-executable-for-command', command],
     buffer,
     workingDirectory: root,
     exitCode: errorMessage == null ? 0 : isNot(0),
@@ -186,25 +180,6 @@ void testGetExecutableForCommand() {
       );
     });
 
-    test('Reports compilation failure', () async {
-      await servePackages();
-      await d.dir(appPath, [
-        d.pubspec({'name': 'myapp'}),
-        d.dir('bin', [d.file('foo.dart', 'main() {')]),
-      ]).create();
-
-      await servePackages();
-      // The solver uses word-wrapping in its error message, so we use \s to
-      // accommodate.
-      await testGetExecutable(
-        ':foo',
-        d.path(appPath),
-        errorMessage: matches(r'foo.dart:1:8:'),
-        issue: CommandResolutionIssue.compilationFailed,
-        resolution: ResolutionAttempt.resolution,
-      );
-    });
-
     test('Finds files', () async {
       final server = await servePackages();
       server.serve(
@@ -246,52 +221,28 @@ void testGetExecutableForCommand() {
       await testGetExecutable(
         'myapp',
         dir,
-        executable: p.join(
-          '.dart_tool',
-          'pub',
-          'bin',
-          'myapp',
-          'myapp.dart-3.1.2+3.snapshot',
-        ),
+        executable: p.join(d.sandbox, appPath, 'bin', 'myapp.dart'),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
         resolution: ResolutionAttempt.resolution,
       );
       await testGetExecutable(
         'myapp:myapp',
         dir,
-        executable: p.join(
-          '.dart_tool',
-          'pub',
-          'bin',
-          'myapp',
-          'myapp.dart-3.1.2+3.snapshot',
-        ),
+        executable: p.join(d.sandbox, appPath, 'bin', 'myapp.dart'),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
         resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         ':myapp',
         dir,
-        executable: p.join(
-          '.dart_tool',
-          'pub',
-          'bin',
-          'myapp',
-          'myapp.dart-3.1.2+3.snapshot',
-        ),
+        executable: p.join(d.sandbox, appPath, 'bin', 'myapp.dart'),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
         resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         ':tool',
         dir,
-        executable: p.join(
-          '.dart_tool',
-          'pub',
-          'bin',
-          'myapp',
-          'tool.dart-3.1.2+3.snapshot',
-        ),
+        executable: p.join(d.sandbox, appPath, 'bin', 'tool.dart'),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
         resolution: ResolutionAttempt.fastPath,
       );
@@ -310,19 +261,6 @@ void testGetExecutableForCommand() {
         resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
-        'foo',
-        dir,
-        executable: p.join(
-          '.dart_tool',
-          'pub',
-          'bin',
-          'foo',
-          'foo.dart-3.1.2+3.snapshot',
-        ),
-        packageConfig: p.join('.dart_tool', 'package_config.json'),
-        resolution: ResolutionAttempt.fastPath,
-      );
-      await testGetExecutable(
         'foo:tool',
         dir,
         allowSnapshot: false,
@@ -332,19 +270,6 @@ void testGetExecutableForCommand() {
           'foo-1.0.0',
           'bin',
           'tool.dart',
-        ),
-        packageConfig: p.join('.dart_tool', 'package_config.json'),
-        resolution: ResolutionAttempt.fastPath,
-      );
-      await testGetExecutable(
-        'foo:tool',
-        dir,
-        executable: p.join(
-          '.dart_tool',
-          'pub',
-          'bin',
-          'foo',
-          'tool.dart-3.1.2+3.snapshot',
         ),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
         resolution: ResolutionAttempt.fastPath,
@@ -453,15 +378,7 @@ void testGetExecutableForCommand() {
       await testGetExecutable(
         'myapp',
         p.join(d.sandbox, appPath, 'pkgs', 'a'),
-        executable: p.join(
-          '..',
-          '..',
-          '.dart_tool',
-          'pub',
-          'bin',
-          'myapp',
-          'myapp.dart-3.5.0.snapshot',
-        ),
+        executable: p.join(d.sandbox, appPath, 'bin', 'myapp.dart'),
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
         packageConfig: p.join('..', '..', '.dart_tool', 'package_config.json'),
         resolution: ResolutionAttempt.fastPath,
@@ -469,16 +386,7 @@ void testGetExecutableForCommand() {
       await testGetExecutable(
         'myapp',
         p.join(d.sandbox, appPath, 'pkgs', 'a', 'sub'),
-        executable: p.join(
-          '..',
-          '..',
-          '..',
-          '.dart_tool',
-          'pub',
-          'bin',
-          'myapp',
-          'myapp.dart-3.5.0.snapshot',
-        ),
+        executable: p.join(d.sandbox, appPath, 'bin', 'myapp.dart'),
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
         packageConfig: p.join(
           '..',
@@ -554,12 +462,11 @@ void testGetExecutableForCommand() {
         'foo',
         p.join(d.sandbox, appPath, 'lib'),
         executable: p.join(
-          '..',
-          '.dart_tool',
-          'pub',
+          d.sandbox,
+          d.hostedCachePath(),
+          'foo-1.0.0',
           'bin',
-          'foo',
-          'foo.dart-3.5.0.snapshot',
+          'foo.dart',
         ),
         packageConfig: p.join('..', '.dart_tool', 'package_config.json'),
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
@@ -747,14 +654,11 @@ void testGetExecutableForCommand() {
         'foo',
         p.join(d.sandbox, appPath, 'pkgs', 'a', 'lib'),
         executable: p.join(
-          '..',
-          '..',
-          '..',
-          '.dart_tool',
-          'pub',
+          d.sandbox,
+          d.hostedCachePath(),
+          'foo-1.0.0',
           'bin',
-          'foo',
-          'foo.dart-3.5.0.snapshot',
+          'foo.dart',
         ),
         packageConfig: p.join(
           '..',
