@@ -35,7 +35,7 @@ class PartialSolution {
   /// negative [Assignment]s that refer to that package.
   ///
   /// This is derived from [_assignments].
-  final _positive = <String, Term?>{};
+  final _positive = <String, Term>{};
 
   /// The union of all negative [Assignment]s for each package.
   ///
@@ -51,8 +51,8 @@ class PartialSolution {
   /// Returns all [PackageRange]s that have been assigned but are not yet
   /// satisfied.
   Iterable<PackageRange> get unsatisfied => _positive.values
-      .where((term) => !_decisions.containsKey(term!.package.name))
-      .map((term) => term!.package);
+      .where((term) => !_decisions.containsKey(term.package.name))
+      .map((term) => term.package);
 
   // The current decision level—that is, the length of [decisions].
   int get decisionLevel => _decisions.length;
@@ -128,7 +128,11 @@ class PartialSolution {
     final name = assignment.package.name;
     final oldPositive = _positive[name];
     if (oldPositive != null) {
-      _positive[name] = oldPositive.intersect(assignment);
+      // Decisions and derivations are always consistent with the existing
+      // positive assignment, so the intersection is never empty.
+      _positive[name] =
+          oldPositive.intersect(assignment) ??
+          (throw StateError('[BUG] $assignment contradicts $oldPositive.'));
       return;
     }
 
