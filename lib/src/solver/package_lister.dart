@@ -71,9 +71,6 @@ class PackageLister {
   /// [incompatibilitiesFor] multiple times.
   var _knownInvalidVersions = VersionConstraint.empty;
 
-  /// Whether we've returned incompatibilities for [_locked].
-  var _listedLockedVersion = false;
-
   /// The versions of [_ref] that have been downloaded and cached, or `null` if
   /// they haven't been downloaded yet.
   List<PackageId>? get cachedVersions => _cachedVersions;
@@ -231,15 +228,28 @@ class PackageLister {
       }
     }
 
-    if (_cachedVersions == null &&
-        _locked != null &&
-        id.version == _locked.version) {
-      if (_listedLockedVersion) return const [];
-
+    final versions =
+        !id.isRoot &&
+                (_cachedVersions != null || _locked?.version != id.version)
+            ? await _versions
+            : null;
+    final index =
+        versions == null
+            ? -1
+            : lowerBound(
+              versions,
+              id,
+              compare:
+                  (PackageId id1, PackageId id2) =>
+                      id1.version.compareTo(id2.version),
+            );
+    if (versions == null ||
+        index >= versions.length ||
+        versions[index].version != id.version) {
       final depender = id.toRange();
-      _listedLockedVersion = true;
       for (var sdk in sdks.values) {
         if (!_matchesSdkConstraint(pubspec, sdk)) {
+          _knownInvalidVersions = _knownInvalidVersions.union(id.version);
           return [
             Incompatibility(
               [Term(depender, true)],
@@ -252,48 +262,41 @@ class PackageLister {
         }
       }
 
-      final entries = [
-        ...pubspec.dependencies.values.where(
-          (range) => !_overriddenPackages.contains(range.name),
-        ),
-        if (id.isRoot)
-          ...pubspec.devDependencies.values.where(
-            (range) => !_overriddenPackages.contains(range.name),
-          ),
-        if (id.isRoot) ...[
-          ..._rootPackage!.workspaceChildren.map((p) {
-            return PackageRange(
-              PackageRef(p.name, RootDescription(p.dir)),
-              p.version,
-            );
-          }),
-          ...pubspec.dependencyOverrides.values,
-        ],
-      ];
-      return entries.map((range) => _dependency(depender, range)).toList();
-    }
+      final entries =
+          [
+                ...pubspec.dependencies.values.where(
+                  (range) => !_overriddenPackages.contains(range.name),
+                ),
+                if (id.isRoot)
+                  ...pubspec.devDependencies.values.where(
+                    (range) => !_overriddenPackages.contains(range.name),
+                  ),
+                if (id.isRoot) ...[
+                  ..._rootPackage!.workspaceChildren.map((p) {
+                    return PackageRange(
+                      PackageRef(p.name, RootDescription(p.dir)),
+                      p.version,
+                    );
+                  }),
+                  ...pubspec.dependencyOverrides.values,
+                ],
+              ]
+              .where(
+                (range) =>
+                    !(_alreadyListedDependencies[range.name]?.allows(
+                          id.version,
+                        ) ??
+                        false),
+              )
+              .toList();
 
-    final versions = await _versions;
-    final index = lowerBound(
-      versions,
-      id,
-      compare:
-          (PackageId id1, PackageId id2) => id1.version.compareTo(id2.version),
-    );
-    if (index >= versions.length || versions[index].version != id.version) {
-      // Every [id] passed to [incompatibilitiesFor] comes either from
-      // [_versions] or from [_locked]. If [id.version] is not in [versions],
-      // [id] must be [_locked] and its version is no longer among the versions
-      // listed by the source (for example, a Git dependency locked to a commit
-      // whose pubspec version differs from the current branch HEAD, or a cached
-      // hosted version removed from the server listing).
-      //
-      // When called from [generalizeLockedIncompatibilities], narrow
-      // incompatibilities for [_locked] itself have already been emitted. Since
-      // [id.version] is not in [versions], those incompatibilities cannot be
-      // generalized across neighboring versions, so we return an empty list and
-      // let the solver fall back to a no-versions incompatibility.
-      return const [];
+      for (final range in entries) {
+        _alreadyListedDependencies[range.name] = id.version.union(
+          _alreadyListedDependencies[range.name] ?? VersionConstraint.empty,
+        );
+      }
+
+      return entries.map((range) => _dependency(depender, range)).toList();
     }
 
     for (var sdk in sdks.values) {
@@ -335,16 +338,6 @@ class PackageLister {
         dependencies[package]!,
       );
     }).toList();
-  }
-
-  /// If incompatibilities were previously emitted only for [_locked] without
-  /// generalizing across all versions, returns the generalized
-  /// incompatibilities for [_locked].
-  Future<List<Incompatibility>> generalizeLockedIncompatibilities() async {
-    final locked = _locked;
-    if (!_listedLockedVersion || locked == null) return const [];
-    _listedLockedVersion = false;
-    return await incompatibilitiesFor(locked);
   }
 
   /// Returns an [Incompatibility] that represents a dependency from [depender]
