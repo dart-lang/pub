@@ -425,6 +425,25 @@ class VersionSolver {
           Term(package, true),
         ], NoVersionsIncompatibilityCause()),
       );
+
+      // If the constraint excludes only a single version, it may have come
+      // from the inverse of a lockfile's dependency. In that case, we also
+      // request any version so that the lister gives us more general
+      // incompatibilities (which [_propagate] will check first). This makes
+      // error reporting much nicer.
+      if (_excludesSingleVersion(package.constraint)) {
+        version = await _packageLister(
+          package,
+        ).bestVersion(VersionConstraint.any);
+        if (version != null) {
+          for (var incompatibility in await _packageLister(
+            package,
+          ).incompatibilitiesFor(version)) {
+            _addIncompatibility(incompatibility);
+          }
+        }
+      }
+
       return package.name;
     }
 
@@ -464,6 +483,10 @@ class VersionSolver {
           .add(incompatibility);
     }
   }
+
+  /// Returns whether [constraint] allows all versions except one.
+  bool _excludesSingleVersion(VersionConstraint constraint) =>
+      VersionConstraint.any.difference(constraint) is Version;
 
   /// Creates a [SolveResult] from the decisions in [_solution].
   Future<SolveResult> _result() async {
