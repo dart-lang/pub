@@ -231,9 +231,21 @@ class PackageLister {
       }
     }
 
-    if (_cachedVersions == null &&
-        _locked != null &&
-        id.version == _locked.version) {
+    // Avoid fetching the version listing just to describe the locked version:
+    // emit incompatibilities for exactly this version. Once the listing has
+    // been fetched, the solver asks again (see
+    // [VersionSolver._choosePackageVersion]) and the incompatibilities are
+    // generalized across neighboring versions below.
+    //
+    // The narrow incompatibilities are also all we can emit if the listing has
+    // been fetched but does not contain the locked version (for example,
+    // because it was removed from the server but is still in the system cache).
+    // Either way, they are emitted only once.
+    final cachedVersions = _cachedVersions;
+    if (_locked != null &&
+        id.version == _locked.version &&
+        (cachedVersions == null ||
+            !cachedVersions.any((version) => version.version == id.version))) {
       if (_listedLockedVersion) return const [];
 
       final depender = id.toRange();
@@ -280,20 +292,8 @@ class PackageLister {
       compare:
           (PackageId id1, PackageId id2) => id1.version.compareTo(id2.version),
     );
-    if (index >= versions.length || versions[index].version != id.version) {
-      // Every [id] passed to [incompatibilitiesFor] comes either from
-      // [_versions] or from [_locked]. If [id.version] is not in [versions],
-      // [id] must be [_locked] and its version is no longer among the versions
-      // listed by the source (for example, a cached hosted version that was
-      // removed or retracted on the server).
-      //
-      // When the solver re-requests [_locked] after [_versions] has been
-      // fetched in order to generalize its incompatibilities, narrow
-      // incompatibilities for [_locked] itself have already been emitted. Since
-      // [id.version] is not in [versions], they cannot be generalized across
-      // neighboring versions.
-      return const [];
-    }
+    assert(index < versions.length);
+    assert(versions[index].version == id.version);
 
     for (var sdk in sdks.values) {
       final sdkIncompatibility = await _checkSdkConstraint(index, sdk);
