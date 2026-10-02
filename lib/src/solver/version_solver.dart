@@ -432,30 +432,57 @@ class VersionSolver {
     }
 
     if (version == null) {
-      // If the constraint excludes only a single version, it must have come
-      // from the inverse of a lockfile's dependency. In that case, we request
-      // any version instead so that the lister gives us more general
-      // incompatibilities. This makes error reporting much nicer.
+      // If there are no versions that satisfy [package.constraint], add an
+      // incompatibility that indicates that.
+      _addIncompatibility(
+        Incompatibility([
+          Term(package, true),
+        ], NoVersionsIncompatibilityCause()),
+      );
+
+      // If the constraint excludes only a single version, it may have come
+      // from the inverse of a lockfile's dependency. In that case, we also
+      // request any version so that the lister gives us more general
+      // incompatibilities (which [_propagate] will check first). This makes
+      // error reporting much nicer.
+      //
+      // For example, if `myapp` depends on `foo any` and `bar <2.0.0`, and the
+      // locked version `foo 1.0.0` is the only version of `foo` and depends on
+      // `bar >=2.0.0`, without generalizing `foo 1.0.0`'s dependency we would
+      // report:
+      //
+      //     Because foo 1.0.0 depends on bar >=2.0.0 and no versions of foo
+      //       match <1.0.0-∞ or >1.0.0, every version of foo requires
+      //       bar >=2.0.0.
+      //     So, because myapp depends on both foo any and bar <2.0.0, version
+      //       solving failed.
+      //
+      // With the generalized incompatibility (`every version of foo depends on
+      // bar >=2.0.0`), we instead report:
+      //
+      //     Because myapp depends on foo any which depends on bar >=2.0.0,
+      //       bar >=2.0.0 is required.
+      //     So, because myapp depends on bar <2.0.0, version solving failed.
       if (_excludesSingleVersion(package.constraint)) {
         version = await _packageLister(
           package,
         ).bestVersion(VersionConstraint.any);
-      } else {
-        // If there are no versions that satisfy [package.constraint], add an
-        // incompatibility that indicates that.
-        _addIncompatibility(
-          Incompatibility([
-            Term(package, true),
-          ], NoVersionsIncompatibilityCause()),
-        );
-        return package.name;
+        if (version != null) {
+          for (var incompatibility in await _packageLister(
+            package,
+          ).incompatibilitiesFor(version)) {
+            _addIncompatibility(incompatibility);
+          }
+        }
       }
+
+      return package.name;
     }
 
     var conflict = false;
     for (var incompatibility in await _packageLister(
       package,
-    ).incompatibilitiesFor(version!)) {
+    ).incompatibilitiesFor(version)) {
       _addIncompatibility(incompatibility);
 
       // If an incompatibility is already satisfied, then selecting [version]
