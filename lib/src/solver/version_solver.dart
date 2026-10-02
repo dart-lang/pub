@@ -110,6 +110,20 @@ class VersionSolver {
   /// Prime the solver with [constraints].
   void addConstraints(Iterable<ConstraintAndCause> constraints) {
     for (final constraint in constraints) {
+      // An additional constraint restricts which versions of a package may be
+      // selected if the package is part of the solution, without requiring the
+      // package itself to be selected.
+      //
+      // In PubGrub, a 1-term negative incompatibility `{not foo ^2.0.0}` means
+      // `foo ^2.0.0` is unconditionally required in the solution (like
+      // `{not root}`), causing unit propagation to derive a positive assignment
+      // `foo ^2.0.0` and forcing `foo` to be selected even if no package
+      // depends on it after backtracking.
+      //
+      // Instead, we emit a 1-term positive incompatibility for the forbidden
+      // complement (`{foo <2.0.0-0 or >=3.0.0}`), so unit propagation derives a
+      // negative assignment that only constrains `foo` if another package
+      // depends on it.
       final forbidden = VersionConstraint.any.difference(
         constraint.range.constraint,
       );
