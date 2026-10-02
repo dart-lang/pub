@@ -37,38 +37,45 @@ Incompatibility reformatRanges(
   _reformatCause(packageListers, incompatibility.cause),
 );
 
-/// Returns [term] with the upper and lower bounds of its package range
-/// reformatted if necessary.
+/// Returns [term] with the upper and lower bounds of its package range (or of
+/// each range of its package's [VersionUnion]) reformatted if necessary.
 Term _reformatTerm(Map<PackageRef, PackageLister> packageListers, Term term) {
   final versions = packageListers[term.package.toRef()]?.cachedVersions ?? [];
 
-  if (term.package.constraint is! VersionRange) return term;
-  if (term.package.constraint is Version) return term;
-  final range = term.package.constraint as VersionRange;
-
-  final min = _reformatMin(versions, range);
-  final maxInfo = reformatMax(versions, range);
-
-  if (min == null && maxInfo == null) {
-    return Term(term.package.withTerseConstraint(), term.isPositive);
+  final constraint = term.package.constraint;
+  final VersionConstraint reformatted;
+  if (constraint is VersionUnion) {
+    // Reformatting only ever narrows a range, so the reformatted ranges stay
+    // disjoint and non-adjacent and [VersionConstraint.unionOf] won't merge
+    // them.
+    reformatted = VersionConstraint.unionOf(
+      constraint.ranges.map((range) => _reformatRange(versions, range)),
+    );
+  } else if (constraint is VersionRange && constraint is! Version) {
+    reformatted = _reformatRange(versions, constraint);
+  } else {
+    return term;
   }
 
-  final (max, includeMax) = maxInfo ?? (range.max, range.includeMax);
-
   return Term(
-    term.package
-        .toRef()
-        .withConstraint(
-          VersionRange(
-            min: min ?? range.min,
-            max: max,
-            includeMin: range.includeMin,
-            includeMax: includeMax,
-            alwaysIncludeMaxPreRelease: true,
-          ),
-        )
-        .withTerseConstraint(),
+    term.package.toRef().withConstraint(reformatted).withTerseConstraint(),
     term.isPositive,
+  );
+}
+
+/// Returns [range] with its upper and lower bounds reformatted if necessary.
+VersionRange _reformatRange(List<PackageId> versions, VersionRange range) {
+  final min = _reformatMin(versions, range);
+  final maxInfo = reformatMax(versions, range);
+  if (min == null && maxInfo == null) return range;
+
+  final (max, includeMax) = maxInfo ?? (range.max, range.includeMax);
+  return VersionRange(
+    min: min ?? range.min,
+    max: max,
+    includeMin: range.includeMin,
+    includeMax: includeMax,
+    alwaysIncludeMaxPreRelease: true,
   );
 }
 
