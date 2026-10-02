@@ -415,6 +415,10 @@ class Incompatibility {
     if (!negative.inverse.satisfies(latter.terms.first)) return null;
 
     final positives = prior.terms.where((term) => term.isPositive);
+    // A "requires" clause needs something that does the requiring. If [prior]
+    // consists of a single negative term there is nothing to report in that
+    // form.
+    if (positives.isEmpty) return null;
 
     final buffer = StringBuffer();
     if (positives.length > 1) {
