@@ -281,6 +281,17 @@ class PackageLister {
           (PackageId id1, PackageId id2) => id1.version.compareTo(id2.version),
     );
     if (index >= versions.length || versions[index].version != id.version) {
+      // Every [id] passed to [incompatibilitiesFor] comes either from
+      // [_versions] or from [_locked]. If [id.version] is not in [versions],
+      // [id] must be [_locked] and its version is no longer among the versions
+      // listed by the source (for example, a cached hosted version that was
+      // removed or retracted on the server).
+      //
+      // When the solver re-requests [_locked] after [_versions] has been
+      // fetched in order to generalize its incompatibilities, narrow
+      // incompatibilities for [_locked] itself have already been emitted. Since
+      // [id.version] is not in [versions], they cannot be generalized across
+      // neighboring versions.
       return const [];
     }
 

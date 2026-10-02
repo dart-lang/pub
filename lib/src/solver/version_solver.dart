@@ -431,6 +431,24 @@ class VersionSolver {
       // request any version so that the lister gives us more general
       // incompatibilities (which [_propagate] will check first). This makes
       // error reporting much nicer.
+      //
+      // For example, if `myapp` depends on `foo any` and `bar <2.0.0`, and the
+      // locked version `foo 1.0.0` is the only version of `foo` and depends on
+      // `bar >=2.0.0`, without generalizing `foo 1.0.0`'s dependency we would
+      // report:
+      //
+      //     Because foo 1.0.0 depends on bar >=2.0.0 and no versions of foo
+      //       match <1.0.0-∞ or >1.0.0, every version of foo requires
+      //       bar >=2.0.0.
+      //     So, because myapp depends on both foo any and bar <2.0.0, version
+      //       solving failed.
+      //
+      // With the generalized incompatibility (`every version of foo depends on
+      // bar >=2.0.0`), we instead report:
+      //
+      //     Because myapp depends on foo any which depends on bar >=2.0.0,
+      //       bar >=2.0.0 is required.
+      //     So, because myapp depends on bar <2.0.0, version solving failed.
       if (_excludesSingleVersion(package.constraint)) {
         version = await _packageLister(
           package,

@@ -249,19 +249,21 @@ So, because no versions of foo match <1.0.0 or >1.0.0 and myapp depends on bar a
     await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
 
-    // Replace the server's versions of foo so 1.0.0 is no longer listed,
-    // while foo 1.0.0 remains in the local cache and lockfile.
+    // Replace the server's versions of foo so 1.0.0 is no longer listed and
+    // 2.0.0 is retracted, while foo 1.0.0 remains in the local cache and
+    // lockfile.
     server.clearPackages();
     server.serve('foo', '2.0.0', deps: {'bar': '1.0.0'});
+    server.retractPackageVersion('foo', '2.0.0');
     server.serve('bar', '1.0.0');
     server.serve('bar', '2.0.0');
 
-    await d.appDir(dependencies: {'foo': '^1.0.0', 'bar': '2.0.0'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': '2.0.0'}).create();
     await expectResolves(
       error: contains(
         '''
-Because foo 1.0.0 depends on bar 1.0.0 and no versions of foo match >1.0.0 <2.0.0, foo ^1.0.0 requires bar 1.0.0.
-So, because myapp depends on both foo ^1.0.0 and bar 2.0.0, version solving failed.''',
+Because foo 1.0.0 depends on bar 1.0.0 and no versions of foo match <1.0.0-∞ or >1.0.0, every version of foo requires bar 1.0.0.
+So, because myapp depends on both foo any and bar 2.0.0, version solving failed.''',
       ),
     );
   });
