@@ -418,18 +418,6 @@ class VersionSolver {
     }
 
     if (version == null) {
-      // If we previously only listed narrow incompatibilities for the locked
-      // version without listing all versions, generalize those
-      // incompatibilities across all versions now for better error reporting.
-      final generalIncompatibilities =
-          await _packageLister(package).generalizeLockedIncompatibilities();
-      if (generalIncompatibilities.isNotEmpty) {
-        for (final incompatibility in generalIncompatibilities) {
-          _addIncompatibility(incompatibility);
-        }
-        return package.name;
-      }
-
       // If there are no versions that satisfy [package.constraint], add an
       // incompatibility that indicates that.
       _addIncompatibility(
