@@ -128,7 +128,11 @@ class PartialSolution {
     final name = assignment.package.name;
     final oldPositive = _positive[name];
     if (oldPositive != null) {
-      _positive[name] = oldPositive.intersect(assignment)!;
+      // Decisions and derivations are always consistent with the existing
+      // positive assignment, so the intersection is never empty.
+      _positive[name] =
+          oldPositive.intersect(assignment) ??
+          (throw StateError('[BUG] $assignment contradicts $oldPositive.'));
       return;
     }
 
