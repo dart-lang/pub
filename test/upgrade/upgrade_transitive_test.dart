@@ -1089,4 +1089,24 @@ void main() {
       ),
     );
   });
+
+  test('`dependency@constraint` fails with a solver error when the requested '
+      'version does not exist', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': 'any'}).create();
+    await pubGet(output: contains('+ foo 1.0.0'));
+
+    // This used to crash the solver's error reporting with
+    // `Bad state: No element` instead of explaining the conflict.
+    await pubUpgrade(
+      args: ['foo@2.0.0'],
+      error: allOf(
+        contains('no versions of foo match 2.0.0'),
+        contains('version solving failed'),
+        contains('foo 2.0.0 was requested by `dart pub upgrade foo@2.0.0`'),
+      ),
+    );
+  });
 }
