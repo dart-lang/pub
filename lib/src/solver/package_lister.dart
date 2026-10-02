@@ -71,6 +71,9 @@ class PackageLister {
   /// [incompatibilitiesFor] multiple times.
   var _knownInvalidVersions = VersionConstraint.empty;
 
+  /// Whether we've returned incompatibilities for [_locked].
+  var _listedLockedVersion = false;
+
   /// The versions of [_ref] that have been downloaded and cached, or `null` if
   /// they haven't been downloaded yet.
   List<PackageId>? get cachedVersions => _cachedVersions;
@@ -228,28 +231,15 @@ class PackageLister {
       }
     }
 
-    final versions =
-        !id.isRoot &&
-                (_cachedVersions != null || _locked?.version != id.version)
-            ? await _versions
-            : null;
-    final index =
-        versions == null
-            ? -1
-            : lowerBound(
-              versions,
-              id,
-              compare:
-                  (PackageId id1, PackageId id2) =>
-                      id1.version.compareTo(id2.version),
-            );
-    if (versions == null ||
-        index >= versions.length ||
-        versions[index].version != id.version) {
+    if (_cachedVersions == null &&
+        _locked != null &&
+        id.version == _locked.version) {
+      if (_listedLockedVersion) return const [];
+
       final depender = id.toRange();
+      _listedLockedVersion = true;
       for (var sdk in sdks.values) {
         if (!_matchesSdkConstraint(pubspec, sdk)) {
-          _knownInvalidVersions = _knownInvalidVersions.union(id.version);
           return [
             Incompatibility(
               [Term(depender, true)],
@@ -262,41 +252,36 @@ class PackageLister {
         }
       }
 
-      final entries =
-          [
-                ...pubspec.dependencies.values.where(
-                  (range) => !_overriddenPackages.contains(range.name),
-                ),
-                if (id.isRoot)
-                  ...pubspec.devDependencies.values.where(
-                    (range) => !_overriddenPackages.contains(range.name),
-                  ),
-                if (id.isRoot) ...[
-                  ..._rootPackage!.workspaceChildren.map((p) {
-                    return PackageRange(
-                      PackageRef(p.name, RootDescription(p.dir)),
-                      p.version,
-                    );
-                  }),
-                  ...pubspec.dependencyOverrides.values,
-                ],
-              ]
-              .where(
-                (range) =>
-                    !(_alreadyListedDependencies[range.name]?.allows(
-                          id.version,
-                        ) ??
-                        false),
-              )
-              .toList();
-
-      for (final range in entries) {
-        _alreadyListedDependencies[range.name] = id.version.union(
-          _alreadyListedDependencies[range.name] ?? VersionConstraint.empty,
-        );
-      }
-
+      final entries = [
+        ...pubspec.dependencies.values.where(
+          (range) => !_overriddenPackages.contains(range.name),
+        ),
+        if (id.isRoot)
+          ...pubspec.devDependencies.values.where(
+            (range) => !_overriddenPackages.contains(range.name),
+          ),
+        if (id.isRoot) ...[
+          ..._rootPackage!.workspaceChildren.map((p) {
+            return PackageRange(
+              PackageRef(p.name, RootDescription(p.dir)),
+              p.version,
+            );
+          }),
+          ...pubspec.dependencyOverrides.values,
+        ],
+      ];
       return entries.map((range) => _dependency(depender, range)).toList();
+    }
+
+    final versions = await _versions;
+    final index = lowerBound(
+      versions,
+      id,
+      compare:
+          (PackageId id1, PackageId id2) => id1.version.compareTo(id2.version),
+    );
+    if (index >= versions.length || versions[index].version != id.version) {
+      return const [];
     }
 
     for (var sdk in sdks.values) {
