@@ -100,20 +100,11 @@ class AnalyzerErrorGroup implements Exception {
 /// for `package:` uri resolution.
 ///
 /// The [name] is used to describe the executable in logs and error messages.
-///
-/// The [additionalSources], if provided, instruct the compiler to include
-/// additional source files into compilation even if they are not referenced
-/// from the main library.
-///
-/// The [nativeAssets], if provided, instruct the compiler include a native
-/// assets map.
 Future<void> precompile({
   required String executablePath,
   required String name,
   required String outputPath,
   required String packageConfigPath,
-  List<String> additionalSources = const [],
-  String? nativeAssets,
 }) async {
   const platformDill = 'lib/_internal/vm_platform_strong.dill';
   final sdkRoot = p.relative(p.dirname(p.dirname(platform.resolvedExecutable)));
@@ -145,8 +136,6 @@ Future<void> precompile({
       platformDill,
       sdkRoot: sdkRoot,
       packagesJson: packageConfigPath,
-      additionalSources: additionalSources,
-      nativeAssets: nativeAssets,
       printIncrementalDependencies: false,
     );
     final result = await client.compile();

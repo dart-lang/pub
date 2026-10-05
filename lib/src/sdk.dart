@@ -15,6 +15,7 @@ import 'sdk/dart.dart';
 import 'sdk/flutter.dart';
 import 'sdk/fuchsia.dart';
 import 'utils.dart';
+export 'utils.dart' show AsCompatibleWithIfPossible;
 
 /// An SDK that can provide packages and on which pubspecs can express version
 /// constraints.
@@ -151,16 +152,3 @@ bool isEffectiveExperimentFlag(
 
 /// The core Dart SDK.
 final sdk = DartSdk();
-
-extension AsCompatibleWithIfPossible on VersionConstraint {
-  // Returns `this` expressed as [VersionConstraint.compatibleWith] if possible.
-  VersionConstraint asCompatibleWithIfPossible() {
-    final range = this;
-    if (range is! VersionRange) return this;
-    final min = range.min;
-    if (min == null) return this;
-    final asCompatibleWith = VersionConstraint.compatibleWith(min);
-    if (asCompatibleWith == this) return asCompatibleWith;
-    return this;
-  }
-}

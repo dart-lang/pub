@@ -53,6 +53,7 @@ To remove a dependency override of a package prefix the package name with
     argParser.addFlag(
       'precompile',
       help: 'Precompile executables in immediate dependencies.',
+      hide: true,
     );
 
     argParser.addFlag(
@@ -71,6 +72,11 @@ To remove a dependency override of a package prefix the package name with
 
   @override
   Future<void> runProtected() async {
+    if (argResults.wasParsed('precompile')) {
+      log.warning(
+        log.yellow('The --precompile flag is no longer used and does nothing.'),
+      );
+    }
     if (argResults.rest.isEmpty) {
       usageException('Must specify a package to be removed.');
     }
@@ -91,17 +97,12 @@ To remove a dependency override of a package prefix the package name with
 
     await entrypoint
         .withWorkPubspec(newPubspec)
-        .acquireDependencies(
-          SolveType.get,
-          precompile: !isDryRun && argResults.flag('precompile'),
-          dryRun: isDryRun,
-        );
+        .acquireDependencies(SolveType.get, dryRun: isDryRun);
 
     if (!isDryRun && argResults.flag('example')) {
       for (final example in entrypoint.examples) {
         await example.acquireDependencies(
           SolveType.get,
-          precompile: argResults.flag('precompile'),
           reportMode: SolveReportMode.summaryOnly,
         );
       }

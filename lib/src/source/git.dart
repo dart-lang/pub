@@ -368,31 +368,19 @@ class GitSource extends CachedSource {
     return await cache.gitCache.pool.withResource(() async {
       await _ensureRepoCache(description, cache);
       final path = _repoCachePath(description, cache);
-      final result = <PackageId>[];
       if (description.tagPattern case final String tagPattern) {
         final versions = await _listTaggedVersions(path, tagPattern);
-        for (final version in versions) {
-          result.add(
+        return [
+          for (final version in versions)
             PackageId(
               ref.name,
               version.version,
               ResolvedGitDescription(description, version.commitId),
             ),
-          );
-        }
-        return result;
+        ];
       } else {
         final revision = await _firstRevision(path, description.ref);
-
-        final Pubspec pubspec;
-        pubspec = await _describeUncached(ref, revision, cache);
-        result.add(
-          PackageId(
-            ref.name,
-            pubspec.version,
-            ResolvedGitDescription(description, revision),
-          ),
-        );
+        final pubspec = await _describeUncached(ref, revision, cache);
         return [
           PackageId(
             ref.name,
@@ -654,27 +642,40 @@ class GitSource extends CachedSource {
 
   /// Ensures that the canonical clone of the repository referred to by
   /// [description] contains the given Git [revision].
+  ///
+  /// Throws a [PackageNotFoundException] if [revision] doesn't exist in the
+  /// repository even after updating the cache.
+  ///
+  /// Returns `true` if it had to update anything.
   Future<bool> _ensureRevision(
     GitDescription description,
     String revision,
     SystemCache cache,
   ) async {
     final path = _repoCachePath(description, cache);
-    if (cache.gitCache.updatedRepos.contains(path)) return false;
+    if (cache.gitCache.updatedRepos.contains(path)) {
+      await _firstRevision(path, revision);
+      return false;
+    }
 
     await _deleteGitRepoIfInvalid(path);
 
-    if (!entryExists(path)) await _createRepoCache(description, cache);
+    if (!entryExists(path)) {
+      await _createRepoCache(description, cache);
+      await _firstRevision(path, revision);
+      return true;
+    }
 
     // Try to list the revision. If it doesn't exist, git will fail and we'll
     // know we have to update the repository.
     try {
-      await _firstRevision(path, revision);
+      await _revParse(path, revision);
+      return false;
     } on git.GitException catch (_) {
       await _updateRepoCache(description, cache);
+      await _firstRevision(path, revision);
       return true;
     }
-    return false;
   }
 
   /// Ensures that the canonical clone of the repository referred to by
@@ -843,26 +844,29 @@ class GitSource extends CachedSource {
 
   /// Runs "git rev-list" on [reference] in [path] and returns the first result.
   ///
+  /// Throws a [git.GitException] if [reference] cannot be resolved.
+  /// This assumes that the canonical clone already exists.
+  Future<String> _revParse(String path, String reference) async {
+    final args = [_gitDirArg(path), 'rev-list', '--max-count=1', reference];
+    final output = (await git.run(args, workingDir: path)).trim();
+    if (output.isEmpty) {
+      throw git.GitException(args, 'Empty output from git rev-list', '', 1);
+    }
+    return output;
+  }
+
+  /// Resolves [reference] to a commit hash in [path], throwing a
+  /// [PackageNotFoundException] if it cannot be found.
+  ///
   /// This assumes that the canonical clone already exists.
   Future<String> _firstRevision(String path, String reference) async {
-    final String output;
     try {
-      output =
-          (await git.run([
-            _gitDirArg(path),
-            'rev-list',
-            '--max-count=1',
-            reference,
-          ], workingDir: path)).trim();
+      return await _revParse(path, reference);
     } on git.GitException catch (e) {
       throw PackageNotFoundException(
         "Could not find git ref '$reference' (${e.stderr})",
       );
     }
-    if (output.isEmpty) {
-      throw PackageNotFoundException("Could not find git ref '$reference'.");
-    }
-    return output;
   }
 
   /// Clones the repo at the URI [from] to the path [to] on the local

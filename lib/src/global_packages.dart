@@ -879,7 +879,7 @@ Try reactivating the package.
         isRefreshingBinstub: false,
         snapshot:
             entrypoint.isCachedGlobal
-                ? entrypoint.pathOfSnapshot(
+                ? entrypoint.pathOfGlobalSnapshot(
                   exec.Executable.adaptProgramName(package.name, script),
                 )
                 : null,
@@ -1078,14 +1078,7 @@ ${header}dart $pubInvocation global run $runPubGlobal "\$@"
 
       if (platform.isLinux || platform.isMacOS) {
         // Make it executable.
-        final result = Process.runSync('chmod', ['+x', tmpPath]);
-        if (result.exitCode != 0) {
-          // Couldn't make it executable so don't leave it laying around.
-          fail(
-            'Could not make "$tmpPath" executable (exit code '
-            '${result.exitCode}):\n${result.stderr}',
-          );
-        }
+        chmod(493, tmpPath); // 0755₈
       }
       File(tmpPath).renameSync(binStubPath);
     } finally {

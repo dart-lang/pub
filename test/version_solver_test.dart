@@ -218,6 +218,102 @@ Because myapp depends on foo any which depends on bar >=2.0.0, bar >=2.0.0 is re
 So, because myapp depends on bar <2.0.0, version solving failed.'''),
     );
   });
+
+  test('fails when a constraint excludes the only version of a locked '
+      'package', () async {
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('bar', '1.0.0', deps: {'foo': '<1.0.0'})
+      ..serve('bar', '2.0.0', deps: {'foo': '>1.0.0'});
+
+    await d.appDir(dependencies: {'foo': 'any'}).create();
+    await expectResolves(result: {'foo': '1.0.0'});
+
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
+    await expectResolves(
+      error: contains(
+        '''
+Because bar <2.0.0 depends on foo <1.0.0 and bar >=2.0.0 depends on foo >1.0.0, every version of bar requires foo <1.0.0 or >1.0.0.
+So, because no versions of foo match <1.0.0 or >1.0.0 and myapp depends on bar any, version solving failed.''',
+      ),
+    );
+  });
+
+  test('fails gracefully when locked version is cached locally '
+      'but removed from the server', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
+    server.serve('bar', '1.0.0');
+    server.serve('bar', '2.0.0');
+
+    await d.appDir(dependencies: {'foo': 'any'}).create();
+    await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
+
+    // Replace the server's versions of foo so 1.0.0 is no longer listed and
+    // 2.0.0 is retracted, while foo 1.0.0 remains in the local cache and
+    // lockfile.
+    server.clearPackages();
+    server.serve('foo', '2.0.0', deps: {'bar': '1.0.0'});
+    server.retractPackageVersion('foo', '2.0.0');
+    server.serve('bar', '1.0.0');
+    server.serve('bar', '2.0.0');
+
+    await d.appDir(dependencies: {'foo': 'any', 'bar': '2.0.0'}).create();
+    await expectResolves(
+      error: contains(
+        '''
+Because foo 1.0.0 depends on bar 1.0.0 and no versions of foo match <1.0.0-∞ or >1.0.0, every version of foo requires bar 1.0.0.
+So, because myapp depends on both foo any and bar 2.0.0, version solving failed.''',
+      ),
+    );
+  });
+
+  test('keeps the dependencies of a locked version that is cached locally but '
+      'removed from the server when its listing was fetched first', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'dep': '1.0.0'});
+    server.serve('dep', '1.0.0');
+    server.serve('qux', '1.0.0', deps: {'foo': 'any'});
+    server.serve('baz', '1.0.0', deps: {'qux': 'any'});
+
+    await d.appDir(dependencies: {'baz': 'any'}).create();
+    await expectResolves(
+      result: {'baz': '1.0.0', 'qux': '1.0.0', 'foo': '1.0.0', 'dep': '1.0.0'},
+    );
+
+    // foo 1.0.0 is no longer listed by the server, but remains in the local
+    // cache and lockfile.
+    server.clearPackages();
+    server.serve('foo', '2.0.0');
+    server.serve('dep', '1.0.0');
+    server.serve('bar', '1.0.0');
+    server.serve('bar', '2.0.0');
+    server.serve('qux', '1.0.0', deps: {'foo': 'any'});
+    server.serve('baz', '2.0.0', deps: {'qux': 'any'});
+    server.serve('baz', '3.0.0', deps: {'foo': '^2.0.0', 'bar': '2.0.0'});
+    server.serve('zed', '1.0.0', deps: {'bar': '1.0.0'});
+    server.serve('zed', '1.1.0', deps: {'bar': '1.0.0'});
+    server.serve('zed', '1.2.0', deps: {'bar': '1.0.0'});
+
+    // The solver first tries baz 3.0.0, which requires foo ^2.0.0 and thereby
+    // fetches foo's version listing before the locked foo 1.0.0 is ever
+    // described. zed's dependency on bar 1.0.0 then forces backtracking to
+    // baz 2.0.0, which depends on foo any, and the locked foo 1.0.0 is
+    // selected. Its dependency on dep must still be taken into account even
+    // though foo 1.0.0 is missing from the listing.
+    await d.appDir(dependencies: {'baz': '>=2.0.0', 'zed': 'any'}).create();
+    await expectResolves(
+      result: {
+        'baz': '2.0.0',
+        'qux': '1.0.0',
+        'foo': '1.0.0',
+        'dep': '1.0.0',
+        'zed': '1.2.0',
+        'bar': '1.0.0',
+      },
+      tries: 2,
+    );
+  });
 }
 
 void rootDependency() {

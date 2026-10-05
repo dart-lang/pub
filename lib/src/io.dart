@@ -26,6 +26,7 @@ import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:tar/tar.dart';
 
+import 'chmod_stub.dart' if (dart.library.ffi) 'chmod_ffi.dart' as ffi_chmod;
 import 'error_group.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
@@ -405,20 +406,17 @@ Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
 
 /// Changes the permissions of [path] to [mode] using `chmod`.
 ///
-/// On Windows, this is a no-op since Windows uses NTFS ACLs.
-/// Any exceptions or non-zero exit codes are logged at fine level.
+/// On Windows, or when using a non-local [f.FileSystem] override, this is a
+/// no-op. Any failure is logged at fine level.
 void chmod(int mode, String path) {
-  if (platform.isLinux || platform.isMacOS) {
-    try {
-      final result = runProcessSync('chmod', [mode.toRadixString(8), path]);
-      if (result.exitCode != 0) {
-        log.fine(
-          'chmod ${mode.toRadixString(8)} "$path" exited with '
-          'code ${result.exitCode}: ${result.stderr}',
-        );
-      }
-    } on Exception catch (e) {
-      log.fine('Failed to run chmod on "$path": $e');
+  if ((platform.isLinux || platform.isMacOS) &&
+      currentFileSystem is f.LocalFileSystem) {
+    final result = ffi_chmod.chmod(mode, path);
+    if (result != 0) {
+      log.fine(
+        'chmod ${mode.toRadixString(8)} "$path" failed with '
+        'return code $result.',
+      );
     }
   }
 }

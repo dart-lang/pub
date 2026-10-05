@@ -26,7 +26,6 @@ Usage: pub upgrade [<package>[@<constraint>|@latest|@resolvable] ...]
 -h, --help                 Print this usage information.
     --[no-]offline         Use cached packages instead of accessing the network.
 -n, --dry-run              Report what dependencies would change but don't change any.
-    --[no-]precompile      Precompile executables in immediate dependencies.
     --tighten              Updates lower bounds in pubspec.yaml to match the resolved version.
     --unlock-transitive    Also upgrades the transitive dependencies of the listed [dependencies]
     --major-versions       Upgrades packages to their latest resolvable versions, and updates pubspec.yaml.
