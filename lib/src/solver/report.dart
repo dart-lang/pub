@@ -6,6 +6,7 @@ import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command_runner.dart';
+import '../experiment.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package_name.dart';
@@ -70,10 +71,8 @@ class SolveReport {
   /// of those packages.
   final Map<String, List<String>> expiredExperimentUsers;
 
-  /// For each package-scoped experiment (`<package>.<experiment>`) listed by
-  /// some workspace package where `<package>` is not in the resolution, the
-  /// names of those workspace packages.
-  final Map<String, List<String>> unknownPackageExperimentUsers;
+  /// All experiments known in this resolution (both SDK and package-declared).
+  final Map<String, Experiment> resolvedExperiments;
 
   SolveReport(
     this._type,
@@ -89,10 +88,11 @@ class SolveReport {
     required bool enforceLockfile,
     required SolveReportMode reportMode,
     this.expiredExperimentUsers = const {},
-    this.unknownPackageExperimentUsers = const {},
+    Map<String, Experiment>? resolvedExperiments,
   }) : _dryRun = dryRun,
        _reportMode = reportMode,
-       _enforceLockfile = enforceLockfile;
+       _enforceLockfile = enforceLockfile,
+       resolvedExperiments = resolvedExperiments ?? availableExperiments;
 
   /// Displays a report of the results of the version resolution in
   /// [_newLockFile] relative to the [_previousLockFile] file.
@@ -359,27 +359,19 @@ $contentHashesDocumentationUrl
         in expiredExperimentUsers.entries) {
       final isOptOut = rawName.startsWith('no-');
       final name = isOptOut ? rawName.substring(3) : rawName;
-      final enabledIn = availableExperiments[name]?.enabledIn;
+      final enabledIn = resolvedExperiments[name]?.enabledIn;
+      final owner = name.contains('.') ? name.split('.').first : 'Dart';
       final status =
           enabledIn == null
               ? 'has been retired and no longer has any effect'
               : isOptOut
-              ? 'has been enabled by default since Dart $enabledIn and can no '
-                  'longer be disabled'
-              : 'has been enabled by default since Dart $enabledIn';
+              ? 'has been enabled by default since $owner $enabledIn and can '
+                  'no longer be disabled'
+              : 'has been enabled by default since $owner $enabledIn';
       final target = isOptOut ? '`$rawName`' : 'it';
       warning(
         'The experiment `$name` $status. Remove $target from `experiments` in '
         'the pubspec.yaml of ${packages.join(', ')}.',
-      );
-    }
-    for (final MapEntry(key: experiment, value: packages)
-        in unknownPackageExperimentUsers.entries) {
-      final targetPackage = experiment.split('.').first;
-      warning(
-        'The experiment `$experiment` in the pubspec.yaml of '
-        '${packages.join(', ')} refers to package `$targetPackage`, which is '
-        'not in the dependency graph.',
       );
     }
     if (experimentUsers.isEmpty) return;
@@ -387,7 +379,7 @@ $contentHashesDocumentationUrl
     for (final MapEntry(key: rawName, value: packages)
         in experimentUsers.entries) {
       final name = rawName.startsWith('no-') ? rawName.substring(3) : rawName;
-      final description = availableExperiments[name]?.description;
+      final description = resolvedExperiments[name]?.description;
       message(
         '* `$rawName` for ${packages.join(', ')}'
         '${description == null ? '' : ' - $description'}',

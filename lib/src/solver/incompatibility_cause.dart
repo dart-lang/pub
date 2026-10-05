@@ -8,6 +8,7 @@ import '../exceptions.dart';
 import '../language_version.dart';
 import '../package_name.dart';
 import '../sdk.dart';
+import '../sdk/dart.dart';
 import '../source/sdk.dart';
 import 'incompatibility.dart';
 
@@ -68,45 +69,82 @@ class NoVersionsIncompatibilityCause extends IncompatibilityCause {
   const NoVersionsIncompatibilityCause._();
 }
 
-/// The incompatibility indicates that a package version opts in to an
-/// experiment that the workspace doesn't allow.
+/// The incompatibility indicates that a package version opts in to one or more
+/// experiments that the workspace doesn't allow.
 ///
 /// A dependency may only use experiments that some workspace package opts in
 /// to (or that are enabled by default).
 class ExperimentIncompatibilityCause extends IncompatibilityCause {
-  final String experiment;
-  final Iterable<String> allowedExperiments;
+  final List<String> experiments;
+  final Iterable<String> enabledExperiments;
 
-  ExperimentIncompatibilityCause(this.experiment, this.allowedExperiments);
+  ExperimentIncompatibilityCause(this.experiments, this.enabledExperiments)
+    : assert(experiments.isNotEmpty);
+
+  String get description =>
+      experiments.length == 1
+          ? 'the experiment `${experiments.single}`'
+          : 'the experiments ${experiments.map((e) => '`$e`').join(', ')}';
 
   @override
   String? get hint {
-    if (!experiment.contains('.') &&
-        !availableExperiments.containsKey(experiment)) {
+    final unknownSdkExperiments = [
+      for (final experiment in experiments)
+        if (!experiment.contains('.') &&
+            !availableExperiments.containsKey(experiment))
+          experiment,
+    ];
+    if (unknownSdkExperiments.isNotEmpty) {
+      final first = unknownSdkExperiments.first;
       return '''
-`$experiment` is not an experiment known by this SDK (${sdk.version}), it may require a newer SDK.
+`$first` is not an experiment known by this SDK (${sdk.version}), it may require a newer SDK.
 
 Read more about experiments at https://dart.dev/go/experiments.''';
     }
+
+    for (final experiment in experiments) {
+      if (experiment.contains('.')) continue;
+      final sdkExperiment = availableExperiments[experiment];
+      if (sdkExperiment != null &&
+          !sdkExperiment.isAvailableOnChannel(DartSdk.channel)) {
+        return '''
+The experiment `$experiment` is only available on the ${sdkExperiment.channels!.join(', ')} channel(s). This SDK is on the ${DartSdk.channel} channel.
+
+Read more about experiments at https://dart.dev/go/experiments.''';
+      }
+    }
+
     final optedIn =
-        allowedExperiments
+        enabledExperiments
             .where((e) => !experimentsNotRequiringOptIn.contains(e))
             .toList();
     final enabledExperimentsDescription =
         optedIn.isEmpty
             ? 'Currently no experiments are enabled.'
             : 'Currently the following experiments are enabled: '
-                '${optedIn.join(', ')}';
+                '${optedIn.map((e) => '`$e`').join(', ')}.';
+    final notEnabledDescription =
+        experiments.length == 1
+            ? 'The experiment `${experiments.single}` has not been enabled.'
+            : 'The experiments ${experiments.map((e) => '`$e`').join(', ')} '
+                'have not been enabled.';
+    final pronoun = experiments.length == 1 ? 'it' : 'them';
+    final yamlEntries = [
+      ...optedIn,
+      for (final e in experiments)
+        if (!optedIn.contains(e)) e,
+    ].map((e) => '    - $e').join('\n');
     return '''
-The experiment `$experiment` has not been enabled.
+$notEnabledDescription
 
 $enabledExperimentsDescription
 
-To enable it add to your pubspec.yaml:
+To enable $pronoun add to your pubspec.yaml:
 
 ```
 experiments:
-  - $experiment
+  enable:
+$yamlEntries
 ```
 
 Read more about experiments at https://dart.dev/go/experiments.''';

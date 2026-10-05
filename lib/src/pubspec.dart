@@ -8,6 +8,7 @@ import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart';
+import 'experiment.dart';
 import 'io.dart';
 import 'language_version.dart';
 import 'package.dart';
@@ -149,26 +150,72 @@ environment:
       );
 
   List<String>? _experiments;
+  Map<String, Experiment>? _declaredExperiments;
 
   /// The experiments this package opts in to via the `experiments` field.
   ///
   /// Each package gets its own list in `.dart_tool/package_config.json`, and
   /// tools enable the experiments only for libraries in that package.
-  List<String> get experiments => _experiments ??= parseExperiments();
+  List<String> get experiments {
+    if (_experiments == null) _parseExperimentsField();
+    return _experiments!;
+  }
 
-  List<String> parseExperiments() {
+  /// The experiments this package declares via `experiments: declare:` in its
+  /// `pubspec.yaml`, keyed by unqualified experiment name.
+  Map<String, Experiment> get declaredExperiments {
+    if (_declaredExperiments == null) _parseExperimentsField();
+    return _declaredExperiments!;
+  }
+
+  void _parseExperimentsField() {
     final experimentsNode = fields.nodes['experiments'];
     if (experimentsNode == null || experimentsNode.value == null) {
-      return [];
+      _experiments = const [];
+      _declaredExperiments = const {};
+      return;
     }
-    if (experimentsNode is! YamlList) {
-      _error('`experiments` must be a list of strings', experimentsNode.span);
+    if (experimentsNode is! YamlMap) {
+      _error(
+        '`experiments` must be a mapping with `enable` and/or `declare` keys.',
+        experimentsNode.span,
+      );
     }
+    for (final keyNode in experimentsNode.nodes.keys) {
+      final key = (keyNode as YamlNode).value;
+      if (key != 'enable' && key != 'declare') {
+        _error(
+          '`experiments` mapping may only contain `enable` and `declare` '
+          'keys.',
+          keyNode.span,
+        );
+      }
+    }
+    final enableNode = experimentsNode.nodes['enable'];
+    if (enableNode == null || enableNode.value == null) {
+      _experiments = const [];
+    } else if (enableNode is YamlList) {
+      _experiments = _parseEnabledExperimentsList(enableNode);
+    } else {
+      _error('`experiments.enable` must be a list of strings', enableNode.span);
+    }
+
+    final declareNode = experimentsNode.nodes['declare'];
+    if (declareNode == null || declareNode.value == null) {
+      _declaredExperiments = const {};
+    } else if (declareNode is YamlMap) {
+      _declaredExperiments = _parseDeclaredExperimentsMap(declareNode);
+    } else {
+      _error('`experiments.declare` must be a mapping', declareNode.span);
+    }
+  }
+
+  List<String> _parseEnabledExperimentsList(YamlList listNode) {
     final result = <String>[];
-    for (final e in experimentsNode.nodes) {
+    for (final e in listNode.nodes) {
       final value = e.value;
       if (value is! String) {
-        _error('`experiments` must be a list of strings', e.span);
+        _error('`experiments.enable` must be a list of strings', e.span);
       }
       if (result.contains(value)) {
         _error('The experiment `$value` is listed more than once.', e.span);
@@ -229,6 +276,104 @@ Read more about experiments at https://dart.dev/go/experiments.
       result.add(value);
     }
     return result;
+  }
+
+  Map<String, Experiment> _parseDeclaredExperimentsMap(YamlMap declareNode) {
+    final result = <String, Experiment>{};
+    final pkgName = _packageName;
+    declareNode.nodes.forEach((keyNode, specNode) {
+      final expNameNode = keyNode as YamlNode;
+      final expName = expNameNode.value;
+      if (expName is! String ||
+          expName.startsWith('no-') ||
+          !_packageExperimentNameRegExp.hasMatch(expName)) {
+        _error(
+          'Declared experiment name must be a valid identifier '
+          '(matching `^[a-zA-Z0-9_-]+\$` and not starting with `no-`).',
+          expNameNode.span,
+        );
+      }
+      if (specNode is! YamlMap) {
+        _error(
+          'Declared experiment `$expName` must be a mapping.',
+          specNode.span,
+        );
+      }
+      for (final fieldKeyNode in specNode.nodes.keys) {
+        final fieldKey = (fieldKeyNode as YamlNode).value;
+        if (!const {
+          'description',
+          'docUrl',
+          'enabledIn',
+          'expired',
+        }.contains(fieldKey)) {
+          _error(
+            'Unknown field `$fieldKey` in declared experiment `$expName`.',
+            fieldKeyNode.span,
+          );
+        }
+      }
+      final descriptionNode = specNode.nodes['description'];
+      final description = descriptionNode?.value;
+      if (description is! String) {
+        _error(
+          'Declared experiment `$expName` must have a string "description".',
+          descriptionNode?.span ?? specNode.span,
+        );
+      }
+      final docUrlNode = specNode.nodes['docUrl'];
+      String? docUrl;
+      if (docUrlNode != null && docUrlNode.value != null) {
+        if (docUrlNode.value is! String) {
+          _error(
+            '"docUrl" of declared experiment `$expName` must be a string.',
+            docUrlNode.span,
+          );
+        }
+        docUrl = docUrlNode.value as String;
+      }
+      final enabledInNode = specNode.nodes['enabledIn'];
+      Version? enabledIn;
+      if (enabledInNode != null && enabledInNode.value != null) {
+        final rawVersion = enabledInNode.value;
+        if (rawVersion is! String) {
+          _error(
+            '"enabledIn" of declared experiment `$expName` must be a version '
+            'string.',
+            enabledInNode.span,
+          );
+        }
+        try {
+          enabledIn = Version.parse(rawVersion);
+        } on FormatException catch (e) {
+          _error(
+            'Invalid "enabledIn" version in declared experiment `$expName`: '
+            '${e.message}',
+            enabledInNode.span,
+          );
+        }
+      }
+      final expiredNode = specNode.nodes['expired'];
+      var expired = enabledIn != null;
+      if (expiredNode != null && expiredNode.value != null) {
+        if (expiredNode.value is! bool) {
+          _error(
+            '"expired" of declared experiment `$expName` must be a boolean.',
+            expiredNode.span,
+          );
+        }
+        expired = expiredNode.value as bool;
+      }
+      final qualifiedName = pkgName == null ? expName : '$pkgName.$expName';
+      result[expName] = Experiment(
+        qualifiedName,
+        description,
+        docUrl: docUrl,
+        enabledIn: enabledIn,
+        expired: expired,
+      );
+    });
+    return UnmodifiableMapView(result);
   }
 
   Map<String, PackageRange>? _dependencies;
@@ -616,6 +761,7 @@ Read more about experiments at https://dart.dev/go/experiments.
         () => dependencies,
         () => executables,
         () => ignoredAdvisories,
+        () => declaredExperiments,
       ]);
 
   /// Returns a list of most errors in this pubspec.
@@ -631,6 +777,8 @@ Read more about experiments at https://dart.dev/go/experiments.
     () => falseSecrets,
     () => sdkConstraints,
     () => ignoredAdvisories,
+    () => experiments,
+    () => declaredExperiments,
   ]);
 
   /// Returns the type of dependency from this package onto [name].

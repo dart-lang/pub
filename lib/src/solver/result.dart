@@ -7,6 +7,7 @@ import 'dart:collection';
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../experiment.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
@@ -15,6 +16,7 @@ import '../pubspec.dart';
 import '../sdk.dart';
 import '../source/cached.dart';
 import '../system_cache.dart';
+import '../utils.dart';
 
 /// The result of a successful version resolution.
 class SolveResult {
@@ -55,6 +57,16 @@ class SolveResult {
   /// That is the union of the experiments listed by the workspace packages.
   List<String> get experiments => _root.allExperimentsInWorkspace.toList();
 
+  /// All experiments known in this resolution (both SDK experiments and
+  /// experiments declared by resolved packages), keyed by their qualified
+  /// name (`<sdk-experiment>` or `<package>.<experiment>`).
+  late final Map<String, Experiment> resolvedExperiments = {
+    ...availableExperiments,
+    for (final pubspec in pubspecs.values)
+      for (final MapEntry(:key, :value) in pubspec.declaredExperiments.entries)
+        '${pubspec.name}.$key': value,
+  };
+
   /// For each experiment that some package in the solution opts in to or out
   /// of, the sorted names of those packages.
   ///
@@ -63,7 +75,10 @@ class SolveResult {
     final result = SplayTreeMap<String, List<String>>();
     for (final name in pubspecs.keys.sorted()) {
       for (final experiment in pubspecs[name]!.experiments) {
-        if (!isEffectiveExperimentFlag(experiment)) {
+        if (!isEffectiveExperimentFlag(
+          experiment,
+          experiments: resolvedExperiments,
+        )) {
           continue;
         }
         (result[experiment] ??= []).add(name);
@@ -80,7 +95,7 @@ class SolveResult {
       for (final experiment in package.pubspec.experiments) {
         final experimentName =
             experiment.startsWith('no-') ? experiment.substring(3) : experiment;
-        if (availableExperiments[experimentName]?.expired == true) {
+        if (resolvedExperiments[experimentName]?.expired == true) {
           (result[experiment] ??= []).add(package.name);
         }
       }
@@ -88,23 +103,44 @@ class SolveResult {
     return result;
   }
 
-  /// For each package-scoped experiment (`<package>.<experiment>`) that some
-  /// workspace package lists where `<package>` is not in the resolution, the
-  /// sorted names of those workspace packages.
-  Map<String, List<String>> get unknownPackageExperimentUsers {
-    final result = SplayTreeMap<String, List<String>>();
+  /// Validates that every package-scoped experiment (`<package>.<experiment>`)
+  /// listed by a workspace package refers to a package in [pubspecs] that
+  /// declares `<experiment>`.
+  void validatePackageExperiments() {
     for (final package in _root.transitiveWorkspace.sortedBy((p) => p.name)) {
       for (final experiment in package.pubspec.experiments) {
         final dotIndex = experiment.indexOf('.');
-        if (dotIndex != -1) {
-          final targetPackage = experiment.substring(0, dotIndex);
-          if (!pubspecs.containsKey(targetPackage)) {
-            (result[experiment] ??= []).add(package.name);
-          }
+        if (dotIndex == -1) continue;
+        final targetPackage = experiment.substring(0, dotIndex);
+        final experimentName = experiment.substring(dotIndex + 1);
+        final targetPubspec = pubspecs[targetPackage];
+        if (targetPubspec == null) {
+          dataError(
+            'The experiment `$experiment` in the pubspec.yaml of '
+            '${package.name} refers to package `$targetPackage`, which is not '
+            'in the dependency graph.',
+          );
+        }
+        final declared = targetPubspec.declaredExperiments[experimentName];
+        if (declared == null) {
+          final available =
+              targetPubspec.declaredExperiments.values
+                  .where((e) => !e.expired)
+                  .toList();
+          final availableDescription =
+              available.isEmpty
+                  ? 'Package `$targetPackage` (${targetPubspec.version}) does '
+                      'not declare any experiments.'
+                  : '''
+Available experiments in `$targetPackage` (${targetPubspec.version}) are:
+${available.map((e) => '* ${e.summary}').join('\n')}''';
+          dataError('''
+`$experiment` is not a known experiment of package `$targetPackage` (${targetPubspec.version}).
+
+$availableDescription''');
         }
       }
     }
-    return result;
   }
 
   /// Downloads all the cached packages selected by this version resolution.

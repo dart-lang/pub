@@ -109,10 +109,15 @@ class Incompatibility {
       return '${_terse(depender, details, allowEvery: true)} depends on '
           '${_terse(dependee, details)}';
     } else if (cause is ExperimentIncompatibilityCause) {
+      if (terms.length == 2) {
+        return '${_terse(terms.first, details, allowEvery: true)} with '
+            '${_terse(terms.last, details)} requires enabling '
+            '${cause.description}';
+      }
       assert(terms.length == 1);
       final dependee = terms.first;
-      return '${_terse(dependee, details, allowEvery: true)} depends on '
-          'the experiment ${cause.experiment}';
+      return '${_terse(dependee, details, allowEvery: true)} requires '
+          'enabling ${cause.description}';
     } else if (cause is SdkIncompatibilityCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
@@ -467,9 +472,7 @@ class Incompatibility {
         '($exceptionMessage)',
       );
     } else if (latterCause is ExperimentIncompatibilityCause) {
-      buffer.write(
-        'which requires enabling the experiment `${latterCause.experiment}`',
-      );
+      buffer.write('which requires enabling ${latterCause.description}');
     } else {
       buffer.write('which is forbidden');
     }

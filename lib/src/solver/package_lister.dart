@@ -58,6 +58,9 @@ class PackageLister {
 
   final Set<String> allowedExperiments;
 
+  /// The experiments explicitly opted in to by the workspace packages.
+  final Set<String> enabledExperiments;
+
   /// A map from dependency names to constraints indicating which versions of
   /// [_ref] have already had their dependencies on the given versions returned
   /// by [incompatibilitiesFor].
@@ -118,6 +121,7 @@ class PackageLister {
     bool downgrade = false,
     this.sdkOverrides = const {},
     required this.allowedExperiments,
+    this.enabledExperiments = const {},
   }) : _isDowngrade = downgrade,
        _rootPackage = null;
 
@@ -128,6 +132,7 @@ class PackageLister {
     required Set<String> overriddenPackages,
     required Map<String, Version>? sdkOverrides,
     required this.allowedExperiments,
+    this.enabledExperiments = const {},
   }) : _ref = PackageRef.root(package),
        // Treat the package as locked so we avoid the logic for finding the
        // boundaries of various constraints, which is useless for the root
@@ -240,12 +245,16 @@ class PackageLister {
         id.version == _locked.version) {
       if (_listedLockedVersion) return const [];
       // Check if this version uses any disallowed experiments.
-      for (final experiment in pubspec.experiments) {
-        if (!allowedExperiments.contains(experiment)) {
+      if (!id.isRoot) {
+        final disallowed = <String>[
+          for (final experiment in pubspec.experiments)
+            if (!await _isExperimentAllowed(pubspec, experiment)) experiment,
+        ];
+        if (disallowed.isNotEmpty) {
           return [
             Incompatibility([
               Term(id.toRange(), true),
-            ], ExperimentIncompatibilityCause(experiment, allowedExperiments)),
+            ], ExperimentIncompatibilityCause(disallowed, enabledExperiments)),
           ];
         }
       }
@@ -283,7 +292,14 @@ class PackageLister {
           ...pubspec.dependencyOverrides.values,
         ],
       ];
-      return entries.map((range) => _dependency(depender, range)).toList();
+      return [
+        ...entries.map((range) => _dependency(depender, range)),
+        if (!id.isRoot)
+          ...await _ungraduatedTargetIncompatibilities(
+            pubspec,
+            lockedDepender: depender,
+          ),
+      ];
     }
 
     final versions = await _versions;
@@ -321,23 +337,26 @@ class PackageLister {
     final lower = await _dependencyBounds(dependencies, index, upper: false);
     final upper = await _dependencyBounds(dependencies, index);
 
-    return dependencies.keys.sorted().map((package) {
-      final constraint = VersionRange(
-        min: lower[package],
-        includeMin: true,
-        max: upper[package],
-        alwaysIncludeMaxPreRelease: true,
-      );
+    return [
+      ...dependencies.keys.sorted().map((package) {
+        final constraint = VersionRange(
+          min: lower[package],
+          includeMin: true,
+          max: upper[package],
+          alwaysIncludeMaxPreRelease: true,
+        );
 
-      _alreadyListedDependencies[package] = constraint.union(
-        _alreadyListedDependencies[package] ?? VersionConstraint.empty,
-      );
+        _alreadyListedDependencies[package] = constraint.union(
+          _alreadyListedDependencies[package] ?? VersionConstraint.empty,
+        );
 
-      return _dependency(
-        _ref.withConstraint(constraint),
-        dependencies[package]!,
-      );
-    }).toList();
+        return _dependency(
+          _ref.withConstraint(constraint),
+          dependencies[package]!,
+        );
+      }),
+      ...await _ungraduatedTargetIncompatibilities(pubspec, index: index),
+    ];
   }
 
   /// Returns an [Incompatibility] that represents a dependency from [depender]
@@ -349,22 +368,139 @@ class PackageLister {
     ], DependencyIncompatibilityCause(depender, target));
   }
 
+  /// For an experiment `<targetPackage>.<expName>`, returns the version ranges
+  /// of `<targetPackage>` where `<expName>` still requires opt-in, or `null` if
+  /// the experiment is disallowed across all versions of `<targetPackage>`
+  /// allowed by [pubspec].
+  ///
+  /// Returns an empty list if [allowedExperiments] already contains
+  /// [experiment] or if every version of `<targetPackage>` has
+  /// graduated/expired `<expName>`.
+  Future<List<PackageRange>?> _incompatibleTargetRangesForExperiment(
+    Pubspec pubspec,
+    String experiment,
+  ) async {
+    if (allowedExperiments.contains(experiment)) return const [];
+    final dotIndex = experiment.indexOf('.');
+    if (dotIndex == -1) return null;
+    final targetPackage = experiment.substring(0, dotIndex);
+    final expName = experiment.substring(dotIndex + 1);
+    final depRange = pubspec.dependencies[targetPackage];
+    if (depRange == null) return null;
+    final targetRef = depRange.toRef();
+    try {
+      final versions =
+          (await _systemCache.getVersions(targetRef)).toList()
+            ..sort((a, b) => a.version.compareTo(b.version));
+      var anyGraduatedInDepRange = false;
+      final isUngraduated = <bool>[];
+      for (final id in versions) {
+        final targetPubspec = await _systemCache.describe(id);
+        final declared = targetPubspec.declaredExperiments[expName];
+        final graduated = declared != null && !declared.requiresOptIn;
+        if (graduated && depRange.allows(id)) {
+          anyGraduatedInDepRange = true;
+        }
+        isUngraduated.add(!graduated);
+      }
+      if (!anyGraduatedInDepRange) return null;
+
+      final ranges = <PackageRange>[];
+      var i = 0;
+      while (i < versions.length) {
+        if (!isUngraduated[i]) {
+          i++;
+          continue;
+        }
+        final first = i;
+        while (i + 1 < versions.length && isUngraduated[i + 1]) {
+          i++;
+        }
+        final last = i;
+        final range = VersionRange(
+          min: first == 0 ? null : versions[first].version,
+          includeMin: true,
+          max: last == versions.length - 1 ? null : versions[last + 1].version,
+          alwaysIncludeMaxPreRelease: true,
+        );
+        ranges.add(targetRef.withConstraint(range));
+        i++;
+      }
+      return ranges;
+    } on Exception {
+      return null;
+    }
+  }
+
+  Future<bool> _isExperimentAllowed(Pubspec pubspec, String experiment) async =>
+      await _incompatibleTargetRangesForExperiment(pubspec, experiment) != null;
+
+  Future<List<Incompatibility>> _ungraduatedTargetIncompatibilities(
+    Pubspec pubspec, {
+    PackageRange? lockedDepender,
+    int? index,
+  }) async {
+    final result = <Incompatibility>[];
+    for (final experiment in pubspec.experiments) {
+      if (allowedExperiments.contains(experiment)) continue;
+      final ungraduatedRanges = await _incompatibleTargetRangesForExperiment(
+        pubspec,
+        experiment,
+      );
+      if (ungraduatedRanges != null && ungraduatedRanges.isNotEmpty) {
+        final PackageRange dependerRange;
+        if (lockedDepender != null) {
+          dependerRange = lockedDepender;
+        } else {
+          final versions = await _versions;
+          final (boundsFirstIndex, boundsLastIndex) = await _findBounds(
+            index!,
+            (p) => p.experiments.contains(experiment),
+          );
+          final dependerVersions = VersionRange(
+            min:
+                boundsFirstIndex == 0
+                    ? null
+                    : versions[boundsFirstIndex].version,
+            includeMin: true,
+            max:
+                boundsLastIndex == versions.length - 1
+                    ? null
+                    : versions[boundsLastIndex + 1].version,
+            alwaysIncludeMaxPreRelease: true,
+          );
+          dependerRange = _ref.withConstraint(dependerVersions);
+        }
+        for (final badTargetRange in ungraduatedRanges) {
+          result.add(
+            Incompatibility(
+              [Term(dependerRange, true), Term(badTargetRange, true)],
+              ExperimentIncompatibilityCause([experiment], enabledExperiments),
+            ),
+          );
+        }
+      }
+    }
+    return result;
+  }
+
   /// If the version at [index] in [_versions] isn't compatible with the allowed
   /// experiments, returns an [Incompatibility] indicating this fact.
   ///
   /// Otherwise, returns `null`.
   Future<Incompatibility?> _checkExperiments(int index) async {
     final versions = await _versions;
+    final pubspec = await _describeSafe(versions[index]);
+    final disallowedExperiments = <String>[
+      for (final e in pubspec.experiments)
+        if (!await _isExperimentAllowed(pubspec, e)) e,
+    ];
 
-    final disAllowedExperiment = (await _describeSafe(
-      versions[index],
-    )).experiments.firstWhereOrNull((e) => !allowedExperiments.contains(e));
-
-    if (disAllowedExperiment == null) return null;
+    if (disallowedExperiments.isEmpty) return null;
 
     final (boundsFirstIndex, boundsLastIndex) = await _findBounds(
       index,
-      (pubspec) => pubspec.experiments.contains(disAllowedExperiment),
+      (pubspec) => disallowedExperiments.every(pubspec.experiments.contains),
     );
     final incompatibleVersions = VersionRange(
       min: boundsFirstIndex == 0 ? null : versions[boundsFirstIndex].version,
@@ -379,7 +515,7 @@ class PackageLister {
 
     return Incompatibility(
       [Term(_ref.withConstraint(incompatibleVersions), true)],
-      ExperimentIncompatibilityCause(disAllowedExperiment, allowedExperiments),
+      ExperimentIncompatibilityCause(disallowedExperiments, enabledExperiments),
     );
   }
 
