@@ -408,9 +408,17 @@ class Incompatibility {
 
     final negative = prior._singleTermWhere((term) => !term.isPositive);
     if (negative == null) return null;
+    // [latter] must represent forbidden versions (a positive 1-term
+    // incompatibility), not `{not root}` ([RootIncompatibilityCause]), which
+    // states that the root package is required.
+    if (!latter.terms.first.isPositive) return null;
     if (!negative.inverse.satisfies(latter.terms.first)) return null;
 
     final positives = prior.terms.where((term) => term.isPositive);
+    // A "requires" clause needs something that does the requiring. If [prior]
+    // consists of a single negative term there is nothing to report in that
+    // form.
+    if (positives.isEmpty) return null;
 
     final buffer = StringBuffer();
     if (positives.length > 1) {
@@ -436,7 +444,17 @@ class Incompatibility {
       return buffer.toString();
     }
 
-    buffer.write('${_terse(latter.terms.first, details)} ');
+    // For [PackageVersionForbiddenCause], [latter.terms.first] is the entire
+    // forbidden complement of the allowed constraint (for example,
+    // `bar <2.0.0-0 or >2.0.0` when `bar@2.0.0` was requested), whereas
+    // [negative] has the range that [prior] actually depends on (for example,
+    // `bar ^1.0.0`). Format [negative] so we report
+    // `foo depends on bar ^1.0.0 which is forbidden`.
+    final targetTerm =
+        latter.cause is PackageVersionForbiddenCause
+            ? negative
+            : latter.terms.first;
+    buffer.write('${_terse(targetTerm, details)} ');
     if (priorLine != null) buffer.write('($priorLine) ');
 
     final latterCause = latter.cause;
