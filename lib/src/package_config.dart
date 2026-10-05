@@ -171,6 +171,12 @@ class PackageConfigEntry {
   /// in the `pubspec.yaml` for the given package.
   LanguageVersion? languageVersion;
 
+  /// The experiments the package opts in to.
+  ///
+  /// Taken from the `experiments` field of the package's `pubspec.yaml`. Tools
+  /// enable these experiments for the libraries of this package only.
+  List<String> experiments;
+
   /// Additional properties not in the specification for the
   /// `.dart_tool/package_config.json` file.
   Map<String, dynamic>? additionalProperties;
@@ -180,6 +186,7 @@ class PackageConfigEntry {
     required this.rootUri,
     this.packageUri,
     this.languageVersion,
+    this.experiments = const [],
     this.additionalProperties = const {},
   });
 
@@ -248,11 +255,19 @@ class PackageConfigEntry {
       }
     }
 
+    final experiments = switch (root['experiments']) {
+      null => const <String>[],
+      final List<Object?> list when list.every((e) => e is String) =>
+        list.cast<String>(),
+      _ => throwFormatException('experiments', 'must be a list of strings'),
+    };
+
     return PackageConfigEntry(
       name: name,
       rootUri: rootUri,
       packageUri: packageUri,
       languageVersion: languageVersion,
+      experiments: experiments,
     );
   }
 
@@ -262,6 +277,7 @@ class PackageConfigEntry {
     'rootUri': rootUri.toString(),
     if (packageUri != null) 'packageUri': packageUri.toString(),
     if (languageVersion != null) 'languageVersion': '$languageVersion',
+    if (experiments.isNotEmpty) 'experiments': experiments,
   }..addAll(additionalProperties ?? {});
 
   @override
