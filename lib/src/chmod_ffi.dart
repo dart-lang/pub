@@ -22,6 +22,9 @@ external void _free(Pointer<Uint8> pointer);
 ///
 /// Returns `0` on success, or `-1` on error.
 int chmod(int mode, String path) {
+  if (!Platform.isLinux && !Platform.isMacOS) {
+    throw UnsupportedError('chmod is not supported on this platform.');
+  }
   final bytes = utf8.encode(path);
   if (bytes.contains(0)) {
     return -1;
