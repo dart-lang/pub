@@ -5,6 +5,7 @@
 @TestOn('vm')
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:checks/checks.dart';
@@ -18,34 +19,30 @@ import 'descriptor.dart';
 String outputPath() => '$sandbox/output/snapshot';
 String incrementalDillPath() => '${outputPath()}.incremental';
 
-// A quite big program is needed for the caching to be an actual advantage.
+// Adjacent string literals ensure that the contiguous string 'original_value'
+// only appears in the compiled Kernel constant table of the .dill file, while
+// the embedded source table (uriToSource) contains "'original_' 'value'".
 FileDescriptor foo = file('foo.dart', '''
-foo() {
-  ${List.generate(500000, (index) => 'print("$index");').join('\n')}
-}
-  ''');
+String foo() => 'original_' 'value';
+''');
 
 FileDescriptor workingMain = file('main.dart', '''
 import 'foo.dart';
 
-main() async {
-  foo();
+void main() {
+  print(foo());
 }
 ''');
 
 FileDescriptor brokenMain = file('main.dart', '''
 import 'foo.dart';
 yadda yadda
-main() asyncc {
-  foo();
+void main() asyncc {
+  print(foo());
 }
 ''');
 
-Future<Duration> timeCompilation(
-  String executable, {
-  bool fails = false,
-}) async {
-  final s = Stopwatch()..start();
+Future<void> runPrecompile(String executable, {bool fails = false}) async {
   verbosity = Verbosity.none;
   Future<void> compile() async {
     await precompile(
@@ -62,45 +59,80 @@ Future<Duration> timeCompilation(
     await compile();
   }
   verbosity = Verbosity.normal;
-  return s.elapsed;
+}
+
+/// Replaces the single occurrence of [from] with [to] in the compiled `.dill`
+/// file at [dillPath].
+///
+/// Because `foo.dart` uses adjacent string literals (`'original_' 'value'`),
+/// patching `'original_value'` to `'cached_version'` modifies only the compiled
+/// Kernel constant table while leaving the embedded `uriToSource` bytes
+/// matching `foo.dart` on disk. Subsequent incremental compilations that reuse
+/// the cached kernel for `foo.dart` will preserve `'cached_version'`, whereas a
+/// cold compilation from source will produce `'original_value'`.
+void patchCompiledConstant(String dillPath, String from, String to) {
+  final needle = utf8.encode(from);
+  final replacement = utf8.encode(to);
+  check(needle.length).equals(replacement.length);
+
+  final bytes = File(dillPath).readAsBytesSync();
+  final matches = <int>[];
+  for (var i = 0; i <= bytes.length - needle.length; i++) {
+    var found = true;
+    for (var j = 0; j < needle.length; j++) {
+      if (bytes[i + j] != needle[j]) {
+        found = false;
+        break;
+      }
+    }
+    if (found) matches.add(i);
+  }
+  check(matches).length.equals(1);
+  final offset = matches.single;
+  bytes.setRange(offset, offset + replacement.length, replacement);
+  File(dillPath).writeAsBytesSync(bytes);
+}
+
+String runSnapshot() {
+  final result = Process.runSync(Platform.resolvedExecutable, [outputPath()]);
+  check(result.exitCode).equals(0);
+  return (result.stdout as String).trim();
 }
 
 void main() {
-  test(
-    'Precompilation is much faster second time and removes old artifacts',
-    () async {
-      await dir('app', [workingMain, foo, packageConfigFile([])]).create();
-      final first = await timeCompilation(path('app/main.dart'));
-      check(
-        because: 'Should not leave a stray directory.',
-        File(incrementalDillPath()).existsSync(),
-      ).isFalse();
-      check(File(outputPath()).existsSync()).isTrue();
+  test('Precompilation reuses cached dill on subsequent runs '
+      'and removes old artifacts', () async {
+    await dir('app', [workingMain, foo, packageConfigFile([])]).create();
+    await runPrecompile(path('app/main.dart'));
+    check(
+      because: 'Should not leave a stray directory.',
+      File(incrementalDillPath()).existsSync(),
+    ).isFalse();
+    check(File(outputPath()).existsSync()).isTrue();
+    check(runSnapshot()).equals('original_value');
 
-      // Do a second compilation to compare the compile times, it should be much
-      // faster because it can reuse the compiled data in the dill file.
-      final second = await timeCompilation(path('app/main.dart'));
-      check(first).isGreaterThan(second * 2);
+    patchCompiledConstant(outputPath(), 'original_value', 'cached_version');
+    check(runSnapshot()).equals('cached_version');
 
-      // Now create an error to test that the output is placed at a different
-      // location.
-      await dir('app', [brokenMain, foo, packageConfigFile([])]).create();
-      final afterErrors = await timeCompilation(
-        path('app/main.dart'),
-        fails: true,
-      );
-      check(File(incrementalDillPath()).existsSync()).isTrue();
-      check(File(outputPath()).existsSync()).isFalse();
-      check(first).isGreaterThan(afterErrors * 2);
+    // A second compilation should reuse the compiled library for `foo.dart`
+    // from `outputPath()`.
+    await runPrecompile(path('app/main.dart'));
+    check(runSnapshot()).equals('cached_version');
 
-      // Fix the error, and check that we still use the cached output to improve
-      // compile times.
-      await dir('app', [workingMain]).create();
-      final afterFix = await timeCompilation(path('app/main.dart'));
-      // The output from the failed compilation should now be gone.
-      check(File('${outputPath()}.incremental').existsSync()).isFalse();
-      check(File(outputPath()).existsSync()).isTrue();
-      check(first).isGreaterThan(afterFix * 2);
-    },
-  );
+    // Introduce an error in `main.dart` to test that the incremental dill is
+    // placed at `incrementalDillPath()` and `outputPath()` is removed.
+    await dir('app', [brokenMain]).create();
+    await runPrecompile(path('app/main.dart'), fails: true);
+    check(File(incrementalDillPath()).existsSync()).isTrue();
+    check(File(outputPath()).existsSync()).isFalse();
+
+    // Fix the error, and check that compilation initializes from
+    // `incrementalDillPath()`, reuses the cached kernel for `foo.dart`, and
+    // deletes `incrementalDillPath()`.
+    await dir('app', [workingMain]).create();
+    await runPrecompile(path('app/main.dart'));
+    check(File(incrementalDillPath()).existsSync()).isFalse();
+    check(File(outputPath()).existsSync()).isTrue();
+    check(runSnapshot()).equals('cached_version');
+  });
 }
