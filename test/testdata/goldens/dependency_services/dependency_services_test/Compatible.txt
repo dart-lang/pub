@@ -13,7 +13,7 @@ packages:
       sha256: $SHA256
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.2.3"
+    version: 1.2.3
   boo:
     dependency: "direct main"
     description:
@@ -21,7 +21,7 @@ packages:
       sha256: $SHA256
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.2.3"
+    version: 1.2.3
   foo:
     dependency: "direct main"
     description:
@@ -29,7 +29,7 @@ packages:
       sha256: $SHA256
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.2.3"
+    version: 1.2.3
 sdks:
   dart: ">=3.0.2 <4.0.0"
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -383,7 +383,7 @@ packages:
       sha256: $SHA256
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.2.3"
+    version: 1.2.3
   boo:
     dependency: "direct main"
     description:
@@ -391,7 +391,7 @@ packages:
       sha256: $SHA256
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.2.3"
+    version: 1.2.3
   foo:
     dependency: "direct main"
     description:
@@ -399,6 +399,6 @@ packages:
       sha256: $SHA256
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.2.4"
+    version: 1.2.4
 sdks:
   dart: ">=3.0.2 <4.0.0"
