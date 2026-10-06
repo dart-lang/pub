@@ -4,23 +4,13 @@
 
 import 'dart:convert';
 import 'dart:ffi';
+import 'dart:io';
 
-@AbiSpecificIntegerMapping({
-  Abi.macosArm64: Uint16(),
-  Abi.macosX64: Uint16(),
-  Abi.linuxArm: Uint32(),
-  Abi.linuxArm64: Uint32(),
-  Abi.linuxIA32: Uint32(),
-  Abi.linuxRiscv32: Uint32(),
-  Abi.linuxRiscv64: Uint32(),
-  Abi.linuxX64: Uint32(),
-})
-final class _ModeT extends AbiSpecificInteger {
-  const _ModeT();
-}
+@Native<Int Function(Pointer<Uint8>, Uint16)>(symbol: 'chmod', isLeaf: true)
+external int _chmodUint16(Pointer<Uint8> path, int mode);
 
-@Native<Int Function(Pointer<Uint8>, _ModeT)>(symbol: 'chmod')
-external int _posixChmod(Pointer<Uint8> path, int mode);
+@Native<Int Function(Pointer<Uint8>, Uint32)>(symbol: 'chmod', isLeaf: true)
+external int _chmodUint32(Pointer<Uint8> path, int mode);
 
 @Native<Pointer<Uint8> Function(Size)>(symbol: 'malloc', isLeaf: true)
 external Pointer<Uint8> _malloc(int size);
@@ -44,7 +34,8 @@ int chmod(int mode, String path) {
     ptr.asTypedList(bytes.length + 1)
       ..setAll(0, bytes)
       ..[bytes.length] = 0;
-    return _posixChmod(ptr, mode);
+    // POSIX `mode_t` is `uint16_t` on macOS and `uint32_t` on Linux.
+    return Platform.isMacOS ? _chmodUint16(ptr, mode) : _chmodUint32(ptr, mode);
   } finally {
     _free(ptr);
   }
