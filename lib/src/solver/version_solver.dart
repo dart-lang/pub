@@ -452,7 +452,7 @@ class VersionSolver {
       // report:
       //
       //     Because foo 1.0.0 depends on bar >=2.0.0 and no versions of foo
-      //       match <1.0.0-∞ or >1.0.0, every version of foo requires
+      //       match <1.0.0 or >1.0.0, every version of foo requires
       //       bar >=2.0.0.
       //     So, because myapp depends on both foo any and bar <2.0.0, version
       //       solving failed.

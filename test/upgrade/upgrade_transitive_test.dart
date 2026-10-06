@@ -1103,7 +1103,10 @@ void main() {
     await pubUpgrade(
       args: ['foo@2.0.0'],
       error: allOf(
-        contains('no versions of foo match 2.0.0'),
+        contains(
+          'Because no versions of foo match 2.0.0 and foo <2.0.0 or >2.0.0 is '
+          'forbidden, foo is forbidden.',
+        ),
         contains('version solving failed'),
         contains('foo 2.0.0 was requested by `dart pub upgrade foo@2.0.0`'),
       ),

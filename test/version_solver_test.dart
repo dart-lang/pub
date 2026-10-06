@@ -262,7 +262,7 @@ So, because no versions of foo match <1.0.0 or >1.0.0 and myapp depends on bar a
     await expectResolves(
       error: contains(
         '''
-Because foo 1.0.0 depends on bar 1.0.0 and no versions of foo match <1.0.0-∞ or >1.0.0, every version of foo requires bar 1.0.0.
+Because foo 1.0.0 depends on bar 1.0.0 and no versions of foo match <1.0.0 or >1.0.0, every version of foo requires bar 1.0.0.
 So, because myapp depends on both foo any and bar 2.0.0, version solving failed.''',
       ),
     );
