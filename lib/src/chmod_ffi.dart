@@ -4,7 +4,8 @@
 
 import 'dart:convert';
 import 'dart:ffi';
-import 'dart:io';
+
+import 'platform_info.dart';
 
 @Native<Int Function(Pointer<Uint8>, Uint16)>(symbol: 'chmod', isLeaf: true)
 external int _chmodUint16(Pointer<Uint8> path, int mode);
@@ -21,8 +22,10 @@ external void _free(Pointer<Uint8> pointer);
 /// Calls POSIX `chmod(2)` on [path] with [mode].
 ///
 /// Returns `0` on success, or `-1` on error.
+///
+/// Only supported on Linux and macOS.
 int chmod(int mode, String path) {
-  if (!Platform.isLinux && !Platform.isMacOS) {
+  if (!platform.isLinux && !platform.isMacOS) {
     throw UnsupportedError('chmod is not supported on this platform.');
   }
   final bytes = utf8.encode(path);
@@ -38,7 +41,7 @@ int chmod(int mode, String path) {
       ..setAll(0, bytes)
       ..[bytes.length] = 0;
     // POSIX `mode_t` is `uint16_t` on macOS and `uint32_t` on Linux.
-    return Platform.isMacOS ? _chmodUint16(ptr, mode) : _chmodUint32(ptr, mode);
+    return platform.isMacOS ? _chmodUint16(ptr, mode) : _chmodUint32(ptr, mode);
   } finally {
     _free(ptr);
   }
