@@ -234,7 +234,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
   Future<void> _runUpgrade(Entrypoint e, {bool onlySummary = false}) async {
     if (!isOffline && !_dryRun) {
-      await _updateSigstoreTrustedRoot();
+      await refreshTrustedRootIfNeeded(cache: cache, force: true);
     }
     await e.acquireDependencies(
       SolveType.upgrade,
@@ -246,18 +246,6 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     );
 
     _showOfflineWarning();
-  }
-
-  Future<void> _updateSigstoreTrustedRoot() async {
-    try {
-      await refreshTrustedRoot(
-        cacheDir: cache.sigstoreTufCacheDir,
-        cachePath: cache.sigstoreTrustedRootPath,
-      );
-      log.fine('Refreshed Sigstore trusted root from TUF repository.');
-    } catch (e) {
-      log.fine('Could not refresh Sigstore trusted root from TUF mirror: $e');
-    }
   }
 
   List<Entrypoint> get _entrypointsToUpgrade => [

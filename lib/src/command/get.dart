@@ -6,6 +6,7 @@ import 'dart:async';
 
 import '../command.dart';
 import '../log.dart' as log;
+import '../sigstore/trusted_root.dart';
 import '../solver.dart';
 
 /// Handles the `get` pub command.
@@ -74,6 +75,10 @@ class GetCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.',
         ),
       );
+    }
+
+    if (!isOffline && !argResults.flag('dry-run')) {
+      await refreshTrustedRootIfNeeded(cache: cache);
     }
 
     await entrypoint.acquireDependencies(
