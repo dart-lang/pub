@@ -37,7 +37,6 @@ import 'solver/report.dart';
 import 'solver/solve_suggestions.dart';
 import 'solver/version_solver.dart';
 import 'source/cached.dart';
-import 'source/hosted.dart';
 import 'source/root.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
@@ -1634,11 +1633,7 @@ See https://dart.dev/go/sdk-constraint
                   lockFile.packages[range.name])
               ?.version ??
           workspaceVersions[range.name]!;
-      if (range.source is HostedSource && constraint.isAny) {
-        changesForPackage[range] = range.toRef().withConstraint(
-          VersionConstraint.compatibleWith(resolvedVersion),
-        );
-      } else if (constraint is VersionRange) {
+      if (constraint is VersionRange) {
         final min = constraint.min;
         if (min != null && min < resolvedVersion) {
           changesForPackage[range] = range.toRef().withConstraint(

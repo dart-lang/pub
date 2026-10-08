@@ -703,7 +703,7 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
 
-    await d.appDir(dependencies: {'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
 
     await pubGet();
 

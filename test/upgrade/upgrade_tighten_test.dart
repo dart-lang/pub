@@ -46,10 +46,10 @@ void main() {
         await pubUpgrade(
           args: ['--tighten', '--dry-run'],
           output: allOf([
-            contains('Would change 4 constraints in pubspec.yaml:'),
+            contains('Would change 3 constraints in pubspec.yaml:'),
             contains('foo: ^1.0.0 -> ^1.5.0'),
             contains('bar: >=0.1.2 <3.0.0 -> >=1.5.0 <3.0.0'),
-            contains('boo: any -> ^1.0.0'),
+            isNot(contains('boo:')),
             contains('boom2: ^1.0.0 -> ^1.5.0'),
           ]),
         );
@@ -57,10 +57,10 @@ void main() {
         await pubUpgrade(
           args: ['--tighten'],
           output: allOf([
-            contains('Changed 4 constraints in pubspec.yaml:'),
+            contains('Changed 3 constraints in pubspec.yaml:'),
             contains('foo: ^1.0.0 -> ^1.5.0'),
             contains('bar: >=0.1.2 <3.0.0 -> >=1.5.0 <3.0.0'),
-            contains('boo: any -> ^1.0.0'),
+            isNot(contains('boo:')),
             contains('boom2: ^1.0.0 -> ^1.5.0'),
           ]),
         );
@@ -71,7 +71,7 @@ void main() {
                 'foo': '^1.5.0',
                 'bar': '>=1.5.0 <3.0.0',
                 'baz': '0.2.0',
-                'boo': '^1.0.0',
+                'boo': 'any',
                 'boom': {'path': '../boom'},
                 'boom2': {'path': '../boom2', 'version': '^1.5.0'},
               },
