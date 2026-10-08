@@ -1635,6 +1635,8 @@ See https://dart.dev/go/sdk-constraint
           workspaceVersions[range.name]!;
       if (constraint is VersionRange) {
         final min = constraint.min;
+        // Constraints without a lower bound (such as `any` or `<2.0.0`) have
+        // `min == null` and are intentionally left untouched.
         if (min != null && min < resolvedVersion) {
           changesForPackage[range] = range.toRef().withConstraint(
             VersionRange(
