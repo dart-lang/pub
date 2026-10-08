@@ -166,6 +166,75 @@ main() {
     expect(buffer.toString(), contains('FINE: Pub 3.1.2+3'));
   });
 
+  test(
+    'trailing -v in pub global run does not enable verbose pub logging',
+    () async {
+      final server = await servePackages();
+      server.serve(
+        'foo',
+        '1.0.0',
+        contents: [
+          d.dir('bin', [
+            d.file('foo.dart', r"""
+main(List<String> args) {
+  print('args: $args');
+}
+"""),
+          ]),
+        ],
+      );
+      await runEmbeddingToBuffer([
+        'pub',
+        'global',
+        'activate',
+        'foo',
+      ], StringBuffer());
+
+      final buffer1 = StringBuffer();
+      await runEmbeddingToBuffer([
+        'pub',
+        'global',
+        'run',
+        'foo',
+        '-v',
+      ], buffer1);
+      expect(buffer1.toString(), contains('args: [-v]'));
+      expect(buffer1.toString(), isNot(contains('FINE: Pub')));
+
+      final buffer2 = StringBuffer();
+      await runEmbeddingToBuffer([
+        'pub',
+        'global',
+        'run',
+        'foo',
+        '--',
+        '-v',
+      ], buffer2);
+      expect(buffer2.toString(), contains('args: [--, -v]'));
+      expect(buffer2.toString(), isNot(contains('FINE: Pub')));
+
+      final buffer3 = StringBuffer();
+      await runEmbeddingToBuffer([
+        '--verbose',
+        'pub',
+        'global',
+        'run',
+        'foo',
+      ], buffer3);
+      expect(buffer3.toString(), contains('FINE: Pub'));
+
+      final buffer4 = StringBuffer();
+      await runEmbeddingToBuffer([
+        'pub',
+        '--verbose',
+        'global',
+        'run',
+        'foo',
+      ], buffer4);
+      expect(buffer4.toString(), contains('FINE: Pub'));
+    },
+  );
+
   testWithGolden('--help', (context) async {
     await servePackages();
     await context.runEmbedding([
