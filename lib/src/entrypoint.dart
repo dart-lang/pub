@@ -426,6 +426,10 @@ See $workspacesDocUrl for more information.''',
   Future<void> writePackageConfigFiles() async {
     ensureDir(p.dirname(packageConfigPath));
 
+    for (final package in workspaceRoot.transitiveWorkspace) {
+      tryDeleteEntry(p.join(package.dir, '.packages'));
+    }
+
     writeTextFileIfDifferent(
       packageConfigPath,
       await _packageConfigFile(
@@ -1534,7 +1538,8 @@ See https://dart.dev/go/sdk-constraint
   bool get _summaryOnlyEnvironment =>
       (platform.environment['PUB_SUMMARY_ONLY'] ?? '0') != '0';
 
-  /// Remove any `pubspec.lock` or `.dart_tool/package_config.json` files in
+  /// Remove any `pubspec.lock`, `.dart_tool/package_config.json`, or `.packages`
+  /// files in
   /// workspace packages that are not the root package.
   ///
   /// Also remove from directories between the workspace package and the
@@ -1569,6 +1574,7 @@ See https://dart.dev/go/sdk-constraint
             p.join(dir, '.dart_tool', 'package_config.json'),
             'package config',
           );
+          deleteIfPresent(p.join(dir, '.packages'), '.packages file');
         }
       }
     }
