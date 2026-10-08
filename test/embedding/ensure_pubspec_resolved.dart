@@ -181,15 +181,9 @@ void testEnsurePubspecResolved() {
         // Ensure that the pubspec looks newer than the lockfile.
         await _touch('pubspec.yaml');
 
-        final expectedPath = p.join(
-          r'$SANDBOX',
-          cachePath,
-          'hosted',
-          r'localhost%58$PORT',
-          'foo-1.0.0',
-          'pubspec.yaml',
+        await _implicitPubGet(
+          r'Could not find `$SANDBOX/cache/hosted/localhost%58$PORT/foo-1.0.0/pubspec.yaml`',
         );
-        await _implicitPubGet('Could not find `$expectedPath`');
       });
 
       test('a cached package was deleted', () async {
@@ -201,15 +195,9 @@ void testEnsurePubspecResolved() {
 
         deleteEntry(p.join(d.sandbox, cachePath));
 
-        final expectedPath = p.join(
-          r'$SANDBOX',
-          cachePath,
-          'hosted',
-          r'localhost%58$PORT',
-          'foo-1.0.0',
-          'pubspec.yaml',
+        await _implicitPubGet(
+          r'Could not find `$SANDBOX/cache/hosted/localhost%58$PORT/foo-1.0.0/pubspec.yaml`',
         );
-        await _implicitPubGet('Could not find `$expectedPath`');
       });
 
       test('the package_config.json file points to the wrong place', () async {
