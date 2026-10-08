@@ -843,4 +843,22 @@ Future<void> main() async {
     // do not render as hyperlinks.
     await ctx.run(['outdated', '--color']);
   });
+
+  test('handles unreachable git dependency when overridden', () async {
+    await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': 'https://localhost:0/nonexistent.git'},
+          },
+          pubspec: {
+            'dependency_overrides': {
+              'foo': {'path': '../foo'},
+            },
+          },
+        )
+        .create();
+    await pubGet();
+    await runPub(args: ['outdated', '--up-to-date'], output: contains('foo'));
+  });
 }
