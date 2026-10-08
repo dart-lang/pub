@@ -1261,14 +1261,14 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           'pubspec.yaml',
         ),
       );
-      if (p.isWithin(cache.rootDir, pubspecPath)) {
-        continue;
-      }
       final pubspecStat = tryStatFile(pubspecPath);
       if (pubspecStat == null) {
         log.fine('Could not find `$pubspecPath`');
         // A dependency is missing - do a full new resolution.
         return null;
+      }
+      if (p.isWithin(cache.rootDir, pubspecPath)) {
+        continue;
       }
 
       if (!lockFileModified.isAfter(pubspecStat.modified)) {
