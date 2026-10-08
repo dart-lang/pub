@@ -64,6 +64,8 @@ class NameValidator extends Validator {
         '$description may not be a reserved word in Dart.\n'
         'Using a valid Dart identifier makes the name usable in Dart code.',
       );
+    } else if (name.length > 64) {
+      errors.add('$description may not exceed 64 characters.');
     } else if (RegExp(r'[A-Z]').hasMatch(name)) {
       warnings.add(
         '$description should be lower-case. Maybe use '

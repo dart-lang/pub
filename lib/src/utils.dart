@@ -804,6 +804,11 @@ extension ExpectField on YamlMap {
         '"name" field may not be a Dart reserved word.',
         nodes['name']?.span,
       );
+    } else if (name.length > 64) {
+      throw SourceSpanApplicationException(
+        '"name" field may not exceed 64 characters.',
+        nodes['name']?.span,
+      );
     }
     return name;
   }

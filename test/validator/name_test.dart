@@ -41,6 +41,15 @@ void main() {
       ]).create();
       await expectValidationDeprecated(name);
     });
+
+    test('has a 64 character package name', () async {
+      final pkgName = 'a' * 64;
+      await d.dir(appPath, [
+        d.libPubspec(pkgName, '1.0.0'),
+        d.dir('lib', [d.file('$pkgName.dart', 'int i = 1;')]),
+      ]).create();
+      await expectValidationDeprecated(name);
+    });
   });
 
   group('should consider a package invalid if it', () {

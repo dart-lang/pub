@@ -297,6 +297,24 @@ dependencies:
 ''', (pubspec) => pubspec.dependencies);
     });
 
+    test('allows a 64 character package name', () {
+      final name = 'a' * 64;
+      final pubspec = Pubspec.parse(
+        'name: $name',
+        sources,
+        containingDescription: ResolvedRootDescription.fromDir('.'),
+      );
+      expect(pubspec.name, equals(name));
+    });
+
+    test('throws if package name is longer than 64 characters', () {
+      expectPubspecException(
+        'name: ${'a' * 65}',
+        (pubspec) => pubspec.name,
+        expectedContains: '"name" field may not exceed 64 characters.',
+      );
+    });
+
     test("throws if 'name' is not a string", () {
       expectPubspecException(
         'name: [not, a, string]',
