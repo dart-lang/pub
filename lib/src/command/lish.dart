@@ -158,7 +158,8 @@ class LishCommand extends PubCommand {
         /// 2. Upload package
         final url = _expectField(parameters, 'url', parametersResponse);
         if (url is! String) invalidServerResponse(parametersResponse);
-        cloudStorageUrl = Uri.parse(url);
+        cloudStorageUrl = Uri.tryParse(url);
+        if (cloudStorageUrl == null) invalidServerResponse(parametersResponse);
         final uploadResponse = await retryForHttp(
           'uploading package',
           () async {
@@ -192,10 +193,12 @@ class LishCommand extends PubCommand {
         /// 3. Finalize publish
         final location = uploadResponse.headers['location'];
         if (location == null) throw PubHttpResponseException(uploadResponse);
+        final locationUri = Uri.tryParse(location);
+        if (locationUri == null) invalidServerResponse(uploadResponse);
         final finalizeResponse = await retryForHttp(
           'finalizing publish',
           () async {
-            final request = http.Request('GET', Uri.parse(location));
+            final request = http.Request('GET', locationUri);
             request.attachPubApiHeaders();
             return await client.fetch(request);
           },
