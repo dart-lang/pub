@@ -703,7 +703,7 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
 
-    await d.appDir(dependencies: {'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': '>=1.0.0 <3.0.0'}).create();
 
     await pubGet();
 
@@ -715,7 +715,7 @@ void main() {
       output: allOf(contains('> foo 1.5.0'), isNot(contains('foo 2.0.0'))),
     );
 
-    await d.appDir(dependencies: {'foo': '^1.5.0'}).validate();
+    await d.appDir(dependencies: {'foo': '>=1.5.0 <3.0.0'}).validate();
   });
 
   test('`dependency@latest` can be combined with --tighten', () async {
