@@ -126,6 +126,39 @@ void main() {
     },
   );
 
+  test('pub get fails with a clear message when the attestation endpoint '
+      'fails', () async {
+    // A failing attestation endpoint (or a proxy that does not forward it)
+    // must be reported as such, not as a failure to find the package, and
+    // must not re-download the archive on every attempt.
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', slsaLevel: 2);
+    server.handle('/api/packages/foo/versions/1.0.0/attestation', (request) {
+      return Response.forbidden('nope');
+    });
+
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'hosted': server.url, 'version': '^1.0.0'},
+          },
+        )
+        .create();
+
+    await pubGet(
+      error: allOf(
+        contains('Failed to fetch the attestation of foo-1.0.0 from'),
+        contains('/api/packages/foo/versions/1.0.0/attestation'),
+        contains('proxy'),
+      ),
+      exitCode: TEMP_FAIL,
+    );
+    expect(
+      server.requestedPaths.where((path) => path.endsWith('1.0.0.tar.gz')),
+      hasLength(1),
+    );
+  });
+
   test('pub get fails when an attestation is claimed but not served', () async {
     // Reporting `slsa_level` and then not serving an attestation must not
     // silently downgrade to an unverified install.

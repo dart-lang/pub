@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import '../exceptions.dart';
 import '../io.dart';
+import '../log.dart' as log;
 import '../platform_info.dart';
 import '../system_cache.dart';
 
@@ -40,7 +41,21 @@ String? loadTrustedRootJson({SystemCache? cache, String? overridePath}) {
 
   final cachePath = cache?.sigstoreTrustedRootPath;
   if (cachePath != null && fileExists(cachePath)) {
-    return readTextFile(cachePath);
+    final text = readTextFile(cachePath);
+    // The cached root is not something the user wrote: if it is corrupt, fall
+    // back to the built-in root rather than failing every attested package.
+    try {
+      if (jsonDecode(text) is! Map<String, dynamic>) {
+        throw const FormatException('not a JSON object');
+      }
+    } on FormatException catch (e) {
+      log.warning(
+        'Ignoring the corrupt Sigstore trusted root at "$cachePath" '
+        '($e), using the built-in one.',
+      );
+      return null;
+    }
+    return text;
   }
 
   return null;

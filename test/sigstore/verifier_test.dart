@@ -7,6 +7,7 @@ library;
 
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:pub/src/sigstore/verifier.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
@@ -20,7 +21,7 @@ void main() {
     final result = verifier.verify(
       packageName: 'helpful',
       packageVersion: Version(0, 1, 5),
-      archiveBytes: helpfulArchiveBytes,
+      archiveSha256: sha256.convert(helpfulArchiveBytes).bytes,
       bundleJson: helpfulBundleJson,
       declaredPackageName: 'helpful',
       declaredPackageVersion: Version(0, 1, 5),
@@ -42,7 +43,7 @@ void main() {
     final result = verifier.verify(
       packageName: 'evil',
       packageVersion: Version(0, 1, 5),
-      archiveBytes: helpfulArchiveBytes,
+      archiveSha256: sha256.convert(helpfulArchiveBytes).bytes,
       bundleJson: helpfulBundleJson,
       declaredPackageName: 'helpful',
       declaredPackageVersion: Version(0, 1, 5),
@@ -64,7 +65,7 @@ void main() {
       final result = verifier.verify(
         packageName: 'helpful',
         packageVersion: Version(0, 1, 5),
-        archiveBytes: helpfulArchiveBytes,
+        archiveSha256: sha256.convert(helpfulArchiveBytes).bytes,
         bundleJson: helpfulBundleJson,
         declaredPackageName: 'helpful',
         declaredPackageVersion: Version(0, 1, 5),
@@ -86,7 +87,7 @@ void main() {
     final result = verifier.verify(
       packageName: 'sample',
       packageVersion: Version(1, 0, 0),
-      archiveBytes: sampleArtifactBytes,
+      archiveSha256: sha256.convert(sampleArtifactBytes).bytes,
       bundleJson: sampleBundleJson,
       expectedRepository:
           'https://github.com/sigstore-conformance/'
@@ -105,7 +106,7 @@ void main() {
     final result = verifier.verify(
       packageName: 'sample',
       packageVersion: Version(1, 0, 0),
-      archiveBytes: tamperedBytes,
+      archiveSha256: sha256.convert(tamperedBytes).bytes,
       bundleJson: sampleBundleJson,
     );
 
@@ -119,7 +120,7 @@ void main() {
     final result = verifier.verify(
       packageName: 'sample',
       packageVersion: Version(1, 0, 0),
-      archiveBytes: sampleArtifactBytes,
+      archiveSha256: sha256.convert(sampleArtifactBytes).bytes,
       bundleJson: '{"not": "a bundle"}',
     );
 
@@ -135,7 +136,7 @@ void main() {
     final result = verifier.verify(
       packageName: 'helpful',
       packageVersion: Version(1, 0, 0),
-      archiveBytes: sampleArtifactBytes,
+      archiveSha256: sha256.convert(sampleArtifactBytes).bytes,
       bundleJson: buildProvenanceBundleJson(
         subjectName: 'helpful-1.0.0.tar.gz',
       ),

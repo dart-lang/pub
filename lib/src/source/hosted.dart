@@ -1812,35 +1812,17 @@ See $contentHashesDocumentationUrl.
             // and cancelling a http stream makes it not reusable. There are
             // ways around this, and we might revisit this later.
             await createFileFromStream(stream, archivePath);
-
-            // Fetch the Sigstore attestation. It is verified below, once the
-            // archive has been extracted and we can read the `repository`
-            // field of the pubspec it contains.
-            if (expectAttestation) {
-              final attestationUri = Uri.parse(description.url).resolve(
-                'api/packages/${id.name}/versions/${id.version}/attestation',
-              );
-              try {
-                final attRequest = http.Request('GET', attestationUri);
-                attestationJson = (await client.fetch(attRequest)).body;
-              } on PubHttpResponseException catch (e) {
-                if (e.response.statusCode != HttpStatus.notFound) {
-                  // Do not swallow errors here: an unverified package must not
-                  // be the result of a failed request. Intermittent failures
-                  // are retried by [retryForHttp].
-                  rethrow;
-                }
-                log.fine(
-                  'No attestation served for ${id.name}-${id.version} '
-                  'at $attestationUri.',
-                );
-                attestationJson = null;
-              }
-            }
           });
         });
       } on Exception catch (error, stackTrace) {
         _throwFriendlyError(error, stackTrace, id.name, description.url);
+      }
+
+      // Fetch the Sigstore attestation. It is verified below, once the archive
+      // has been extracted and we can read the `repository` field of the
+      // pubspec it contains.
+      if (expectAttestation) {
+        attestationJson = await _fetchAttestation(id, description, cache);
       }
 
       try {
@@ -1854,7 +1836,7 @@ See $contentHashesDocumentationUrl.
         description,
         cache,
         attestationJson: attestationJson,
-        archivePath: archivePath,
+        archiveSha256: contentHash!,
         extractedPath: destPath,
         slsaLevel: versionInfo.slsaLevel,
         previousProvenance: previousProvenance,
@@ -1866,9 +1848,61 @@ See $contentHashesDocumentationUrl.
     });
   }
 
-  /// Verifies [attestationJson] against the archive at [archivePath], which has
-  /// been extracted to [extractedPath], and returns the repository the package
-  /// was built from.
+  /// Fetches the Sigstore attestation of [id] from the package repository, or
+  /// returns `null` if the repository serves none (`404`).
+  ///
+  /// This is a separate request from the archive download with its own
+  /// retries: a failing attestation endpoint must neither re-download the
+  /// archive on every attempt nor be reported as a failure to find the
+  /// package.
+  Future<String?> _fetchAttestation(
+    PackageId id,
+    HostedDescription description,
+    SystemCache cache,
+  ) async {
+    final attestationUri = Uri.parse(
+      description.url,
+    ).resolve('api/packages/${id.name}/versions/${id.version}/attestation');
+    try {
+      return await withAuthenticatedClient(cache, Uri.parse(description.url), (
+        client,
+      ) async {
+        return await retryForHttp('fetching "$attestationUri"', () async {
+          try {
+            final request = http.Request('GET', attestationUri);
+            return (await client.fetch(request)).body;
+          } on PubHttpResponseException catch (e) {
+            if (e.response.statusCode == HttpStatus.notFound) {
+              log.fine(
+                'No attestation served for ${id.name}-${id.version} '
+                'at $attestationUri.',
+              );
+              return null;
+            }
+            // Do not swallow errors here: an unverified package must not be
+            // the result of a failed request. Intermittent failures are
+            // retried by [retryForHttp].
+            rethrow;
+          }
+        });
+      });
+    } on Exception catch (e) {
+      // `PubHttpException` after the retries are exhausted, or an
+      // `AuthenticationException` for a `401`/`403` from the endpoint.
+      if (e is! PubHttpException && e is! AuthenticationException) rethrow;
+      throw PackageIntegrityException('''
+Failed to fetch the attestation of ${id.name}-${id.version} from `$attestationUri`:
+${e is PubHttpException ? e.message : e}
+
+This indicates a problem on the package repository `${description.url}`, or
+with a proxy in front of it that does not forward attestation requests.
+''');
+    }
+  }
+
+  /// Verifies [attestationJson] against the archive with the sha256 digest
+  /// [archiveSha256], which has been extracted to [extractedPath], and returns
+  /// the repository the package was built from.
   ///
   /// Returns `null` if the package is not attested, and throws if it should
   /// have been.
@@ -1877,7 +1911,7 @@ See $contentHashesDocumentationUrl.
     HostedDescription description,
     SystemCache cache, {
     required String? attestationJson,
-    required String archivePath,
+    required Uint8List archiveSha256,
     required String extractedPath,
     required int? slsaLevel,
     required String? previousProvenance,
@@ -1907,7 +1941,7 @@ This indicates a problem on the package repository: `${description.url}`.
       result = PubAttestationVerifier(cache: cache).verify(
         packageName: id.name,
         packageVersion: id.version,
-        archiveBytes: readBinaryFile(archivePath),
+        archiveSha256: archiveSha256,
         bundleJson: attestationJson,
         declaredPackageName: pubspec.name,
         declaredPackageVersion: pubspec.version,

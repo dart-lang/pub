@@ -295,9 +295,6 @@ attestation, and the client will fetch and verify it, see
 
 **GET** `<hosted-url>/api/packages/<package>/versions/<version>/attestation`
 
-**Headers**
-* `Accept: application/json`
-
 **Response**
 * `Content-Type: application/json`
 
@@ -309,6 +306,18 @@ attestation for that version: a client that has been told a version is attested
 will fail the download if the attestation cannot be retrieved, rather than
 install it unverified. Repositories that do not support attestations should
 respond `404` here and omit `slsa_level`.
+
+Two consequences of this for repository implementers:
+
+* The attestation must be retrievable *before* a version listing that
+  advertises it (with `slsa_level`) is served. A client that gets a `404` here
+  does not retry: it fails the download. Repositories that publish the version
+  listing through a separate system (e.g. an exported bucket) must order the
+  two accordingly.
+* A proxy or mirror that passes the version listing through verbatim, but does
+  not forward requests to this end-point, breaks every attested package for its
+  users. Such a proxy must either forward this end-point or strip `slsa_level`
+  from the listings it serves.
 
 The attestation is not a substitute for the repository being trustworthy about
 *which* versions are attested; it is what allows the client to check the archive
