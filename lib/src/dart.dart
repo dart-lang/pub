@@ -100,11 +100,15 @@ class AnalyzerErrorGroup implements Exception {
 /// for `package:` uri resolution.
 ///
 /// The [name] is used to describe the executable in logs and error messages.
+///
+/// The [nativeAssets], if provided, is the path of a native assets mapping
+/// (`native_assets.yaml`) that the compiler embeds in the snapshot.
 Future<void> precompile({
   required String executablePath,
   required String name,
   required String outputPath,
   required String packageConfigPath,
+  String? nativeAssets,
 }) async {
   const platformDill = 'lib/_internal/vm_platform_strong.dill';
   final sdkRoot = p.relative(p.dirname(p.dirname(platform.resolvedExecutable)));
@@ -136,6 +140,7 @@ Future<void> precompile({
       platformDill,
       sdkRoot: sdkRoot,
       packagesJson: packageConfigPath,
+      nativeAssets: nativeAssets,
       printIncrementalDependencies: false,
     );
     final result = await client.compile();
