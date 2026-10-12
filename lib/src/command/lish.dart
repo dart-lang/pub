@@ -78,6 +78,7 @@ class LishCommand extends PubCommand {
 
   late final String? _fromArchive = argResults.option('from-archive');
   late final String? _toArchive = argResults.option('to-archive');
+  late final String? _withAttestation = argResults.option('with-attestation');
 
   LishCommand() {
     argParser.addFlag(
@@ -118,6 +119,14 @@ class LishCommand extends PubCommand {
       valueHelp: '[archive.tar.gz]',
       hide: true,
     );
+    argParser.addOption(
+      'with-attestation',
+      help:
+          'The path to a Sigstore attestation bundle JSON file to upload '
+          'with the package archive.',
+      valueHelp: '[attestation.sigstore.json]',
+      hide: true,
+    );
 
     argParser.addOption(
       'directory',
@@ -135,9 +144,11 @@ class LishCommand extends PubCommand {
   Future<void> _publishUsingClient(
     List<int> packageBytes,
     http.Client client,
-    Uri host,
-  ) async {
+    Uri host, {
+    Uint8List? attestationBytes,
+  }) async {
     Uri? cloudStorageUrl;
+    Uri? attestationUploadUrl;
 
     try {
       await log.progress('Uploading', () async {
@@ -155,7 +166,33 @@ class LishCommand extends PubCommand {
         );
         final parameters = parseJsonResponse(parametersResponse);
 
-        /// 2. Upload package
+        /// 2. Upload attestation
+        ///
+        /// The attestation is uploaded before the archive: that way we don't
+        /// spend time uploading the archive to a repository that will not
+        /// accept the attestation anyway.
+        if (attestationBytes != null) {
+          final attestationUrl = parameters['attestationUrl'];
+          if (attestationUrl == null) {
+            dataError(
+              'The package repository $host does not support publishing '
+              'with attestations.',
+            );
+          }
+          if (attestationUrl is! String) {
+            invalidServerResponse(parametersResponse);
+          }
+          attestationUploadUrl = Uri.parse(attestationUrl);
+          await retryForHttp('uploading attestation', () async {
+            final request = http.Request('POST', attestationUploadUrl!);
+            request.attachPubApiHeaders();
+            request.headers[HttpHeaders.contentTypeHeader] = 'application/json';
+            request.bodyBytes = attestationBytes;
+            return await client.fetch(request);
+          });
+        }
+
+        /// 3. Upload package
         final url = _expectField(parameters, 'url', parametersResponse);
         if (url is! String) invalidServerResponse(parametersResponse);
         cloudStorageUrl = Uri.parse(url);
@@ -189,7 +226,7 @@ class LishCommand extends PubCommand {
           },
         );
 
-        /// 3. Finalize publish
+        /// 4. Finalize publish
         final location = uploadResponse.headers['location'];
         if (location == null) throw PubHttpResponseException(uploadResponse);
         final finalizeResponse = await retryForHttp(
@@ -227,13 +264,26 @@ class LishCommand extends PubCommand {
         fail(log.red('Failed to upload the package.'));
       } else if (Uri.parse(url.origin) == Uri.parse(host.origin)) {
         handleJsonError(error.response);
+      } else if (url == attestationUploadUrl) {
+        // The repository may direct the attestation upload to another origin
+        // (e.g. a storage service), whose error response is not a pub JSON
+        // error.
+        final response = error.response;
+        if (response is http.Response && response.body.trim().isNotEmpty) {
+          log.error('Server message: ${sanitizeForTerminal(response.body)}');
+        }
+        fail(log.red('Failed to upload the attestation.'));
       } else {
         rethrow;
       }
     }
   }
 
-  Future<void> _publish(List<int> packageBytes, Uri host) async {
+  Future<void> _publish(
+    List<int> packageBytes,
+    Uri host, {
+    Uint8List? attestationBytes,
+  }) async {
     try {
       final officialPubServers = {
         'https://pub.dev',
@@ -261,12 +311,22 @@ class LishCommand extends PubCommand {
         // This allows us to use `dart pub token add` to inject a token for use
         // with the official servers.
         await oauth2.withClient((client) {
-          return _publishUsingClient(packageBytes, client, host);
+          return _publishUsingClient(
+            packageBytes,
+            client,
+            host,
+            attestationBytes: attestationBytes,
+          );
         });
       } else {
         // For third party servers using bearer authentication client
         await withAuthenticatedClient(cache, host, (client) {
-          return _publishUsingClient(packageBytes, client, host);
+          return _publishUsingClient(
+            packageBytes,
+            client,
+            host,
+            attestationBytes: attestationBytes,
+          );
         });
       }
     } on PubHttpResponseException catch (error) {
@@ -302,6 +362,12 @@ the \$PUB_HOSTED_URL environment variable.''');
 
     if (_toArchive != null && force) {
       usageException('Cannot use both --to-archive and --force.');
+    }
+
+    if (_withAttestation != null && _fromArchive == null) {
+      usageException(
+        '`--with-attestation` can only be used with `--from-archive`.',
+      );
     }
 
     if (argResults.wasParsed('ignore-warnings') && !dryRun) {
@@ -418,12 +484,46 @@ the \$PUB_HOSTED_URL environment variable.''');
       );
     }
     final host = computeHost(pubspec);
+    Uint8List? attestationBytes;
+    if (_withAttestation != null) {
+      final repository = pubspec.fields['repository']?.toString();
+      if (repository == null || repository.trim().isEmpty) {
+        dataError(
+          'A repository must be specified in the "repository" field of '
+          'pubspec.yaml when publishing with an attestation.',
+        );
+      }
+      try {
+        attestationBytes = readBinaryFile(_withAttestation);
+      } on FileSystemException catch (e) {
+        dataError('Failed reading attestation file "$_withAttestation": $e');
+      }
+      if (attestationBytes.isEmpty) {
+        dataError('The attestation file "$_withAttestation" is empty.');
+      }
+      try {
+        final decoded = jsonDecode(utf8.decode(attestationBytes));
+        if (decoded is! Map<String, dynamic>) {
+          dataError(
+            'The attestation file "$_withAttestation" must contain a JSON '
+            'object.',
+          );
+        }
+      } on FormatException catch (e) {
+        dataError(
+          'The attestation file "$_withAttestation" is not valid JSON: '
+          '${e.message}',
+        );
+      }
+    }
+
     log.message('Publishing ${pubspec.name} ${pubspec.version} to $host.');
     return _Publication(
       packageBytes: packageBytes,
       warningCount: 0,
       hintCount: 0,
       pubspec: pubspec,
+      attestationBytes: attestationBytes,
     );
   }
 
@@ -509,7 +609,11 @@ the \$PUB_HOSTED_URL environment variable.''');
       final host = computeHost(publication.pubspec);
       await _confirmUpload(publication, host);
 
-      await _publish(publication.packageBytes, host);
+      await _publish(
+        publication.packageBytes,
+        host,
+        attestationBytes: publication.attestationBytes,
+      );
     } else {
       if (dryRun) {
         log.message('Would have written to $_toArchive.');
@@ -538,6 +642,7 @@ the \$PUB_HOSTED_URL environment variable.''');
 
 class _Publication {
   Uint8List packageBytes;
+  Uint8List? attestationBytes;
   int warningCount;
   int hintCount;
 
@@ -555,5 +660,6 @@ class _Publication {
     required this.warningCount,
     required this.hintCount,
     required this.pubspec,
+    this.attestationBytes,
   });
 }
