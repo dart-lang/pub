@@ -314,6 +314,20 @@ void main() {
         ]),
       ]).validate();
     });
+
+    test('removes old .packages file', () async {
+      await servePackages();
+
+      await d.dir(appPath, [
+        d.appPubspec(),
+        d.dir('lib'),
+        d.file('.packages', 'some old content'),
+      ]).create();
+
+      await pubCommand(command);
+
+      await d.dir(appPath, [d.nothing('.packages')]).validate();
+    });
   });
 
   test('pubspec.lock, package_config, package_graph and workspace_ref '

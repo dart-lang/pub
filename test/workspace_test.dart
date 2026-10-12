@@ -926,6 +926,7 @@ foo:foomain''',
         File(
           p.join(dir, '.dart_tool', 'package_config.json'),
         ).createSync(recursive: true);
+        File(p.join(dir, '.packages')).createSync(recursive: true);
       }
 
       void validateLockFileAndPackageConfig(
@@ -939,31 +940,36 @@ foo:foomain''',
           ).statSync().type,
           state,
         );
+        expect(File(p.join(dir, '.packages')).statSync().type, state);
       }
 
+      final rootDir = p.join(sandbox, appPath);
       createLockFileAndPackageConfig(sandbox);
       createLockFileAndPackageConfig(aDir);
       createLockFileAndPackageConfig(pkgsDir);
       createLockFileAndPackageConfig(inside);
+      File(p.join(rootDir, '.packages')).createSync(recursive: true);
 
       await pubGet(
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-        warning: allOf(
+        warning: allOf([
           contains('Deleting old lock-file: `.${s}pkgs${s}a${s}pubspec.lock'),
           isNot(contains('.${s}pkgs${s}b${s}pubspec.lock')),
           contains(
             'Deleting old package config: '
             '`.${s}pkgs${s}a$s.dart_tool${s}package_config.json`',
           ),
+          contains('Deleting old .packages file: `.${s}pkgs${s}a$s.packages`'),
           contains('Deleting old lock-file: `.${s}pkgs${s}pubspec.lock'),
           contains(
             'Deleting old package config: '
             '`.${s}pkgs$s.dart_tool${s}package_config.json`',
           ),
+          contains('Deleting old .packages file: `.${s}pkgs$s.packages`'),
           contains(
             'See https://dart.dev/go/workspaces-stray-files for details.',
           ),
-        ),
+        ]),
       );
 
       validateLockFileAndPackageConfig(
@@ -973,6 +979,10 @@ foo:foomain''',
       validateLockFileAndPackageConfig(aDir, FileSystemEntityType.notFound);
       validateLockFileAndPackageConfig(pkgsDir, FileSystemEntityType.notFound);
       validateLockFileAndPackageConfig(inside, FileSystemEntityType.file);
+      expect(
+        File(p.join(rootDir, '.packages')).statSync().type,
+        FileSystemEntityType.notFound,
+      );
     },
   );
 
