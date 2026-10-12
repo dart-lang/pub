@@ -29,6 +29,7 @@ import '../path.dart';
 import '../platform_info.dart';
 import '../pubspec.dart';
 import '../rate_limited_scheduler.dart';
+import '../sigstore/verifier.dart';
 import '../source.dart';
 import '../system_cache.dart';
 import '../utils.dart';
@@ -257,6 +258,10 @@ class HostedSource extends CachedSource {
     if (sha256 != null && sha256 is! String) {
       throw const FormatException('The sha256 should be a string.');
     }
+    final provenance = description['provenance'];
+    if (provenance != null && provenance is! String) {
+      throw const FormatException('The provenance should be a string.');
+    }
     final foundName = description['name'];
     if (foundName is! String) {
       throw const FormatException('The name should be a string.');
@@ -270,6 +275,7 @@ class HostedSource extends CachedSource {
       ResolvedHostedDescription(
         HostedDescription(name, url),
         sha256: _parseContentHash(sha256 as String?),
+        provenance: provenance as String?,
       ),
     );
   }
@@ -443,12 +449,18 @@ class HostedSource extends CachedSource {
         isRetracted: retracted,
         advisoriesUpdated: advisoriesDate,
       );
+      final slsaLevelField = map['slsa_level'];
+      if (slsaLevelField != null && slsaLevelField is! int) {
+        throw FormatException('slsa_level must be an int', map);
+      }
+      final slsaLevel = slsaLevelField as int?;
       return HostedVersionInfo(
         pubspec.version,
         pubspec,
         Uri.parse(archiveUrl),
         status,
         parsedContentHash,
+        slsaLevel: slsaLevel,
       );
     }).toList();
   }
@@ -1308,8 +1320,12 @@ class HostedSource extends CachedSource {
         contentHash = hashFromCache;
       }
     }
+    final String? provenance;
     if (dirExists(packageDir)) {
       contentHash ??= sha256FromCache(id, cache);
+      provenance =
+          (id.description as ResolvedHostedDescription).provenance ??
+          provenanceFromCache(id, cache);
     } else {
       didUpdate = true;
       if (cache.isOffline) {
@@ -1318,13 +1334,17 @@ class HostedSource extends CachedSource {
           'Try again without --offline.',
         );
       }
-      contentHash = await _downloadAtomically(id, packageDir, cache);
+      final (hash, prov) = await _downloadAtomically(id, packageDir, cache);
+      contentHash = hash;
+      provenance = prov;
     }
     return DownloadPackageResult(
       PackageId(
         id.name,
         id.version,
-        (id.description as ResolvedHostedDescription).withSha256(contentHash),
+        (id.description as ResolvedHostedDescription)
+            .withSha256(contentHash)
+            .withProvenance(provenance),
       ),
       didUpdate: didUpdate,
     );
@@ -1376,6 +1396,86 @@ class HostedSource extends CachedSource {
       return null;
     } on FormatException catch (e) {
       log.fine('Bad content-hash in cache: $e, ignoring cache entry');
+      return null;
+    }
+  }
+
+  /// Parallel to `hosted-hashes` there is a `hosted-provenance` directory with
+  /// a stored provenance repository URL of all downloaded packages.
+  String provenancePath(PackageId id, SystemCache cache) {
+    final description = id.description.description;
+    if (description is! HostedDescription) {
+      throw ArgumentError('Wrong source');
+    }
+    final rootDir = cache.rootDir;
+
+    final serverDir = _urlToDirectory(description.url);
+    return p.join(
+      rootDir,
+      'hosted-provenance',
+      serverDir,
+      '${id.name}-${id.version}.provenance',
+    );
+  }
+
+  /// Loads the provenance repository at `provenancePath(id)`.
+  String? provenanceFromCache(PackageId id, SystemCache cache) {
+    try {
+      final text = readTextFile(provenancePath(id, cache)).trim();
+      return text.isEmpty ? null : text;
+    } on io.IOException {
+      return null;
+    }
+  }
+
+  /// Writes the provenance repository for [id] in the cache.
+  void writeProvenance(PackageId id, SystemCache cache, String provenance) {
+    final path = provenancePath(id, cache);
+    ensureDir(p.dirname(path));
+    writeTextFile(path, provenance);
+    // Also remember, independently of the version, that this package was
+    // attested at least once. See [packageProvenancePath].
+    final packagePath = packageProvenancePath(
+      id.description.description as HostedDescription,
+      cache,
+    );
+    ensureDir(p.dirname(packagePath));
+    writeTextFile(packagePath, provenance);
+  }
+
+  /// Next to the per-version provenance files there is a per-package file
+  /// recording the repository the package was last attested from.
+  ///
+  /// Whether an archive is verified must not be decided by the package
+  /// repository alone: a compromised repository could simply stop reporting
+  /// `slsa_level` for a package. Once we have seen an attestation for any
+  /// version of a package, we keep requiring one.
+  ///
+  /// Package names cannot contain `-`, so this never collides with the
+  /// `<name>-<version>.provenance` files.
+  String packageProvenancePath(
+    HostedDescription description,
+    SystemCache cache,
+  ) {
+    return p.join(
+      cache.rootDir,
+      'hosted-provenance',
+      _urlToDirectory(description.url),
+      '${description.packageName}.provenance',
+    );
+  }
+
+  /// Loads the repository of the last attestation seen for the package
+  /// described by [description], or `null` if it was never attested.
+  String? packageProvenanceFromCache(
+    HostedDescription description,
+    SystemCache cache,
+  ) {
+    try {
+      final text =
+          readTextFile(packageProvenancePath(description, cache)).trim();
+      return text.isEmpty ? null : text;
+    } on io.IOException {
       return null;
     }
   }
@@ -1566,18 +1666,19 @@ class HostedSource extends CachedSource {
   /// `$server/packages/$package/versions/$version.tar.gz` where server comes
   /// from `id.description`.
   ///
-  /// Returns the content-hash of the downloaded archive.
-  Future<Uint8List> _downloadAtomically(
+  /// Returns the content-hash and verified provenance repository of the
+  /// downloaded archive.
+  Future<(Uint8List, String?)> _downloadAtomically(
     PackageId id,
     String destPath,
     SystemCache cache,
   ) async {
     final tempDir = cache.createTempDir();
     try {
-      final contentHash = await _downloadAndExtract(id, tempDir, cache);
+      final result = await _downloadAndExtract(id, tempDir, cache);
       ensureDir(p.dirname(destPath));
       tryRenameDir(tempDir, destPath);
-      return contentHash;
+      return result;
     } catch (e) {
       deleteEntry(tempDir);
       rethrow;
@@ -1586,8 +1687,9 @@ class HostedSource extends CachedSource {
 
   /// Downloads the archive for [id] and extracts it to [destPath].
   ///
-  /// Returns the content-hash of the downloaded archive.
-  Future<Uint8List> _downloadAndExtract(
+  /// Returns the content-hash and verified provenance repository of the
+  /// downloaded archive.
+  Future<(Uint8List, String?)> _downloadAndExtract(
     PackageId id,
     String destPath,
     SystemCache cache,
@@ -1619,7 +1721,18 @@ class HostedSource extends CachedSource {
       );
     }
 
-    late final Uint8List contentHash;
+    Uint8List? contentHash;
+    String? attestationJson;
+
+    // The repository we have previously seen an attestation from for this
+    // package, if any.
+    final previousProvenance = packageProvenanceFromCache(description, cache);
+    // Attestations are fetched when the repository says there is one, but also
+    // when we have seen one before: the repository must not be able to skip
+    // verification by simply not reporting `slsa_level`.
+    final expectAttestation =
+        versionInfo.slsaLevel != null || previousProvenance != null;
+
     final archiveUrl = versionInfo.archiveUrl;
     log.io('Get package from $archiveUrl.');
     log.fine('Downloading ${log.bold(id.name)} ${id.version}...');
@@ -1654,8 +1767,9 @@ This indicates a problem on the package repository: `${description.url}`.
 See $contentHashesDocumentationUrl.
 ''');
         }
-        contentHash = Uint8List.fromList(actualHash.bytes);
-        writeHash(id, cache, contentHash);
+        final hash = Uint8List.fromList(actualHash.bytes);
+        contentHash = hash;
+        writeHash(id, cache, hash);
       }
 
       // It is important that we do not compare against id.description.sha256,
@@ -1704,13 +1818,169 @@ See $contentHashesDocumentationUrl.
         _throwFriendlyError(error, stackTrace, id.name, description.url);
       }
 
+      // Fetch the Sigstore attestation. It is verified below, once the archive
+      // has been extracted and we can read the `repository` field of the
+      // pubspec it contains.
+      if (expectAttestation) {
+        attestationJson = await _fetchAttestation(id, description, cache);
+      }
+
       try {
         await extractTarGz(readBinaryFileAsStream(archivePath), destPath);
       } on FormatException catch (e) {
         dataError('Failed to extract `$archivePath`: ${e.message}.');
       }
-      return contentHash;
+
+      final verifiedProvenance = _verifyAttestation(
+        id,
+        description,
+        cache,
+        attestationJson: attestationJson,
+        archiveSha256: contentHash!,
+        extractedPath: destPath,
+        slsaLevel: versionInfo.slsaLevel,
+        previousProvenance: previousProvenance,
+      );
+      if (verifiedProvenance != null) {
+        writeProvenance(id, cache, verifiedProvenance);
+      }
+      return (contentHash!, verifiedProvenance);
     });
+  }
+
+  /// Fetches the Sigstore attestation of [id] from the package repository, or
+  /// returns `null` if the repository serves none (`404`).
+  ///
+  /// This is a separate request from the archive download with its own
+  /// retries: a failing attestation endpoint must neither re-download the
+  /// archive on every attempt nor be reported as a failure to find the
+  /// package.
+  Future<String?> _fetchAttestation(
+    PackageId id,
+    HostedDescription description,
+    SystemCache cache,
+  ) async {
+    final attestationUri = Uri.parse(
+      description.url,
+    ).resolve('api/packages/${id.name}/versions/${id.version}/attestation');
+    try {
+      return await withAuthenticatedClient(cache, Uri.parse(description.url), (
+        client,
+      ) async {
+        return await retryForHttp('fetching "$attestationUri"', () async {
+          try {
+            final request = http.Request('GET', attestationUri);
+            return (await client.fetch(request)).body;
+          } on PubHttpResponseException catch (e) {
+            if (e.response.statusCode == HttpStatus.notFound) {
+              log.fine(
+                'No attestation served for ${id.name}-${id.version} '
+                'at $attestationUri.',
+              );
+              return null;
+            }
+            // Do not swallow errors here: an unverified package must not be
+            // the result of a failed request. Intermittent failures are
+            // retried by [retryForHttp].
+            rethrow;
+          }
+        });
+      });
+    } on Exception catch (e) {
+      // `PubHttpException` after the retries are exhausted, or an
+      // `AuthenticationException` for a `401`/`403` from the endpoint.
+      if (e is! PubHttpException && e is! AuthenticationException) rethrow;
+      throw PackageIntegrityException('''
+Failed to fetch the attestation of ${id.name}-${id.version} from `$attestationUri`:
+${e is PubHttpException ? e.message : e}
+
+This indicates a problem on the package repository `${description.url}`, or
+with a proxy in front of it that does not forward attestation requests.
+''');
+    }
+  }
+
+  /// Verifies [attestationJson] against the archive with the sha256 digest
+  /// [archiveSha256], which has been extracted to [extractedPath], and returns
+  /// the repository the package was built from.
+  ///
+  /// Returns `null` if the package is not attested, and throws if it should
+  /// have been.
+  String? _verifyAttestation(
+    PackageId id,
+    HostedDescription description,
+    SystemCache cache, {
+    required String? attestationJson,
+    required Uint8List archiveSha256,
+    required String extractedPath,
+    required int? slsaLevel,
+    required String? previousProvenance,
+  }) {
+    AttestationVerificationResult? result;
+    if (attestationJson != null) {
+      // The `repository` of the version listing is served by the package
+      // repository and therefore not trustworthy. The pubspec inside the
+      // archive is covered by the attested digest.
+      final pubspecPath = p.join(extractedPath, 'pubspec.yaml');
+      final Pubspec pubspec;
+      try {
+        pubspec = Pubspec.parse(
+          readTextFile(pubspecPath),
+          cache.sources,
+          containingDescription: ResolvedRootDescription.fromDir('.'),
+        );
+      } on Exception catch (e) {
+        throw PackageIntegrityException('''
+Could not read the pubspec of the attested archive for ${id.name}-${id.version}: $e
+
+This indicates a problem on the package repository: `${description.url}`.
+''');
+      }
+      final declaredRepository = pubspec.fields['repository']?.toString();
+
+      result = PubAttestationVerifier(cache: cache).verify(
+        packageName: id.name,
+        packageVersion: id.version,
+        archiveSha256: archiveSha256,
+        bundleJson: attestationJson,
+        declaredPackageName: pubspec.name,
+        declaredPackageVersion: pubspec.version,
+        expectedRepository: declaredRepository,
+      );
+      if (!result.isValid) {
+        throw PackageIntegrityException('''
+Downloaded archive for ${id.name}-${id.version} failed Sigstore attestation verification:
+${result.errors.map((e) => '  * $e').join('\n')}
+
+This indicates a problem on the package repository: `${description.url}`.
+''');
+      }
+      log.fine(
+        'Verified Sigstore attestation for ${id.name}-${id.version} '
+        'from repository ${result.repository}.',
+      );
+    } else if (slsaLevel != null) {
+      throw PackageIntegrityException('''
+The package repository reports that ${id.name}-${id.version} has SLSA level $slsaLevel,
+but served no attestation for it.
+
+This indicates a problem on the package repository: `${description.url}`.
+''');
+    }
+
+    // Throws if a previously attested package is no longer attested, and warns
+    // if it changed repository.
+    ProvenancePolicy.enforcePolicy(
+      packageName: id.name,
+      version: id.version,
+      currentProvenance: result?.provenance,
+      previousLockedProvenance:
+          previousProvenance == null
+              ? null
+              : ProvenanceInfo(repository: previousProvenance),
+      onWarning: log.warning,
+    );
+    return result?.repository;
   }
 
   /// Writes the contenthash for [id] in the cache.
@@ -2018,30 +2288,43 @@ class ResolvedHostedDescription extends ResolvedDescription {
   ///   (will be null if the file doesn't exist for corrupt or legacy caches).
   final Uint8List? sha256;
 
+  /// The verified Sigstore provenance repository of the package, or null if
+  /// not signed or unknown.
+  final String? provenance;
+
   ResolvedHostedDescription(
     HostedDescription super.description, {
     required this.sha256,
+    this.provenance,
   });
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {
     final hash = sha256;
+    final prov = provenance;
     return {
       'name': description.packageName,
       'url': description.url,
       if (hash != null) 'sha256': hexEncode(hash),
+      if (prov != null) 'provenance': prov,
     };
   }
 
   @override
-  // We do not include the sha256 in the hashCode because of the equality
-  // semantics.
+  // We do not include the sha256 or the provenance in the hashCode because of
+  // the equality semantics: a `null` value compares equal to any other value,
+  // so including them would break the hashCode/== contract.
   int get hashCode => description.hashCode;
 
   @override
   bool operator ==(Object other) {
     return other is ResolvedHostedDescription &&
         other.description == description &&
+        // A [provenance] of `null` means that we don't know the provenance
+        // yet. Therefore we have to assume it is equal to any known value.
+        (provenance == null ||
+            other.provenance == null ||
+            provenance == other.provenance) &&
         // A [sha256] of `null` means that we don't know the hash yet.
         // Therefore we have to assume it is equal to any known value.
         (sha256 == null ||
@@ -2050,7 +2333,22 @@ class ResolvedHostedDescription extends ResolvedDescription {
   }
 
   ResolvedHostedDescription withSha256(Uint8List? newSha256) =>
-      ResolvedHostedDescription(description, sha256: newSha256);
+      ResolvedHostedDescription(
+        description,
+        sha256: newSha256,
+        provenance: provenance,
+      );
+
+  /// Returns a description with [newProvenance], if it is not `null`.
+  ///
+  /// A known provenance is never cleared: that would silently drop the
+  /// repository binding of an already verified package.
+  ResolvedHostedDescription withProvenance(String? newProvenance) =>
+      ResolvedHostedDescription(
+        description,
+        sha256: sha256,
+        provenance: newProvenance ?? provenance,
+      );
 }
 
 /// Information about a package version retrieved from /api/packages/$package<
@@ -2062,14 +2360,16 @@ class HostedVersionInfo {
   /// The sha256 digest of the archive according to the package-repository.
   final Uint8List? archiveSha256;
   final PackageStatus status;
+  final int? slsaLevel;
 
   HostedVersionInfo(
     this.version,
     this.pubspec,
     this.archiveUrl,
     this.status,
-    this.archiveSha256,
-  );
+    this.archiveSha256, {
+    this.slsaLevel,
+  });
 }
 
 /// Information about a security advisory affecting a package. The information

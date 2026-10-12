@@ -49,6 +49,10 @@ class SystemCache {
 
   String get tempDir => p.join(rootDir, '_temp');
 
+  /// The path to the cached Sigstore trusted root in the pub cache.
+  String get sigstoreTrustedRootPath =>
+      p.join(rootDir, 'sigstore', 'trusted_root.json');
+
   static String defaultDir =
       (() {
         final envCache = platform.environment['PUB_CACHE'];
