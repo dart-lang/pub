@@ -148,6 +148,7 @@ class LishCommand extends PubCommand {
     Uint8List? attestationBytes,
   }) async {
     Uri? cloudStorageUrl;
+    Uri? attestationUploadUrl;
 
     try {
       await log.progress('Uploading', () async {
@@ -181,8 +182,9 @@ class LishCommand extends PubCommand {
           if (attestationUrl is! String) {
             invalidServerResponse(parametersResponse);
           }
+          attestationUploadUrl = Uri.parse(attestationUrl);
           await retryForHttp('uploading attestation', () async {
-            final request = http.Request('POST', Uri.parse(attestationUrl));
+            final request = http.Request('POST', attestationUploadUrl!);
             request.attachPubApiHeaders();
             request.headers[HttpHeaders.contentTypeHeader] = 'application/json';
             request.bodyBytes = attestationBytes;
@@ -262,6 +264,15 @@ class LishCommand extends PubCommand {
         fail(log.red('Failed to upload the package.'));
       } else if (Uri.parse(url.origin) == Uri.parse(host.origin)) {
         handleJsonError(error.response);
+      } else if (url == attestationUploadUrl) {
+        // The repository may direct the attestation upload to another origin
+        // (e.g. a storage service), whose error response is not a pub JSON
+        // error.
+        final response = error.response;
+        if (response is http.Response && response.body.trim().isNotEmpty) {
+          log.error('Server message: ${sanitizeForTerminal(response.body)}');
+        }
+        fail(log.red('Failed to upload the attestation.'));
       } else {
         rethrow;
       }

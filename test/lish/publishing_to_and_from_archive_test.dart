@@ -202,6 +202,70 @@ void main() {
     expect(server.requestedPaths, isNot(contains('upload')));
   });
 
+  test('Fails when the attestation upload to another origin fails', () async {
+    final server = await servePackages();
+    // The repository directs the attestation upload to another origin (e.g. a
+    // storage service), which fails with an error that is not a pub JSON
+    // error.
+    final attestationServer = await startPackageServer();
+    await d
+        .validPackage(
+          pubspecExtras: {
+            'repository': 'https://github.com/dart-lang/test_pkg',
+          },
+        )
+        .create();
+    await d.credentialsFile(server, 'access-token').create();
+    await runPub(
+      args: [
+        'lish',
+        '--skip-validation',
+        '--to-archive',
+        p.join('..', 'archive.tar.gz'),
+      ],
+    );
+
+    final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+    File(bundlePath).writeAsStringSync('{"mediaType": "sigstore"}');
+
+    attestationServer.expect('POST', '/attestation', (request) {
+      return Response.forbidden('<Error><Code>AccessDenied</Code></Error>');
+    });
+
+    final pub = await startPublish(
+      server,
+      args: [
+        '--from-archive',
+        'archive.tar.gz',
+        '--with-attestation',
+        bundlePath,
+      ],
+      workingDirectory: d.sandbox,
+    );
+
+    expect(pub.stdout, emitsThrough('Publishing from archive: archive.tar.gz'));
+    await confirmPublish(pub);
+
+    handleUploadForm(
+      server,
+      body: {
+        ...uploadFormBody(server),
+        'attestationUrl':
+            Uri.parse(attestationServer.url).resolve('/attestation').toString(),
+      },
+    );
+
+    expect(
+      pub.stderr,
+      emitsThrough('Server message: <Error><Code>AccessDenied</Code></Error>'),
+    );
+    expect(pub.stderr, emits('Failed to upload the attestation.'));
+    await pub.shouldExit(1);
+
+    // We should fail before uploading the archive.
+    expect(server.requestedPaths, isNot(contains('upload')));
+  });
+
   test('Fails when the repository rejects the attestation', () async {
     final server = await servePackages();
     await d
