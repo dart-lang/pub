@@ -117,7 +117,6 @@ void main() {
         buildProvenanceBundleJson(
           subjectName: 'helpful-0.1.2.tar.gz',
           subjectSha256: 'abc123',
-          repository: 'https://github.com/dieter/helpful',
           ref: 'refs/tags/v0.1.2',
           commitSha: 'deadbeef',
         ),
