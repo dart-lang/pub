@@ -71,13 +71,12 @@ void main() {
       expect(entry.header.userName, equals('pub'));
       expect(entry.header.groupName, equals('pub'));
       if (entry.type == TypeFlag.dir) {
-        if (!Platform.isWindows) {
-          expect(entry.header.mode, equals(_defaultMode | _executableMask));
-        }
-      } else {
-        if (!Platform.isWindows) {
-          expect(entry.header.mode, equals(_defaultMode));
-        }
+        // Directory modes do not depend on the platform.
+        expect(entry.header.mode, equals(_defaultMode | _executableMask));
+      } else if (!Platform.isWindows) {
+        // File modes keep the executable bits of the file, which are not
+        // meaningful on Windows.
+        expect(entry.header.mode, equals(_defaultMode));
       }
     }
 

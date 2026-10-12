@@ -1340,7 +1340,6 @@ ByteStream createTarGz(List<String> contents, {required String baseDir}) {
   contents.forEach(buffer.writeln);
   log.fine(buffer.toString());
 
-  ArgumentError.checkNotNull(baseDir, 'baseDir');
   baseDir = p.normalize(p.absolute(baseDir));
 
   final epoch = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
