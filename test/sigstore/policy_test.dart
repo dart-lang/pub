@@ -5,7 +5,6 @@
 @TestOn('vm')
 library;
 
-import 'package:pub/src/sigstore/provenance.dart';
 import 'package:pub/src/sigstore/verifier.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';

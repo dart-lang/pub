@@ -17,71 +17,69 @@ import '../../sigstore/test_fixtures.dart';
 import '../../test_pub.dart';
 
 void main() {
-  test(
-    'verifies a real signed package attestation and records provenance (helpful 0.1.5)',
-    () async {
-      final server = await servePackages();
-      server.serve(
-        'helpful',
-        '0.1.5',
-        slsaLevel: 2,
-        archiveBytes: helpfulArchiveBytes,
-        pubspec: {'repository': 'https://github.com/mosuem/helpful'},
+  test('verifies a real signed package attestation and records provenance '
+      '(helpful 0.1.5)', () async {
+    final server = await servePackages();
+    server.serve(
+      'helpful',
+      '0.1.5',
+      slsaLevel: 2,
+      archiveBytes: helpfulArchiveBytes,
+      pubspec: {'repository': 'https://github.com/mosuem/helpful'},
+    );
+    server.handle('/api/packages/helpful/versions/0.1.5/attestation', (
+      request,
+    ) {
+      return Response.ok(
+        helpfulBundleJson,
+        headers: {'content-type': 'application/json; charset="utf-8"'},
       );
-      server.handle('/api/packages/helpful/versions/0.1.5/attestation', (
-        request,
-      ) {
-        return Response.ok(
-          helpfulBundleJson,
-          headers: {'content-type': 'application/json; charset="utf-8"'},
-        );
-      });
+    });
 
-      await d
-          .appDir(
-            dependencies: {
-              'helpful': {'hosted': server.url, 'version': '^0.1.0'},
-            },
-          )
-          .create();
+    await d
+        .appDir(
+          dependencies: {
+            'helpful': {'hosted': server.url, 'version': '^0.1.0'},
+          },
+        )
+        .create();
 
-      await pubGet();
+    await pubGet();
 
-      final cacheDir = server.pathInCache('helpful', '0.1.5');
-      expect(Directory(cacheDir).existsSync(), isTrue);
+    final cacheDir = server.pathInCache('helpful', '0.1.5');
+    expect(Directory(cacheDir).existsSync(), isTrue);
 
-      final versionProvenance = File(
-        p.join(server.provenanceCachingPath, 'helpful-0.1.5.provenance'),
-      );
-      final packageProvenance = File(
-        p.join(server.provenanceCachingPath, 'helpful.provenance'),
-      );
-      expect(
-        versionProvenance.readAsStringSync(),
-        'https://github.com/mosuem/helpful',
-      );
-      expect(
-        packageProvenance.readAsStringSync(),
-        'https://github.com/mosuem/helpful',
-      );
+    final versionProvenance = File(
+      p.join(server.provenanceCachingPath, 'helpful-0.1.5.provenance'),
+    );
+    final packageProvenance = File(
+      p.join(server.provenanceCachingPath, 'helpful.provenance'),
+    );
+    expect(
+      versionProvenance.readAsStringSync(),
+      'https://github.com/mosuem/helpful',
+    );
+    expect(
+      packageProvenance.readAsStringSync(),
+      'https://github.com/mosuem/helpful',
+    );
 
-      final lockfile =
-          File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync();
-      expect(
-        lockfile,
-        contains('provenance: "https://github.com/mosuem/helpful"'),
-      );
+    final lockfile =
+        File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync();
+    expect(
+      lockfile,
+      contains('provenance: "https://github.com/mosuem/helpful"'),
+    );
 
-      // Serving a newer unattested version of the same package must be
-      // rejected as a downgrade even if the lockfile is deleted.
-      File(p.join(d.sandbox, appPath, 'pubspec.lock')).deleteSync();
-      server.serve('helpful', '0.1.6');
-      await pubGet(
-        error: contains('Downgrading from a signed package'),
-        exitCode: DATA,
-      );
-    },
-  );
+    // Serving a newer unattested version of the same package must be
+    // rejected as a downgrade even if the lockfile is deleted.
+    File(p.join(d.sandbox, appPath, 'pubspec.lock')).deleteSync();
+    server.serve('helpful', '0.1.6');
+    await pubGet(
+      error: contains('Downgrading from a signed package'),
+      exitCode: DATA,
+    );
+  });
 
   test('proceeds when no attestation is served by repository', () async {
     final server = await servePackages();
