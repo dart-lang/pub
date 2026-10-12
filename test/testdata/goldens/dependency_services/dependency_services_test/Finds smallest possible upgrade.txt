@@ -31,7 +31,7 @@ $ echo '{"target":"foo","disallowed":[{"name":"foo","url":"http://localhost:$POR
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "effaacd54b31939dc8a71e3ccc6b14fa70f544a23a91d8b11eeba869d09cc789"
+          "sha256": "c024d3eef712815020cdcc5c3cdde5534a497cca24828cc2c038188222fa4650"
         }
       },
       "latest": "1.1.4",
@@ -46,7 +46,7 @@ $ echo '{"target":"foo","disallowed":[{"name":"foo","url":"http://localhost:$POR
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "5c90f73bc6f153b0c6ab43579dea6dea0ab9aa9ff0244f780936e47303a7768c"
+              "sha256": "df40439b243ca308ba6fd0cbf8cfc3f10561152df4df6c43ceb77e12ee44fb03"
             }
           },
           "constraintBumped": "^1.0.0",
@@ -59,7 +59,7 @@ $ echo '{"target":"foo","disallowed":[{"name":"foo","url":"http://localhost:$POR
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "effaacd54b31939dc8a71e3ccc6b14fa70f544a23a91d8b11eeba869d09cc789"
+              "sha256": "c024d3eef712815020cdcc5c3cdde5534a497cca24828cc2c038188222fa4650"
             }
           }
         }
@@ -74,7 +74,7 @@ $ echo '{"target":"foo","disallowed":[{"name":"foo","url":"http://localhost:$POR
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "5c90f73bc6f153b0c6ab43579dea6dea0ab9aa9ff0244f780936e47303a7768c"
+              "sha256": "df40439b243ca308ba6fd0cbf8cfc3f10561152df4df6c43ceb77e12ee44fb03"
             }
           },
           "constraintBumped": "^1.1.4",
@@ -87,7 +87,7 @@ $ echo '{"target":"foo","disallowed":[{"name":"foo","url":"http://localhost:$POR
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "effaacd54b31939dc8a71e3ccc6b14fa70f544a23a91d8b11eeba869d09cc789"
+              "sha256": "c024d3eef712815020cdcc5c3cdde5534a497cca24828cc2c038188222fa4650"
             }
           }
         }
@@ -102,7 +102,7 @@ $ echo '{"target":"foo","disallowed":[{"name":"foo","url":"http://localhost:$POR
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "5c90f73bc6f153b0c6ab43579dea6dea0ab9aa9ff0244f780936e47303a7768c"
+              "sha256": "df40439b243ca308ba6fd0cbf8cfc3f10561152df4df6c43ceb77e12ee44fb03"
             }
           },
           "constraintBumped": "^1.1.4",
@@ -115,7 +115,7 @@ $ echo '{"target":"foo","disallowed":[{"name":"foo","url":"http://localhost:$POR
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "effaacd54b31939dc8a71e3ccc6b14fa70f544a23a91d8b11eeba869d09cc789"
+              "sha256": "c024d3eef712815020cdcc5c3cdde5534a497cca24828cc2c038188222fa4650"
             }
           }
         }
@@ -130,7 +130,7 @@ $ echo '{"target":"foo","disallowed":[{"name":"foo","url":"http://localhost:$POR
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "9ee54a074bcfbbb539b0458bd1c7e636bbccd85c4b202b9fce0a931ed63c472a"
+              "sha256": "5d3f75344e64e22dd3d7cba2282d9ad06bdf579ab343c753c0d659e7d1876c02"
             }
           },
           "constraintBumped": "^1.1.3",
@@ -143,7 +143,7 @@ $ echo '{"target":"foo","disallowed":[{"name":"foo","url":"http://localhost:$POR
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "effaacd54b31939dc8a71e3ccc6b14fa70f544a23a91d8b11eeba869d09cc789"
+              "sha256": "c024d3eef712815020cdcc5c3cdde5534a497cca24828cc2c038188222fa4650"
             }
           }
         }

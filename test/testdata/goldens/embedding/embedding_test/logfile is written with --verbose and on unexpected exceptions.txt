@@ -52,7 +52,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E] FINE: Computed checksum $CRC32C for foo 1.0.0 with expected CRC32C of $CRC32C.
 [E] IO  : Writing $N characters to text file $SANDBOX/cache/hosted-hashes/localhost%58$PORT/foo-1.0.0.sha256.
 [E] FINE: Contents:
-[E]    | c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df
+[E]    | 383c02bfb0e60cdc6ef684502ce5f60e8ccea85d47ff36614dcba457dbe29b7e
 [E] FINE: Created $FILE from stream
 [E] IO  : Reading binary file $FILE.
 [E] FINE: Extracting .tar.gz stream to $DIR
@@ -229,7 +229,7 @@ IO  : Creating $FILE from stream
 FINE: Computed checksum $CRC32C for foo 1.0.0 with expected CRC32C of $CRC32C.
 IO  : Writing $N characters to text file $SANDBOX/cache/hosted-hashes/localhost%58$PORT/foo-1.0.0.sha256.
 FINE: Contents:
-   | c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df
+   | 383c02bfb0e60cdc6ef684502ce5f60e8ccea85d47ff36614dcba457dbe29b7e
 FINE: Created $FILE from stream
 IO  : Reading binary file $FILE.
 FINE: Extracting .tar.gz stream to $DIR
