@@ -65,6 +65,18 @@ void main() {
     expect(root['certificateAuthorities'], isEmpty);
   });
 
+  test('ignores a corrupt trusted_root.json in the pub cache', () async {
+    // The cached root is not something the user wrote: a corrupt one must not
+    // fail every attested package, the built-in root is used instead.
+    await d.dir('cache', [
+      d.dir('sigstore', [d.file('trusted_root.json', '{not json')]),
+    ]).create();
+
+    final cache = SystemCache(rootDir: p.join(d.sandbox, 'cache'));
+    expect(loadTrustedRootJson(cache: cache), isNull);
+    expect(loadTrustedRoot(cache: cache), isNull);
+  });
+
   test('returns null when no override or cache is found', () {
     final root = loadTrustedRoot();
     expect(root, isNull);

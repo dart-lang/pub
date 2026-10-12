@@ -83,6 +83,9 @@ class PubAttestationVerifier {
     String? overrideTrustedRootJson,
     bool offline = true,
     Set<String> trustedSignerWorkflows = defaultTrustedSignerWorkflows,
+    // TODO(https://github.com/dart-lang/pub/issues/4942): Default to `true`
+    // once the publishing workflow of `dart-lang/setup-dart` is released on a
+    // tag. Until then any branch of that repository is accepted.
     bool requireTaggedSignerRef = false,
   }) : _cache = cache,
        _overrideTrustedRootPath = overrideTrustedRootPath,
@@ -91,7 +94,8 @@ class PubAttestationVerifier {
        _trustedSignerWorkflows = trustedSignerWorkflows,
        _requireTaggedSignerRef = requireTaggedSignerRef;
 
-  /// Verifies that [archiveBytes] is the archive of [packageName] at
+  /// Verifies that the archive with the sha256 digest [archiveSha256] is the
+  /// archive of [packageName] at
   /// [packageVersion], built by a trusted workflow from [expectedRepository].
   ///
   /// [bundleJson] is the Sigstore bundle as served by the package repository.
@@ -100,7 +104,7 @@ class PubAttestationVerifier {
   /// guaranteed to happen on the same bytes.
   ///
   /// [expectedRepository] is the `repository:` field of the `pubspec.yaml`
-  /// *inside* [archiveBytes]. The pubspec of the version listing must not be
+  /// *inside* the archive. The pubspec of the version listing must not be
   /// used: only the archive is covered by the attested digest. If
   /// [requireRepository] is `true`, verification fails when
   /// [expectedRepository] is missing - an attestation that is not bound to a
@@ -109,26 +113,36 @@ class PubAttestationVerifier {
   AttestationVerificationResult verify({
     required String packageName,
     required Version packageVersion,
-    required List<int> archiveBytes,
+    required List<int> archiveSha256,
     required String bundleJson,
     String? declaredPackageName,
     Version? declaredPackageVersion,
     String? expectedRepository,
     bool requireRepository = true,
   }) {
+    if (archiveSha256.length != 32) {
+      throw ArgumentError.value(
+        archiveSha256,
+        'archiveSha256',
+        'must be a 32-byte sha256 digest',
+      );
+    }
+
+    // Loaded outside of the `try` below: a missing or unreadable trusted root
+    // is a local configuration problem, not a problem with the attestation,
+    // and must not be reported as one. An empty string makes
+    // `package:sigstore` fall back to its built-in production root of trust.
+    final trustedRootJson =
+        _overrideTrustedRootJson ??
+        loadTrustedRootJson(
+          cache: _cache,
+          overridePath: _overrideTrustedRootPath,
+        ) ??
+        '';
+
     String? identity;
     String? issuer;
     try {
-      // A `null` trusted root makes `package:sigstore` fall back to its
-      // built-in production root of trust.
-      final trustedRootJson =
-          _overrideTrustedRootJson ??
-          loadTrustedRootJson(
-            cache: _cache,
-            overridePath: _overrideTrustedRootPath,
-          ) ??
-          '';
-
       // Throws [SigstoreError.invalidBundle], handled below.
       final bundle = SigstoreBundle.fromJson(bundleJson);
 
@@ -147,7 +161,10 @@ class PubAttestationVerifier {
         '',
       );
 
-      final result = client.verify(archiveBytes, false, bundle, policy);
+      // Verifying against the digest (`isDigest: true`): the archive was
+      // already hashed while it was downloaded, and the subject digest of the
+      // in-toto statement is compared against it.
+      final result = client.verify(archiveSha256, true, bundle, policy);
       if (!result.isValid()) {
         return AttestationVerificationResult.failure(
           packageName: packageName,
@@ -189,7 +206,7 @@ class PubAttestationVerifier {
       final errors = checkProvenancePolicy(
         packageName: packageName,
         packageVersion: packageVersion,
-        archiveSha256: sha256.convert(archiveBytes).toString(),
+        archiveSha256: Digest(archiveSha256).toString(),
         provenance: provenance,
         signer: signer,
         oidcIssuer: issuer,
@@ -314,8 +331,8 @@ List<String> checkProvenancePolicy({
       '${(trustedSignerWorkflows.toList()..sort()).join(', ')}.',
     );
   } else if (requireTaggedSignerRef && !signer.ref.startsWith('refs/tags/')) {
-    // TODO(sigurdm): Pin the signing workflow by the `job_workflow_sha`
-    // certificate extension (OID 1.3.6.1.4.1.57264.1.20) once
+    // TODO(https://github.com/dart-lang/pub/issues/4942): Pin the signing
+    // workflow by the `job_workflow_sha` certificate extension once
     // `package:sigstore` exposes it. A ref is mutable, a sha is not.
     errors.add(
       'Attestation was signed by "${signer.workflow}" at "${signer.ref}", '
