@@ -91,7 +91,7 @@ void main() {
       ],
     );
 
-    final bundleContent = '{"mediaType": "sigstore"}';
+    const bundleContent = '{"mediaType": "sigstore"}';
     final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
     File(bundlePath).writeAsStringSync(bundleContent);
 
@@ -316,7 +316,7 @@ void main() {
         ],
       );
 
-      final bundleContent = '{"mediaType": "sigstore"}';
+      const bundleContent = '{"mediaType": "sigstore"}';
       final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
       File(bundlePath).writeAsStringSync(bundleContent);
 

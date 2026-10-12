@@ -494,12 +494,14 @@ the \$PUB_HOSTED_URL environment variable.''');
         final decoded = jsonDecode(utf8.decode(attestationBytes));
         if (decoded is! Map<String, dynamic>) {
           dataError(
-            'The attestation file "$_withAttestation" must contain a JSON object.',
+            'The attestation file "$_withAttestation" must contain a JSON '
+            'object.',
           );
         }
       } on FormatException catch (e) {
         dataError(
-          'The attestation file "$_withAttestation" is not valid JSON: ${e.message}',
+          'The attestation file "$_withAttestation" is not valid JSON: '
+          '${e.message}',
         );
       }
     }
