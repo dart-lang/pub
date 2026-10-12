@@ -52,7 +52,7 @@ $ echo '' | dependency_services list
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df"
+          "sha256": "383c02bfb0e60cdc6ef684502ce5f60e8ccea85d47ff36614dcba457dbe29b7e"
         }
       }
     }
@@ -91,7 +91,7 @@ $ echo '' | dependency_services report
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df"
+          "sha256": "383c02bfb0e60cdc6ef684502ce5f60e8ccea85d47ff36614dcba457dbe29b7e"
         }
       },
       "latest": "2.0.0",
@@ -107,7 +107,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "fee5502506315776878d8556f0f041c9c5c552716db3b25fc43ce1f0175a992d"
+              "sha256": "8668f31da04cf0ae61ce876a25efa672f2aa59ae3c471326c2960fc8bd835f25"
             }
           },
           "constraintBumped": "^2.0.0",
@@ -120,7 +120,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df"
+              "sha256": "383c02bfb0e60cdc6ef684502ce5f60e8ccea85d47ff36614dcba457dbe29b7e"
             }
           }
         }
@@ -135,7 +135,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "fee5502506315776878d8556f0f041c9c5c552716db3b25fc43ce1f0175a992d"
+              "sha256": "8668f31da04cf0ae61ce876a25efa672f2aa59ae3c471326c2960fc8bd835f25"
             }
           },
           "constraintBumped": "^2.0.0",
@@ -148,7 +148,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df"
+              "sha256": "383c02bfb0e60cdc6ef684502ce5f60e8ccea85d47ff36614dcba457dbe29b7e"
             }
           }
         }

@@ -31,7 +31,7 @@ $ echo '{"target":null,"disallowed":[{"name":"foo","url":"http://localhost:$PORT
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df"
+          "sha256": "383c02bfb0e60cdc6ef684502ce5f60e8ccea85d47ff36614dcba457dbe29b7e"
         }
       },
       "latest": "1.0.3",
@@ -46,7 +46,7 @@ $ echo '{"target":null,"disallowed":[{"name":"foo","url":"http://localhost:$PORT
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "2d3e97e5c2da80e2814780d28feca697e7940417b13860f44772c6084cb9fd8f"
+              "sha256": "8d7d4ee47865aad41af49f5057a57d5c84175ddfdfbe11978013b46ecca05606"
             }
           },
           "constraintBumped": "^1.0.0",
@@ -59,7 +59,7 @@ $ echo '{"target":null,"disallowed":[{"name":"foo","url":"http://localhost:$PORT
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df"
+              "sha256": "383c02bfb0e60cdc6ef684502ce5f60e8ccea85d47ff36614dcba457dbe29b7e"
             }
           }
         }
@@ -75,7 +75,7 @@ $ echo '{"target":null,"disallowed":[{"name":"foo","url":"http://localhost:$PORT
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "2d3e97e5c2da80e2814780d28feca697e7940417b13860f44772c6084cb9fd8f"
+              "sha256": "8d7d4ee47865aad41af49f5057a57d5c84175ddfdfbe11978013b46ecca05606"
             }
           },
           "constraintBumped": "^1.0.1",
@@ -88,7 +88,7 @@ $ echo '{"target":null,"disallowed":[{"name":"foo","url":"http://localhost:$PORT
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df"
+              "sha256": "383c02bfb0e60cdc6ef684502ce5f60e8ccea85d47ff36614dcba457dbe29b7e"
             }
           }
         }
