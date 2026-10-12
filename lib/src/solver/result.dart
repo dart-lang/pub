@@ -5,12 +5,15 @@
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../exceptions.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
+import '../sigstore/verifier.dart';
 import '../source/cached.dart';
+import '../source/hosted.dart';
 import '../system_cache.dart';
 
 /// The result of a successful version resolution.
@@ -78,6 +81,38 @@ class SolveResult {
     );
     // Invariant: the content-hashes in PUB_CACHE matches those provided by the
     // server.
+
+    // Enforce lockfile provenance policy against previous locks
+    for (final id in resolvedPackageIds) {
+      if (id.description is! ResolvedHostedDescription) continue;
+      final currentDesc = id.description as ResolvedHostedDescription;
+      final prevId = _previousLockFile.packages[id.name];
+      final prevDesc =
+          prevId?.description is ResolvedHostedDescription
+              ? prevId!.description as ResolvedHostedDescription
+              : null;
+
+      final prevProvenance =
+          prevDesc?.provenance != null
+              ? ProvenanceInfo(repository: prevDesc!.provenance!)
+              : null;
+      final currentProvenance =
+          currentDesc.provenance != null
+              ? ProvenanceInfo(repository: currentDesc.provenance!)
+              : null;
+
+      try {
+        ProvenancePolicy.enforcePolicy(
+          packageName: id.name,
+          version: id.version,
+          currentProvenance: currentProvenance,
+          previousLockedProvenance: prevProvenance,
+          onWarning: log.warning,
+        );
+      } on PackageProvenanceException catch (e) {
+        throw PackageIntegrityException(e.message);
+      }
+    }
 
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
