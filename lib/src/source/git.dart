@@ -191,9 +191,74 @@ class GitSource extends CachedSource {
           containingDir: containingDir,
           tagPattern: tagPattern,
         ),
-        resolvedRef,
+        _validatedResolvedRef(resolvedRef),
       ),
     );
+  }
+
+  /// Matches whitespace and ASCII control characters, none of which can occur
+  /// in a git ref name.
+  ///
+  /// See https://git-scm.com/docs/git-check-ref-format ("They cannot have
+  /// ASCII control characters (i.e. bytes whose values are lower than \040, or
+  /// \177 DEL), space, ...").
+  static final _refForbiddenCharacters = RegExp(r'[\s\x00-\x1f\x7f]');
+
+  /// Matches a full hexadecimal commit id: 40 digits for SHA-1 repositories,
+  /// 64 for SHA-256 repositories (see
+  /// https://git-scm.com/docs/git-init#Documentation/git-init.txt---object-formatltformatgt).
+  ///
+  /// Abbreviated ids are not accepted: pub always writes the full id reported
+  /// by git, and an abbreviation does not pin a commit unambiguously.
+  static final _commitId = RegExp(r'^([0-9a-fA-F]{40}|[0-9a-fA-F]{64})$');
+
+  /// Validates that [ref] can safely be passed to git as a revision.
+  ///
+  /// Returns [ref] unchanged, or `null` if [ref] is `null`.
+  ///
+  /// This is deliberately not a full check of git's revision syntax (users may
+  /// legitimately use expressions like `HEAD~1`, see
+  /// https://git-scm.com/docs/gitrevisions). It only rejects values that are
+  /// never valid and that git would otherwise interpret as something other
+  /// than a revision:
+  /// - the empty string,
+  /// - a leading `-`, which git would parse as a command line option,
+  /// - whitespace and control characters, see [_refForbiddenCharacters].
+  ///
+  /// Throws a [FormatException] if [ref] is rejected.
+  static String? _validatedRef(String? ref) {
+    if (ref == null) return null;
+    if (ref.isEmpty) {
+      throw const FormatException(
+        "The 'ref' field of the description must not be empty.",
+      );
+    }
+    if (ref.startsWith('-')) {
+      throw FormatException(
+        '"$ref" is not a valid Git ref, it must not start with "-".',
+      );
+    }
+    if (_refForbiddenCharacters.hasMatch(ref)) {
+      throw FormatException(
+        '"$ref" is not a valid Git ref, it must not contain whitespace or '
+        'control characters.',
+      );
+    }
+    return ref;
+  }
+
+  /// Validates that [resolvedRef] (from a lockfile) is a full hexadecimal
+  /// commit id, as written by `git rev-list` (see [_commitId]).
+  ///
+  /// Throws a [FormatException] otherwise.
+  static String _validatedResolvedRef(String resolvedRef) {
+    if (!_commitId.hasMatch(resolvedRef)) {
+      throw FormatException(
+        "The 'resolved-ref' field of the description must be a full "
+        'hexadecimal commit id (40 or 64 digits), was "$resolvedRef".',
+      );
+    }
+    return resolvedRef;
   }
 
   /// Throws a [FormatException] if [url] isn't a valid Git URL.
@@ -467,7 +532,7 @@ class GitSource extends CachedSource {
       if (!git.isInstalled) {
         fail(
           'Cannot get ${id.name} from Git (${description.url}).\n'
-          'Please ensure Git is correctly installed.',
+          '${git.missingGitMessage}',
         );
       }
 
@@ -1166,7 +1231,7 @@ class GitDescription extends Description {
     return GitDescription.raw(
       url: validatedUrl.url,
       relative: validatedUrl.wasRelative,
-      ref: ref,
+      ref: GitSource._validatedRef(ref),
       path: path,
       tagPattern: tagPattern,
     );

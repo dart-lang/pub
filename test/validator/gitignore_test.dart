@@ -80,7 +80,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    await setUpFakeGitScript(bash: 'echo "Not git"', batch: 'echo "Not git"');
+    await setUpFakeGitScript(bash: 'echo "Not git"');
     await expectValidation(
       allOf([contains('Package has 0 warnings.')]),
       exit_codes.SUCCESS,
