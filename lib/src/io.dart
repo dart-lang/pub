@@ -908,6 +908,12 @@ Future flushThenExit(int status) {
 /// The spawned process will inherit its parent's environment variables. If
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
+///
+/// If [executable] is a bare name, it is resolved against `PATH` by the
+/// operating system (on Windows only `.exe` files are considered). The
+/// executable is never started through a shell unless [runInShell] is `true`.
+/// Never combine [runInShell] with untrusted [args]: `cmd.exe` interprets
+/// metacharacters such as `&` in arguments as command separators.
 Future<StringProcessResult> runProcess(
   String executable,
   List<String> args, {
@@ -922,11 +928,7 @@ Future<StringProcessResult> runProcess(
   return _descriptorPool.withResource(() async {
     ProcessResult result;
     try {
-      (executable, args) = _sanitizeExecutablePath(
-        executable,
-        args,
-        workingDir: workingDir,
-      );
+      log.process(executable, args, workingDir ?? '.');
       result = await Process.run(
         executable,
         args,
@@ -970,11 +972,7 @@ Future<PubProcess> startProcess(
   return _descriptorPool.request().then((resource) async {
     Process ioProcess;
     try {
-      (executable, args) = _sanitizeExecutablePath(
-        executable,
-        args,
-        workingDir: workingDir,
-      );
+      log.process(executable, args, workingDir ?? '.');
       ioProcess = await Process.start(
         executable,
         args,
@@ -1007,11 +1005,7 @@ StringProcessResult runProcessSync(
   ArgumentError.checkNotNull(executable, 'executable');
   ProcessResult result;
   try {
-    (executable, args) = _sanitizeExecutablePath(
-      executable,
-      args,
-      workingDir: workingDir,
-    );
+    log.process(executable, args, workingDir ?? '.');
     result = Process.runSync(
       executable,
       args,
@@ -1044,11 +1038,7 @@ BytesProcessResult runProcessSyncBytes(
 }) {
   ProcessResult result;
   try {
-    (executable, args) = _sanitizeExecutablePath(
-      executable,
-      args,
-      workingDir: workingDir,
-    );
+    log.process(executable, args, workingDir ?? '.');
     result = Process.runSync(
       executable,
       args,
@@ -1170,26 +1160,6 @@ class PubProcess {
   /// Sends [signal] to the underlying process.
   bool kill([ProcessSignal signal = ProcessSignal.sigterm]) =>
       _process.kill(signal);
-}
-
-/// Sanitizes the executable path on windows for [Process.start], [Process.run]
-/// and [Process.runSync].
-(String, List<String>) _sanitizeExecutablePath(
-  String executable,
-  List<String> args, {
-  String? workingDir,
-}) {
-  // TODO(rnystrom): Should dart:io just handle this?
-  // Spawning a process on Windows will not look for the executable in the
-  // system path. So, if executable looks like it needs that (i.e. it doesn't
-  // have any path separators in it), then spawn it through a shell.
-  if (platform.isWindows && !executable.contains('\\')) {
-    args = ['/c', executable, ...args];
-    executable = 'cmd';
-  }
-
-  log.process(executable, args, workingDir ?? '.');
-  return (executable, args);
 }
 
 /// Updates [path]'s modification time.
