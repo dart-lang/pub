@@ -216,8 +216,8 @@ class LishCommand extends PubCommand {
             'package repository.\nYou can modify credentials using:\n'
             '    $topLevelProgram pub token add $host\n';
       }
-      if (error.serverMessage != null) {
-        msg += '\n${error.serverMessage!}\n';
+      if (error.serverMessage?.isNotEmpty == true) {
+        msg += '\nMessage from server: ${log.bold(error.serverMessage!)}\n';
       }
       dataError(msg + log.red('Authentication failed!'));
     } on PubHttpResponseException catch (error) {

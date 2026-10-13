@@ -1855,7 +1855,7 @@ See $contentHashesDocumentationUrl.
       }
 
       if (error.serverMessage?.isNotEmpty == true && hint != null) {
-        hint += '\n${error.serverMessage}';
+        hint += '\nMessage from server: ${log.bold(error.serverMessage!)}';
       }
 
       throw PackageNotFoundException(message, hint: hint);
