@@ -10,10 +10,7 @@ import '../validator.dart';
 
 /// A validator of the SDK constraint.
 ///
-/// Validates that a package's SDK constraint:
-/// * has an upper bound.
-/// * is not depending on a prerelease, unless the package itself is a
-/// prerelease.
+/// Validates that a package's SDK constraint has an upper bound.
 class SdkConstraintValidator extends Validator {
   @override
   Future validate() async {
@@ -31,21 +28,6 @@ class SdkConstraintValidator extends Validator {
         );
       }
 
-      final constraintMin = originalConstraint.min;
-      final packageVersion = package.version;
-
-      if (constraintMin != null &&
-          constraintMin.isPreRelease &&
-          !packageVersion.isPreRelease) {
-        warnings.add(
-          'Packages with an SDK constraint on a pre-release of the Dart SDK '
-          'should themselves be published as a pre-release version. '
-          'If this package needs Dart version $constraintMin, consider '
-          'publishing the package as a pre-release instead.\n'
-          'See https://dart.dev/tools/pub/publishing#publishing-prereleases '
-          'For more information on pre-releases.',
-        );
-      }
       if (
       // We only want to give this hint if there was no other problems with
       // the sdk constraint.
