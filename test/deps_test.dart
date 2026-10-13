@@ -353,6 +353,18 @@ void main() {
       },
     );
 
+    test("re-resolves and succeeds when a cached package's pubspec.yaml is "
+        'deleted with --json', () async {
+      await pubGet();
+      deleteEntry(
+        p.join(d.sandbox, d.hostedCachePath(), 'normal-1.2.3', 'pubspec.yaml'),
+      );
+      await runPub(
+        args: ['deps', '--json'],
+        output: contains('"name": "normal"'),
+      );
+    });
+
     test('with the Flutter SDK, if applicable', () async {
       await pubGet();
 
