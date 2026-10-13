@@ -1308,6 +1308,16 @@ class HostedSource extends CachedSource {
         contentHash = hashFromCache;
       }
     }
+    if (dirExists(packageDir) &&
+        !fileExists(p.join(packageDir, 'pubspec.yaml'))) {
+      // The entry is unusable without a `pubspec.yaml`. Pub never extracts a
+      // package without one, so something else has damaged the cache.
+      log.warning(
+        'Cached version of ${id.name}-${id.version} is missing its '
+        'pubspec.yaml - redownloading.',
+      );
+      deleteEntry(packageDir);
+    }
     if (dirExists(packageDir)) {
       contentHash ??= sha256FromCache(id, cache);
     } else {

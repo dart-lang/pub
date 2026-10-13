@@ -444,4 +444,26 @@ void main() {
       exitCode: UNAVAILABLE,
     );
   });
+
+  test('redownloads a cached package whose pubspec.yaml is missing', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
+    await pubGet();
+
+    final pubspecPath = p.join(
+      d.sandbox,
+      d.hostedCachePath(),
+      'foo-1.0.0',
+      'pubspec.yaml',
+    );
+    deleteEntry(pubspecPath);
+
+    await pubGet(
+      warning:
+          'Cached version of foo-1.0.0 is missing its pubspec.yaml '
+          '- redownloading.',
+    );
+    expect(fileExists(pubspecPath), isTrue);
+  });
 }
