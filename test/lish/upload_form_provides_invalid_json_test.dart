@@ -36,4 +36,29 @@ void main() {
     );
     await pub.shouldExit(1);
   });
+
+  test('upload form provides invalid JSON with control characters', () async {
+    await servePackages();
+    await d.validPackage().create();
+    await servePackages();
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
+
+    await confirmPublish(pub);
+
+    globalServer.expect(
+      'GET',
+      '/api/packages/versions/new',
+      (request) => shelf.Response.ok('{not json\x1b[31m\x00'),
+    );
+
+    expect(
+      pub.stderr,
+      emitsLines(
+        'Invalid server response:\n'
+        '{not json [31m ',
+      ),
+    );
+    await pub.shouldExit(1);
+  });
 }
