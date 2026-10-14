@@ -7,6 +7,7 @@ library;
 
 import 'dart:convert';
 
+import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -30,6 +31,49 @@ void main() {
     handleUploadForm(globalServer, body: body);
     expect(pub.stderr, emits('Invalid server response:'));
     expect(pub.stderr, emits(jsonEncode(body)));
+    await pub.shouldExit(1);
+  });
+
+  test('upload form url is not a valid url', () async {
+    await servePackages();
+    await d.validPackage().create();
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
+
+    await confirmPublish(pub);
+
+    final body = {
+      'url': 'http://[invalid',
+      'fields': {'field1': 'value1', 'field2': 'value2'},
+    };
+
+    handleUploadForm(globalServer, body: body);
+    expect(pub.stderr, emits('Invalid server response:'));
+    expect(pub.stderr, emits(jsonEncode(body)));
+    await pub.shouldExit(1);
+  });
+
+  test('upload redirect location is not a valid url', () async {
+    await servePackages();
+    await d.validPackage().create();
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
+
+    await confirmPublish(pub);
+
+    handleUploadForm(globalServer);
+
+    globalServer.expect('POST', '/upload', (request) async {
+      await request.read().drain<void>();
+      return shelf.Response(
+        302,
+        headers: {'location': 'http://[invalid'},
+        body: 'Redirecting to bad location',
+      );
+    });
+
+    expect(pub.stderr, emits('Invalid server response:'));
+    expect(pub.stderr, emits('Redirecting to bad location'));
     await pub.shouldExit(1);
   });
 }
