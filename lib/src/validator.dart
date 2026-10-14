@@ -14,6 +14,7 @@ import 'path.dart';
 import 'sdk.dart';
 import 'system_cache.dart';
 import 'validator/analyze.dart';
+import 'validator/api_breakage.dart';
 import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
@@ -146,6 +147,7 @@ abstract class Validator {
     final validators = [
       FileCaseValidator(),
       AnalyzeValidator(),
+      ApiBreakageValidator(),
       GitignoreValidator(),
       GitStatusValidator(),
       PubspecValidator(),
