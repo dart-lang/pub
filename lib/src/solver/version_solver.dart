@@ -14,6 +14,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
+import '../sdk.dart';
 import '../source/hosted.dart';
 import '../source/unknown.dart';
 import '../system_cache.dart';
@@ -96,6 +97,8 @@ class VersionSolver {
 
   final _stopwatch = Stopwatch();
 
+  final Set<String> _allowedExperiments;
+
   VersionSolver(
     this._type,
     this._systemCache,
@@ -105,7 +108,15 @@ class VersionSolver {
     Map<String, Version> sdkOverrides = const {},
   }) : _sdkOverrides = sdkOverrides,
        _dependencyOverrides = _root.allOverridesInWorkspace,
-       _unlock = {...unlock};
+       _unlock = {...unlock},
+       _allowedExperiments = {
+         ..._root.allExperimentsInWorkspace,
+         ...experimentsNotRequiringOptIn,
+         for (final package in _root.transitiveWorkspace)
+           for (final MapEntry(:key, :value)
+               in package.pubspec.declaredExperiments.entries)
+             if (!value.requiresOptIn) '${package.name}.$key',
+       };
 
   /// Prime the solver with [constraints].
   void addConstraints(Iterable<ConstraintAndCause> constraints) {
@@ -591,6 +602,8 @@ class VersionSolver {
           _systemCache,
           overriddenPackages: _overriddenPackages,
           sdkOverrides: _sdkOverrides,
+          allowedExperiments: _allowedExperiments,
+          enabledExperiments: _root.allExperimentsInWorkspace,
         );
       }
 
@@ -615,6 +628,8 @@ class VersionSolver {
         _getAllowedRetracted(ref.name),
         downgrade: _type == SolveType.downgrade,
         sdkOverrides: _sdkOverrides,
+        allowedExperiments: _allowedExperiments,
+        enabledExperiments: _root.allExperimentsInWorkspace,
       );
     });
   }
