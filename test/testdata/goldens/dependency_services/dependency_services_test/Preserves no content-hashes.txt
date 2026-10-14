@@ -12,21 +12,21 @@ packages:
       name: bar
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.2.3"
+    version: 1.2.3
   boo:
     dependency: "direct main"
     description:
       name: boo
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.2.3"
+    version: 1.2.3
   foo:
     dependency: "direct main"
     description:
       name: foo
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.2.3"
+    version: 1.2.3
 sdks:
   dart: ">=3.0.2 <4.0.0"
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -365,20 +365,20 @@ packages:
       name: bar
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.2.3"
+    version: 1.2.3
   boo:
     dependency: "direct main"
     description:
       name: boo
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.2.3"
+    version: 1.2.3
   foo:
     dependency: "direct main"
     description:
       name: foo
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.2.4"
+    version: 1.2.4
 sdks:
   dart: ">=3.0.2 <4.0.0"
