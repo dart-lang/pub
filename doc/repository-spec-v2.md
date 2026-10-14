@@ -220,9 +220,11 @@ server, this could work in many different ways.
 
 **Headers:**
 * `Accept: application/vnd.pub.v2+json`
+* `If-None-Match: <etag>` (optional)
 
 **Response**
 * `Content-Type: application/vnd.pub.v2+json`
+* `ETag: <etag>` (optional)
 
 ```js
 {
@@ -284,6 +286,14 @@ The `advisoriesUpdated` property is optional, if specified the client may assume
 that the advisories end-point is supported by the server. If present this must
 be a timestamp of when the result from the advisories end-point for this package
 changed.
+
+### Conditional Requests (ETags)
+
+Package repositories may optionally support standard HTTP conditional requests
+using [ETags](https://datatracker.ietf.org/doc/html/rfc9110#section-8.8.3)
+(`If-None-Match` / `304 Not Modified`). When an `ETag` response header is
+provided, the `dart pub` client may cache it and validates the cached listing on
+subsequent requests.
 
 ## Publishing Packages
 
