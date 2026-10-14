@@ -1580,7 +1580,9 @@ See https://dart.dev/go/sdk-constraint
         );
       } else if (constraint is VersionRange) {
         final min = constraint.min;
-        if (min != null && min < resolvedVersion) {
+        if (min != null &&
+            min < resolvedVersion &&
+            constraint.allows(resolvedVersion)) {
           changesForPackage[range] = range.toRef().withConstraint(
             VersionRange(
               min: resolvedVersion,
