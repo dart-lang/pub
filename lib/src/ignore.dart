@@ -577,9 +577,14 @@ bool _matchesStack(List<_IgnorePrefixPair?> ignores, String path) {
   // If a rule matches, the result is true if the rule is not negative.
   for (final ignorePair in ignores.reversed) {
     if (ignorePair == null) continue;
-    final prefixLength = ignorePair.prefix.length;
-    final s =
-        prefixLength == 0 ? path : path.substring(ignorePair.prefix.length);
+    final prefix = ignorePair.prefix;
+    // The prefix is not necessarily a prefix of [path]. This can happen if
+    // e.g. [listDir] returned entries not beneath the queried directory
+    // (seen with odd path spellings on Windows, see
+    // https://github.com/dart-lang/pub/issues/4765). Rules from such a
+    // directory cannot match [path], so skip them.
+    if (!path.startsWith(prefix)) continue;
+    final s = path.substring(prefix.length);
     for (final rule in ignorePair.ignore._rules.reversed) {
       if (rule.pattern.hasMatch(s)) {
         return !rule.negative;

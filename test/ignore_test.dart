@@ -109,6 +109,39 @@ void main() {
         }
       });
     }
+
+    test(
+      'listFiles with entries not beneath the listed directory '
+      '(https://github.com/dart-lang/pub/issues/4765)',
+      () {
+        // [listDir] can (with odd path spellings, seen on Windows) return
+        // entries that are not beneath the queried directory. The ignore
+        // rules of such a directory must not crash matching, nor match.
+        Iterable<String> listDir(String dir) {
+          if (dir == '.') return ['longer-directory'];
+          if (dir == 'longer-directory') return ['a'];
+          return [];
+        }
+
+        bool isDir(String path) =>
+            path == '.' || path == 'a' || path == 'longer-directory';
+
+        Ignore? ignoreForDir(String dir) =>
+            dir == 'longer-directory' ? Ignore(['*.txt']) : null;
+
+        // Used to throw `RangeError (start): Invalid value` in
+        // `_matchesStack`, because the prefix '/longer-directory/' is longer
+        // than the path '/a/' being matched.
+        expect(
+          Ignore.listFiles(
+            listDir: listDir,
+            ignoreForDir: ignoreForDir,
+            isDir: isDir,
+          ),
+          isEmpty,
+        );
+      },
+    );
   });
 
   ProcessResult runGit(List<String> args, {String? workingDirectory}) {
