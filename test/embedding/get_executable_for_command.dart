@@ -215,6 +215,11 @@ void testGetExecutableForCommand() {
           d.file('myapp.dart', 'main() {print(42);}'),
           d.file('tool.dart', 'main() {print(42);}'),
         ]),
+        d.dir('tool', [
+          d.file('helper.dart', 'main() {print(42);}'),
+          d.file('tool.dart', 'main() {print("from tool");}'),
+        ]),
+        d.dir('lib', [d.file('lib.dart', '')]),
       ]).create();
       final dir = d.path(appPath);
 
@@ -244,6 +249,30 @@ void testGetExecutableForCommand() {
         dir,
         executable: p.join(d.sandbox, appPath, 'bin', 'tool.dart'),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
+        resolution: ResolutionAttempt.fastPath,
+      );
+      await testGetExecutable(
+        ':helper',
+        dir,
+        executable: p.join(d.sandbox, appPath, 'tool', 'helper.dart'),
+        packageConfig: p.join('.dart_tool', 'package_config.json'),
+        resolution: ResolutionAttempt.fastPath,
+      );
+      await testGetExecutable(
+        ':helper',
+        p.join(dir, 'lib'),
+        executable: p.join(d.sandbox, appPath, 'tool', 'helper.dart'),
+        packageConfig: p.join('..', '.dart_tool', 'package_config.json'),
+        resolution: ResolutionAttempt.fastPath,
+      );
+      await testGetExecutable(
+        ':unknown',
+        dir,
+        errorMessage: contains(
+          'Could not find `bin${p.separator}unknown.dart` or '
+          '`tool${p.separator}unknown.dart` in package `myapp`.',
+        ),
+        issue: CommandResolutionIssue.noBinaryFound,
         resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(

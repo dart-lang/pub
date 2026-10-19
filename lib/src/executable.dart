@@ -82,6 +82,22 @@ Future<int> runExecutable(
     entrypoint.packageConfig,
     entrypoint.packageConfigPath,
   );
+  if (!fileExists(executablePath) &&
+      package == entrypoint.workPackage.name &&
+      p.dirname(executable.relativePath) == 'bin') {
+    final toolExecutable = Executable(
+      package,
+      p.join('tool', p.basename(executable.relativePath)),
+    );
+    final toolPath = toolExecutable.resolve(
+      entrypoint.packageConfig,
+      entrypoint.packageConfigPath,
+    );
+    if (fileExists(toolPath)) {
+      executable = toolExecutable;
+      executablePath = toolPath;
+    }
+  }
   if (!fileExists(executablePath)) {
     var message =
         'Could not find ${log.bold(p.normalize(executable.relativePath))}';
@@ -246,6 +262,8 @@ final class DartExecutableWithPackageConfig {
 ///   * If `<package>` is empty: default to the current package.
 ///   * If `<command>` is empty, resolve it as `bin/<package>.dart` or
 ///     `bin/main.dart` to the first that exists.
+///   * If `<package>` is the current package and `bin/<command>.dart` does not
+///     exist, fall back to `tool/<command>.dart`.
 ///
 /// For example:
 /// * `foo` will resolve to `foo:bin/foo.dart` or `foo:bin/main.dart`.
@@ -370,12 +388,30 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   final packageConfigPath = p.normalize(
     p.join(workspaceRootDir, '.dart_tool', 'package_config.json'),
   );
-  final path = executable.resolve(packageConfig, packageConfigPath);
+  var path = executable.resolve(packageConfig, packageConfigPath);
   if (!fileExists(p.join(rootOrCurrent, path))) {
-    throw CommandResolutionFailedException._(
-      'Could not find `bin${p.separator}$command.dart` in package `$package`.',
-      CommandResolutionIssue.noBinaryFound,
-    );
+    if (package == rootPackageName) {
+      final toolExecutable = Executable(
+        package,
+        p.join('tool', '$command.dart'),
+      );
+      final toolPath = toolExecutable.resolve(packageConfig, packageConfigPath);
+      if (fileExists(p.join(rootOrCurrent, toolPath))) {
+        path = toolPath;
+      } else {
+        throw CommandResolutionFailedException._(
+          'Could not find `bin${p.separator}$command.dart` or '
+          '`tool${p.separator}$command.dart` in package `$package`.',
+          CommandResolutionIssue.noBinaryFound,
+        );
+      }
+    } else {
+      throw CommandResolutionFailedException._(
+        'Could not find `bin${p.separator}$command.dart` '
+        'in package `$package`.',
+        CommandResolutionIssue.noBinaryFound,
+      );
+    }
   }
   return DartExecutableWithPackageConfig(
     executable: p.normalize(path),
