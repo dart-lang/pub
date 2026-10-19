@@ -269,8 +269,8 @@ void testGetExecutableForCommand() {
         ':unknown',
         dir,
         errorMessage: contains(
-          'Could not find `bin${p.separator}unknown.dart` or '
-          '`tool${p.separator}unknown.dart` in package `myapp`.',
+          'Could not find `bin/unknown.dart` or `tool/unknown.dart` in '
+          'package `myapp`.',
         ),
         issue: CommandResolutionIssue.noBinaryFound,
         resolution: ResolutionAttempt.fastPath,
