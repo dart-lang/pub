@@ -27,7 +27,7 @@ class DepsCommand extends PubCommand {
   String get description => 'Print package dependencies.';
 
   @override
-  String get argumentsDescription => '[arguments...]';
+  String get argumentsDescription => '[<package>...]';
 
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-deps';

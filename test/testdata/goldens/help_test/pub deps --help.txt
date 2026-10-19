@@ -4,7 +4,7 @@
 $ pub deps --help
 Print package dependencies.
 
-Usage: pub deps [arguments...]
+Usage: pub deps [<package>...]
 -h, --help               Print this usage information.
 -s, --style              How output should be displayed.
                          [compact, tree (default), list]
