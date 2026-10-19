@@ -33,20 +33,4 @@ void main() {
     expect(pub.stderr, emits('stderr output'));
     await pub.shouldExit(123);
   });
-
-  test(
-    'runs a tool/*.dart script in the entrypoint package with :name',
-    () async {
-      await d.dir(appPath, [
-        d.appPubspec(),
-        d.dir('tool', [d.file('script.dart', _script)]),
-      ]).create();
-
-      await pubGet();
-      final pub = await pubRun(args: [':script']);
-      expect(pub.stdout, emitsThrough('stdout output'));
-      expect(pub.stderr, emits('stderr output'));
-      await pub.shouldExit(123);
-    },
-  );
 }

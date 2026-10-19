@@ -76,9 +76,7 @@ class RunCommand extends PubCommand {
     // If there is no colon prefix, default to the root package.
     if (executable.contains(':')) {
       final components = split1(executable, ':');
-      if (components[0].isNotEmpty) {
-        package = components[0];
-      }
+      package = components[0];
       executable = components[1];
 
       if (p.split(executable).length > 1) {

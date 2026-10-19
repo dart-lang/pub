@@ -82,22 +82,6 @@ Future<int> runExecutable(
     entrypoint.packageConfig,
     entrypoint.packageConfigPath,
   );
-  if (!fileExists(executablePath) &&
-      package == entrypoint.workPackage.name &&
-      p.dirname(executable.relativePath) == 'bin') {
-    final toolExecutable = Executable(
-      package,
-      p.join('tool', p.basename(executable.relativePath)),
-    );
-    final toolPath = toolExecutable.resolve(
-      entrypoint.packageConfig,
-      entrypoint.packageConfigPath,
-    );
-    if (fileExists(toolPath)) {
-      executable = toolExecutable;
-      executablePath = toolPath;
-    }
-  }
   if (!fileExists(executablePath)) {
     var message =
         'Could not find ${log.bold(p.normalize(executable.relativePath))}';
