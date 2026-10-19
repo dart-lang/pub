@@ -247,11 +247,12 @@ final class DartExecutableWithPackageConfig {
 ///   * If `<command>` is empty, resolve it as `bin/<package>.dart` or
 ///     `bin/main.dart` to the first that exists.
 ///   * If `<package>` is the current package and `bin/<command>.dart` does not
-///     exist, fall back to `tool/<command>.dart`.
+///     exist, also try `tool/<command>.dart`.
 ///
 /// For example:
 /// * `foo` will resolve to `foo:bin/foo.dart` or `foo:bin/main.dart`.
-/// * `:foo` will resolve to `<current>:bin/foo.dart`.
+/// * `:foo` will resolve to `<current>:bin/foo.dart` or
+///   `<current>:tool/foo.dart`.
 /// * The empty string and `":"` both resolves to `<current>:bin/<current>.dart` or
 ///   `bin/<current>:main.dart`.
 ///
