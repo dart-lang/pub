@@ -12,6 +12,7 @@ Usage: pub deps [arguments...]
                          (defaults to on)
     --executables        List all available executables.
     --json               Output dependency information in a json format.
+    --from-root          Show paths from root packages down to the target packages instead of inverted.
 -C, --directory=<dir>    Run this in the directory <dir>.
 
 Run "pub help" to see global options.
