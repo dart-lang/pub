@@ -71,4 +71,472 @@ void main() {
     expect(File(d.path('archive.tar.gz')).existsSync(), isTrue);
     await runPub(args: ['cache', 'preload', p.join('..', 'archive.tar.gz')]);
   });
+
+  test('Can publish from archive with attestation bundle', () async {
+    final server = await servePackages();
+    await d
+        .validPackage(
+          pubspecExtras: {
+            'repository': 'https://github.com/dart-lang/test_pkg',
+          },
+        )
+        .create();
+    await d.credentialsFile(server, 'access-token').create();
+    await runPub(
+      args: [
+        'lish',
+        '--skip-validation',
+        '--to-archive',
+        p.join('..', 'archive.tar.gz'),
+      ],
+    );
+
+    const bundleContent = '{"mediaType": "sigstore"}';
+    final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+    File(bundlePath).writeAsStringSync(bundleContent);
+
+    server.expect('POST', '/attestation', (request) async {
+      expect(
+        request.headers,
+        containsPair('authorization', 'Bearer access-token'),
+      );
+      expect(request.headers['content-type'], startsWith('application/json'));
+      expect(await request.readAsString(), bundleContent);
+      return Response.ok('');
+    });
+
+    server.expect('GET', '/create', (request) {
+      return Response.ok(
+        jsonEncode({
+          'success': {
+            'message': 'Package test_pkg 1.0.0 with attestation uploaded!',
+          },
+        }),
+      );
+    });
+
+    final pub = await startPublish(
+      server,
+      args: [
+        '--from-archive',
+        'archive.tar.gz',
+        '--with-attestation',
+        bundlePath,
+      ],
+      workingDirectory: d.sandbox,
+    );
+
+    expect(pub.stdout, emitsThrough('Publishing from archive: archive.tar.gz'));
+    await confirmPublish(pub);
+
+    handleUploadForm(server, body: uploadFormBody(server, attestation: true));
+    handleUpload(server);
+
+    expect(pub.stdout, emitsThrough(startsWith('Uploading...')));
+    expect(
+      pub.stdout,
+      emits(
+        'Message from server: '
+        'Package test_pkg 1.0.0 with attestation uploaded!',
+      ),
+    );
+    await pub.shouldExit(SUCCESS);
+
+    // The attestation is uploaded before the archive, so that we don't upload
+    // the archive to a repository that rejects the attestation.
+    expect(
+      server.requestedPaths.indexOf('attestation'),
+      lessThan(server.requestedPaths.indexOf('upload')),
+    );
+  });
+
+  test('Fails when publishing with attestation to a server that does not '
+      'support it', () async {
+    final server = await servePackages();
+    await d
+        .validPackage(
+          pubspecExtras: {
+            'repository': 'https://github.com/dart-lang/test_pkg',
+          },
+        )
+        .create();
+    await d.credentialsFile(server, 'access-token').create();
+    await runPub(
+      args: [
+        'lish',
+        '--skip-validation',
+        '--to-archive',
+        p.join('..', 'archive.tar.gz'),
+      ],
+    );
+
+    final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+    File(bundlePath).writeAsStringSync('{"mediaType": "sigstore"}');
+
+    final pub = await startPublish(
+      server,
+      args: [
+        '--from-archive',
+        'archive.tar.gz',
+        '--with-attestation',
+        bundlePath,
+      ],
+      workingDirectory: d.sandbox,
+    );
+
+    expect(pub.stdout, emitsThrough('Publishing from archive: archive.tar.gz'));
+    await confirmPublish(pub);
+
+    // No `attestationUrl` in the response, hence, the repository does not
+    // support publishing with attestations.
+    handleUploadForm(server);
+
+    expect(pub.stdout, emitsThrough(startsWith('Uploading...')));
+    await pub.shouldExit(DATA);
+    expect(
+      pub.stderr,
+      emitsThrough(contains('does not support publishing with attestations')),
+    );
+
+    // We should fail before uploading the archive.
+    expect(server.requestedPaths, isNot(contains('upload')));
+  });
+
+  test('Fails when the attestation upload to another origin fails', () async {
+    final server = await servePackages();
+    // The repository directs the attestation upload to another origin (e.g. a
+    // storage service), which fails with an error that is not a pub JSON
+    // error.
+    final attestationServer = await startPackageServer();
+    await d
+        .validPackage(
+          pubspecExtras: {
+            'repository': 'https://github.com/dart-lang/test_pkg',
+          },
+        )
+        .create();
+    await d.credentialsFile(server, 'access-token').create();
+    await runPub(
+      args: [
+        'lish',
+        '--skip-validation',
+        '--to-archive',
+        p.join('..', 'archive.tar.gz'),
+      ],
+    );
+
+    final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+    File(bundlePath).writeAsStringSync('{"mediaType": "sigstore"}');
+
+    attestationServer.expect('POST', '/attestation', (request) {
+      return Response.forbidden('<Error><Code>AccessDenied</Code></Error>');
+    });
+
+    final pub = await startPublish(
+      server,
+      args: [
+        '--from-archive',
+        'archive.tar.gz',
+        '--with-attestation',
+        bundlePath,
+      ],
+      workingDirectory: d.sandbox,
+    );
+
+    expect(pub.stdout, emitsThrough('Publishing from archive: archive.tar.gz'));
+    await confirmPublish(pub);
+
+    handleUploadForm(
+      server,
+      body: {
+        ...uploadFormBody(server),
+        'attestationUrl':
+            Uri.parse(attestationServer.url).resolve('/attestation').toString(),
+      },
+    );
+
+    expect(
+      pub.stderr,
+      emitsThrough('Server message: <Error><Code>AccessDenied</Code></Error>'),
+    );
+    expect(pub.stderr, emits('Failed to upload the attestation.'));
+    await pub.shouldExit(1);
+
+    // We should fail before uploading the archive.
+    expect(server.requestedPaths, isNot(contains('upload')));
+  });
+
+  test('Fails when the repository rejects the attestation', () async {
+    final server = await servePackages();
+    await d
+        .validPackage(
+          pubspecExtras: {
+            'repository': 'https://github.com/dart-lang/test_pkg',
+          },
+        )
+        .create();
+    await d.credentialsFile(server, 'access-token').create();
+    await runPub(
+      args: [
+        'lish',
+        '--skip-validation',
+        '--to-archive',
+        p.join('..', 'archive.tar.gz'),
+      ],
+    );
+
+    final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+    File(bundlePath).writeAsStringSync('{"mediaType": "sigstore"}');
+
+    server.expect('POST', '/attestation', (request) {
+      return Response.badRequest(
+        body: jsonEncode({
+          'error': {
+            'code': 'PackageRejected',
+            'message': 'Not a valid Sigstore bundle.',
+          },
+        }),
+        headers: {'content-type': 'application/vnd.pub.v2+json'},
+      );
+    });
+
+    final pub = await startPublish(
+      server,
+      args: [
+        '--from-archive',
+        'archive.tar.gz',
+        '--with-attestation',
+        bundlePath,
+      ],
+      workingDirectory: d.sandbox,
+    );
+
+    expect(pub.stdout, emitsThrough('Publishing from archive: archive.tar.gz'));
+    await confirmPublish(pub);
+
+    handleUploadForm(server, body: uploadFormBody(server, attestation: true));
+
+    expect(
+      pub.stderr,
+      emits('Message from server: Not a valid Sigstore bundle.'),
+    );
+    await pub.shouldExit(1);
+
+    // We should fail before uploading the archive.
+    expect(server.requestedPaths, isNot(contains('upload')));
+  });
+
+  test(
+    'Fails when publishing with attestation without repository in pubspec',
+    () async {
+      await d.validPackage().create();
+      await runPub(
+        args: [
+          'lish',
+          '--skip-validation',
+          '--to-archive',
+          p.join('..', 'archive.tar.gz'),
+        ],
+      );
+
+      final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+      File(bundlePath).writeAsStringSync('{}');
+
+      await runPub(
+        args: [
+          'lish',
+          '--from-archive',
+          p.join(d.sandbox, 'archive.tar.gz'),
+          '--with-attestation',
+          bundlePath,
+        ],
+        error: contains(
+          'A repository must be specified in the "repository" field',
+        ),
+        exitCode: DATA,
+        workingDirectory: d.sandbox,
+      );
+    },
+  );
+
+  test(
+    'Allows publishing from archive with attestation and non-GitHub repository',
+    () async {
+      final server = await servePackages();
+      await d
+          .validPackage(
+            pubspecExtras: {
+              'repository': 'https://gitlab.com/dart-lang/test_pkg',
+            },
+          )
+          .create();
+      await d.credentialsFile(server, 'access-token').create();
+      await runPub(
+        args: [
+          'lish',
+          '--skip-validation',
+          '--to-archive',
+          p.join('..', 'archive.tar.gz'),
+        ],
+      );
+
+      const bundleContent = '{"mediaType": "sigstore"}';
+      final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+      File(bundlePath).writeAsStringSync(bundleContent);
+
+      server.expect('POST', '/attestation', (request) async {
+        expect(await request.readAsString(), bundleContent);
+        return Response.ok('');
+      });
+
+      server.expect('GET', '/create', (request) {
+        return Response.ok(
+          jsonEncode({
+            'success': {
+              'message': 'Package test_pkg 1.0.0 with attestation uploaded!',
+            },
+          }),
+        );
+      });
+
+      final pub = await startPublish(
+        server,
+        args: [
+          '--from-archive',
+          'archive.tar.gz',
+          '--with-attestation',
+          bundlePath,
+        ],
+        workingDirectory: d.sandbox,
+      );
+
+      expect(
+        pub.stdout,
+        emitsThrough('Publishing from archive: archive.tar.gz'),
+      );
+      await confirmPublish(pub);
+
+      handleUploadForm(server, body: uploadFormBody(server, attestation: true));
+      handleUpload(server);
+
+      expect(pub.stdout, emitsThrough(startsWith('Uploading...')));
+      await pub.shouldExit(SUCCESS);
+    },
+  );
+
+  test(
+    'Fails when --with-attestation is used without --from-archive',
+    () async {
+      await d.validPackage().create();
+      await runPub(
+        args: ['lish', '--with-attestation', 'bundle.json'],
+        error: contains(
+          '`--with-attestation` can only be used with `--from-archive`.',
+        ),
+        exitCode: USAGE,
+      );
+    },
+  );
+
+  test('Fails when attestation file is empty', () async {
+    await d
+        .validPackage(
+          pubspecExtras: {
+            'repository': 'https://github.com/dart-lang/test_pkg',
+          },
+        )
+        .create();
+    await runPub(
+      args: [
+        'lish',
+        '--skip-validation',
+        '--to-archive',
+        p.join('..', 'archive.tar.gz'),
+      ],
+    );
+
+    final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+    File(bundlePath).writeAsStringSync('');
+
+    await runPub(
+      args: [
+        'lish',
+        '--from-archive',
+        p.join(d.sandbox, 'archive.tar.gz'),
+        '--with-attestation',
+        bundlePath,
+      ],
+      error: contains('The attestation file "$bundlePath" is empty.'),
+      exitCode: DATA,
+      workingDirectory: d.sandbox,
+    );
+  });
+
+  test('Fails when attestation file is not valid JSON', () async {
+    await d
+        .validPackage(
+          pubspecExtras: {
+            'repository': 'https://github.com/dart-lang/test_pkg',
+          },
+        )
+        .create();
+    await runPub(
+      args: [
+        'lish',
+        '--skip-validation',
+        '--to-archive',
+        p.join('..', 'archive.tar.gz'),
+      ],
+    );
+
+    final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+    File(bundlePath).writeAsStringSync('not-json');
+
+    await runPub(
+      args: [
+        'lish',
+        '--from-archive',
+        p.join(d.sandbox, 'archive.tar.gz'),
+        '--with-attestation',
+        bundlePath,
+      ],
+      error: contains('is not valid JSON:'),
+      exitCode: DATA,
+      workingDirectory: d.sandbox,
+    );
+  });
+
+  test('Fails when attestation file is not a JSON object', () async {
+    await d
+        .validPackage(
+          pubspecExtras: {
+            'repository': 'https://github.com/dart-lang/test_pkg',
+          },
+        )
+        .create();
+    await runPub(
+      args: [
+        'lish',
+        '--skip-validation',
+        '--to-archive',
+        p.join('..', 'archive.tar.gz'),
+      ],
+    );
+
+    final bundlePath = p.join(d.sandbox, 'bundle.sigstore.json');
+    File(bundlePath).writeAsStringSync('["not", "a", "map"]');
+
+    await runPub(
+      args: [
+        'lish',
+        '--from-archive',
+        p.join(d.sandbox, 'archive.tar.gz'),
+        '--with-attestation',
+        bundlePath,
+      ],
+      error: contains('must contain a JSON object.'),
+      exitCode: DATA,
+      workingDirectory: d.sandbox,
+    );
+  });
 }
