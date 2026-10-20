@@ -180,4 +180,27 @@ void main() {
 
     await ctx.runExecutablesTest();
   });
+
+  testWithGolden('lists tool/*.dart executables from root package only', (
+    ctx,
+  ) async {
+    await d.dir('foo', [
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('bin', [d.file('bar.dart', _validMain)]),
+      d.dir('tool', [d.file('foo_tool.dart', _validMain)]),
+    ]).create();
+
+    await d.dir(appPath, [
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../foo'},
+        },
+      ),
+      d.dir('bin', [d.file('myapp.dart', _validMain)]),
+      d.dir('tool', [d.file('codegen.dart', _validMain)]),
+    ]).create();
+
+    await ctx.runExecutablesTest();
+    await ctx.run(['deps', '--executables', '--no-dev']);
+  });
 }

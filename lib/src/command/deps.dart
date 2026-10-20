@@ -162,7 +162,11 @@ class DepsCommand extends PubCommand {
             (name) => graph.packages[name],
           ),
         ])
-          ...package!.executableNames.map(
+          ...{
+            ...package!.executableNames,
+            if (workspacePackageNames.contains(package.name))
+              ...package.toolNames,
+          }.map(
             (name) =>
                 package == entrypoint.workspaceRoot
                     ? ':$name'
@@ -449,6 +453,9 @@ class DepsCommand extends PubCommand {
   /// Outputs all executables reachable from [entrypoint].
   Future<void> _outputExecutables(StringBuffer buffer) async {
     final graph = await entrypoint.packageGraph;
+    final workspacePackageNames = {
+      for (final p in entrypoint.workspaceRoot.transitiveWorkspace) p.name,
+    };
     final packages = {
       for (final p in entrypoint.workspaceRoot.transitiveWorkspace) ...[
         graph.packages[p.name]!,
@@ -459,7 +466,11 @@ class DepsCommand extends PubCommand {
     };
 
     for (var package in packages) {
-      final executables = package.executableNames;
+      final isWorkspacePackage = workspacePackageNames.contains(package.name);
+      final executables = <String>{
+        ...package.executableNames,
+        if (isWorkspacePackage && _includeDev) ...package.toolNames,
+      };
       if (executables.isNotEmpty) {
         buffer.writeln(_formatExecutables(package.name, executables.toList()));
       }
