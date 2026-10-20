@@ -111,6 +111,7 @@ class PackageServer {
               'archive_url':
                   '${server.url}/packages/$name/versions/${version.version}.tar.gz',
               if (version.isRetracted) 'retracted': true,
+              if (version.slsaLevel != null) 'slsa_level': version.slsaLevel,
               if (version.sha256 != null || server.serveContentHashes)
                 'archive_sha256':
                     version.sha256 ??
@@ -284,6 +285,9 @@ class PackageServer {
   String get hashesCachingPath =>
       p.join(d.sandbox, cachePath, 'hosted-hashes', 'localhost%58$port');
 
+  String get provenanceCachingPath =>
+      p.join(d.sandbox, cachePath, 'hosted-provenance', 'localhost%58$port');
+
   /// A map from package names to the concrete packages to serve.
   final _packages = <String, _ServedPackage>{};
 
@@ -300,8 +304,10 @@ class PackageServer {
     Map<String, dynamic>? deps,
     Map<String, dynamic>? pubspec,
     List<d.Descriptor>? contents,
+    List<int>? archiveBytes,
     String? sdk,
     Map<String, List<String>>? headers,
+    int? slsaLevel,
   }) {
     final pubspecFields = <String, dynamic>{
       'name': name,
@@ -318,7 +324,11 @@ class PackageServer {
     package.versions[version] = _ServedPackageVersion(
       pubspecFields,
       headers: headers,
-      contents: () => tarFromDescriptors(contents ?? []),
+      contents:
+          archiveBytes != null
+              ? () => Stream.value(archiveBytes)
+              : () => tarFromDescriptors(contents ?? []),
+      slsaLevel: slsaLevel,
     );
   }
 
@@ -426,10 +436,16 @@ class _ServedPackageVersion {
   bool isRetracted = false;
   // Overrides the calculated sha256.
   String? sha256;
+  int? slsaLevel;
 
   Version get version => Version.parse(pubspec['version'] as String);
 
-  _ServedPackageVersion(this.pubspec, {required this.contents, this.headers});
+  _ServedPackageVersion(
+    this.pubspec, {
+    required this.contents,
+    this.headers,
+    this.slsaLevel,
+  });
 
   Future<int> computeArchiveCrc32c() async {
     return await Crc32c.computeByConsumingStream(contents());
