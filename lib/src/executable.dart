@@ -246,11 +246,12 @@ final class DartExecutableWithPackageConfig {
 ///   * If `<package>` is empty: default to the current package.
 ///   * If `<command>` is empty, resolve it as `bin/<package>.dart` or
 ///     `bin/main.dart` to the first that exists.
-///   * If `<package>` is the current package and `bin/<command>.dart` does not
-///     exist, also try `tool/<command>.dart`.
+///   * If `<package>` is in the current workspace and `bin/<command>.dart` does
+///     not exist, also try `tool/<command>.dart`.
 ///
 /// For example:
-/// * `foo` will resolve to `foo:bin/foo.dart` or `foo:bin/main.dart`.
+/// * `foo` will resolve to `foo:bin/foo.dart` or `foo:bin/main.dart` (or
+///   `foo:tool/foo.dart` if `foo` is in the current workspace).
 /// * `:foo` will resolve to `<current>:bin/foo.dart` or
 ///   `<current>:tool/foo.dart`.
 /// * The empty string and `":"` both resolves to `<current>:bin/<current>.dart` or
@@ -363,7 +364,10 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     command = package;
   }
 
-  if (!packageConfig.packages.any((p) => p.name == package)) {
+  final targetPackage = packageConfig.packages.firstWhereOrNull(
+    (p) => p.name == package,
+  );
+  if (targetPackage == null) {
     throw CommandResolutionFailedException._(
       'Could not find package `$package` or file `$descriptor`',
       CommandResolutionIssue.packageNotFound,
@@ -375,7 +379,12 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   );
   var path = executable.resolve(packageConfig, packageConfigPath);
   if (!fileExists(p.join(rootOrCurrent, path))) {
-    if (package == rootPackageName) {
+    if (_isWorkspacePackage(
+      targetPackage,
+      rootPackageName,
+      workspaceRootDir,
+      packageConfigDir,
+    )) {
       final toolExecutable = Executable(
         package,
         p.join('tool', '$command.dart'),
@@ -402,6 +411,24 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     executable: p.normalize(path),
     packageConfig: p.relative(packageConfigPath, from: rootOrCurrent),
   );
+}
+
+bool _isWorkspacePackage(
+  PackageConfigEntry package,
+  String rootPackageName,
+  String workspaceRootDir,
+  String packageConfigDir,
+) {
+  if (package.name == rootPackageName) return true;
+  final packageRootDir = p.canonicalize(
+    package.resolvedRootDir(packageConfigDir),
+  );
+  final canonicalWorkspaceRoot = p.canonicalize(workspaceRootDir);
+  if (p.equals(packageRootDir, canonicalWorkspaceRoot)) return true;
+  return p.isWithin(canonicalWorkspaceRoot, packageRootDir) &&
+      fileExists(
+        p.join(packageRootDir, '.dart_tool', 'pub', 'workspace_ref.json'),
+      );
 }
 
 bool _looksLikeFile(String candidate) {

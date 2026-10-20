@@ -164,7 +164,8 @@ class DepsCommand extends PubCommand {
         ])
           ...{
             ...package!.executableNames,
-            if (package == entrypoint.workspaceRoot) ...package.toolNames,
+            if (workspacePackageNames.contains(package.name))
+              ...package.toolNames,
           }.map(
             (name) =>
                 package == entrypoint.workspaceRoot
