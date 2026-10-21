@@ -5,6 +5,7 @@
 @TestOn('vm')
 library;
 
+import 'package:pub/src/io.dart';
 import 'package:pub/src/path.dart';
 import 'package:test/test.dart';
 
@@ -337,6 +338,30 @@ void main() {
   ],
   "executables": []
 }''',
+      );
+    });
+
+    test(
+      're-resolves and succeeds when a cached package is deleted with --json',
+      () async {
+        await pubGet();
+        deleteEntry(p.join(d.sandbox, cachePath));
+        await runPub(
+          args: ['deps', '--json'],
+          output: contains('"name": "normal"'),
+        );
+      },
+    );
+
+    test("re-resolves and succeeds when a cached package's pubspec.yaml is "
+        'deleted with --json', () async {
+      await pubGet();
+      deleteEntry(
+        p.join(d.sandbox, d.hostedCachePath(), 'normal-1.2.3', 'pubspec.yaml'),
+      );
+      await runPub(
+        args: ['deps', '--json'],
+        output: contains('"name": "normal"'),
       );
     });
 
