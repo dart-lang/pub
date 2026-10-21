@@ -135,6 +135,9 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   bool get trace => _isVerbose;
 
   bool get _isVerbose {
-    return argResults.flag('verbose') || isVerbose();
+    return argResults.flag('verbose') ||
+        (globalResults?.options.contains('verbose') == true
+            ? globalResults!.flag('verbose')
+            : isVerbose());
   }
 }

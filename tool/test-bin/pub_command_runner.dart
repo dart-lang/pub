@@ -104,21 +104,25 @@ class RunCommand extends Command<int> {
 
 class Runner extends CommandRunner<int> {
   late ArgResults _results;
+  List<String> _args = const [];
 
   Runner() : super('pub_command_runner', 'Tests the embeddable pub command.') {
     addCommand(
-      pubCommand(isVerbose: () => _results.flag('verbose'))
+      pubCommand(
+          isVerbose: () => _args.contains('-v') || _args.contains('--verbose'),
+        )
         ..addSubcommand(ThrowingCommand())
         ..addSubcommand(EnsurePubspecResolvedCommand())
         ..addSubcommand(GetExecutableForCommandCommand()),
     );
     addCommand(RunCommand());
-    argParser.addFlag('verbose');
+    argParser.addFlag('verbose', abbr: 'v');
   }
 
   @override
   Future<int> run(Iterable<String> args) async {
     try {
+      _args = args.toList();
       _results = super.parse(args);
       if (_results.flag('verbose')) {
         log.verbosity = log.Verbosity.all;
