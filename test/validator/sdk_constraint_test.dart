@@ -43,6 +43,13 @@ void main() {
       await expectValidationDeprecated(sdkConstraint);
     });
 
+    test('depends on a pre-release sdk from a non-pre-release', () async {
+      await d.dir(appPath, [
+        d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0-dev.1 <2.0.0'),
+      ]).create();
+      await expectValidationDeprecated(sdkConstraint);
+    });
+
     test('has a Flutter SDK constraint with an appropriate Dart SDK '
         'constraint', () async {
       await d.dir(appPath, [
@@ -89,18 +96,6 @@ void main() {
       await expectValidationDeprecated(
         sdkConstraint,
         errors: anyElement(contains('should have an upper bound constraint')),
-      );
-    });
-
-    test('depends on a pre-release sdk from a non-pre-release', () async {
-      await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0-dev.1 <2.0.0'),
-      ]).create();
-      await expectValidationDeprecated(
-        sdkConstraint,
-        warnings: anyElement(
-          contains('consider publishing the package as a pre-release instead'),
-        ),
       );
     });
 
