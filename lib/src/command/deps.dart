@@ -27,13 +27,13 @@ class DepsCommand extends PubCommand {
   String get description => 'Print package dependencies.';
 
   @override
-  String get argumentsDescription => '[arguments...]';
+  String get argumentsDescription => '[<package>...]';
 
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-deps';
 
   @override
-  bool get takesArguments => false;
+  bool get takesArguments => true;
 
   /// Whether to include dev dependencies.
   bool get _includeDev => argResults.flag('dev');
@@ -65,6 +65,14 @@ class DepsCommand extends PubCommand {
       help: 'Output dependency information in a json format.',
     );
 
+    argParser.addFlag(
+      'from-root',
+      negatable: false,
+      help:
+          'Show paths from root packages down to the target packages '
+          'instead of inverted.',
+    );
+
     argParser.addOption(
       'directory',
       abbr: 'C',
@@ -76,6 +84,30 @@ class DepsCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     final buffer = StringBuffer();
+    final targetPackages = argResults.rest;
+
+    if (targetPackages.isNotEmpty) {
+      if (argResults.flag('json')) {
+        usageException('Cannot combine --json and package arguments.');
+      }
+      if (argResults.flag('executables')) {
+        usageException('Cannot combine --executables and package arguments.');
+      }
+      if (argResults.wasParsed('style') &&
+          argResults.option('style') != 'tree') {
+        usageException(
+          'Cannot combine --style=${argResults.option('style')} and '
+          'package arguments.',
+        );
+      }
+      await _outputTargetPackages(buffer, targetPackages);
+      log.message(buffer.toString());
+      return;
+    }
+
+    if (argResults.flag('from-root')) {
+      usageException('Cannot specify --from-root without target packages.');
+    }
 
     if (argResults.flag('json')) {
       if (argResults.wasParsed('dev')) {
@@ -392,6 +424,251 @@ class DepsCommand extends PubCommand {
 
   String _labelPackage(Package package) =>
       '${log.bold(package.name)} ${package.version}';
+
+  /// Outputs dependency paths explaining why [targets] are included.
+  Future<void> _outputTargetPackages(
+    StringBuffer buffer,
+    List<String> targets,
+  ) async {
+    final graph = await entrypoint.packageGraph;
+    final workspacePackageNames = {
+      for (final p in entrypoint.workspaceRoot.transitiveWorkspace) p.name,
+    };
+    final reachableNames = {
+      ...workspacePackageNames,
+      ...await _getAllDependencies(),
+    };
+
+    for (final target in targets) {
+      if (!graph.packages.containsKey(target)) {
+        dataError('Package "$target" is not a dependency.');
+      }
+      if (!reachableNames.contains(target)) {
+        dataError(
+          'Package "$target" is only included via dev_dependencies. '
+          'Run without --no-dev to see paths.',
+        );
+      }
+    }
+
+    for (final sdk in sdks.values) {
+      if (!sdk.isAvailable) continue;
+      buffer.writeln("${log.bold('${sdk.name} SDK')} ${sdk.version}");
+    }
+
+    if (argResults.flag('from-root')) {
+      await _outputFromRootTree(
+        buffer,
+        targets,
+        workspacePackageNames,
+        reachableNames,
+      );
+    } else {
+      await _outputInvertedTree(
+        buffer,
+        targets,
+        workspacePackageNames,
+        reachableNames,
+      );
+    }
+  }
+
+  /// Generates an inverted dependency tree starting from each package in
+  /// [targets] and walking up to the workspace root packages.
+  Future<void> _outputInvertedTree(
+    StringBuffer buffer,
+    List<String> targets,
+    Set<String> workspacePackageNames,
+    Set<String> reachableNames,
+  ) async {
+    final graph = await entrypoint.packageGraph;
+
+    List<Package> dependeesOf(String targetName, {required bool isTargetRoot}) {
+      if (!isTargetRoot && workspacePackageNames.contains(targetName)) {
+        return const [];
+      }
+      final result = <Package>[];
+      for (final name in reachableNames) {
+        if (name == targetName) continue;
+        final package = graph.packages[name]!;
+        if (_childrenOf(package, workspacePackageNames).contains(targetName)) {
+          result.add(package);
+        }
+      }
+      result.sort((a, b) => a.name.compareTo(b.name));
+      return result;
+    }
+
+    final packageTree = <String, Map>{};
+    for (final targetName in targets) {
+      final targetPackage = await _getPackage(targetName);
+      final rootMap = <String, Map>{};
+      packageTree[_labelPackage(targetPackage)] = rootMap;
+
+      final toWalk = Queue<(Package, String, Map<String, Map>)>();
+      final visited = <String>{targetPackage.name};
+
+      for (final dependee in dependeesOf(
+        targetPackage.name,
+        isTargetRoot: true,
+      )) {
+        toWalk.add((dependee, targetPackage.name, rootMap));
+      }
+
+      while (toWalk.isNotEmpty) {
+        final (package, dependedOn, map) = toWalk.removeFirst();
+        final annotation = _edgeAnnotation(
+          package,
+          dependedOn,
+          workspacePackageNames,
+        );
+        final nextDependees = dependeesOf(package.name, isTargetRoot: false);
+
+        if (nextDependees.isNotEmpty && !visited.add(package.name)) {
+          map['${log.gray('${package.name}...')} $annotation'] =
+              <String, Map>{};
+          continue;
+        }
+
+        final childMap = <String, Map>{};
+        map['${_labelPackage(package)} $annotation'] = childMap;
+        for (final dependee in nextDependees) {
+          toWalk.add((dependee, package.name, childMap));
+        }
+      }
+    }
+
+    buffer.write(tree.fromMap(packageTree));
+  }
+
+  /// Generates a top-down dependency tree from workspace roots pruned to paths
+  /// that reach [targets].
+  Future<void> _outputFromRootTree(
+    StringBuffer buffer,
+    List<String> targets,
+    Set<String> workspacePackageNames,
+    Set<String> reachableNames,
+  ) async {
+    final graph = await entrypoint.packageGraph;
+    final targetSet = targets.toSet();
+
+    Set<String> ancestorsOfTarget(String target) {
+      final ancestors = <String>{target};
+      final queue = Queue<String>()..add(target);
+      while (queue.isNotEmpty) {
+        final current = queue.removeFirst();
+        final isCurrentRoot = workspacePackageNames.contains(current);
+        for (final name in reachableNames) {
+          if (name == target) continue;
+          if (isCurrentRoot && !workspacePackageNames.contains(name)) {
+            continue;
+          }
+          final package = graph.packages[name]!;
+          if (_childrenOf(package, workspacePackageNames).contains(current)) {
+            if (ancestors.add(name)) {
+              queue.add(name);
+            }
+          }
+        }
+      }
+      return ancestors;
+    }
+
+    final ancestorsByTarget = {
+      for (final target in targetSet) target: ancestorsOfTarget(target),
+    };
+
+    List<String> prunedChildrenOf(Package package) {
+      final result = <String>[];
+      for (final dep in _childrenOf(package, workspacePackageNames)) {
+        if (!reachableNames.contains(dep)) continue;
+        final reachesSomeTarget = targetSet.any(
+          (target) =>
+              package.name != target &&
+              ancestorsByTarget[target]!.contains(dep),
+        );
+        if (reachesSomeTarget) {
+          result.add(dep);
+        }
+      }
+      return result;
+    }
+
+    final packageTree = <String, Map>{};
+    final toWalk = Queue<(Package, String?, Map<String, Map>)>();
+    final visited = <String>{};
+
+    for (final name in workspacePackageNames) {
+      final reachesOrIsTarget = targetSet.any(
+        (target) => ancestorsByTarget[target]!.contains(name),
+      );
+      if (!reachesOrIsTarget) continue;
+      toWalk.add((await _getPackage(name), null, packageTree));
+    }
+
+    while (toWalk.isNotEmpty) {
+      final (package, parentName, map) = toWalk.removeFirst();
+      final annotation =
+          parentName == null
+              ? null
+              : _edgeAnnotation(
+                graph.packages[parentName]!,
+                package.name,
+                workspacePackageNames,
+              );
+      final labelSuffix = annotation == null ? '' : ' $annotation';
+      final children = prunedChildrenOf(package);
+
+      if (children.isNotEmpty && !visited.add(package.name)) {
+        map['${log.gray('${package.name}...')}$labelSuffix'] = <String, Map>{};
+        continue;
+      }
+
+      final childMap = <String, Map>{};
+      map['${_labelPackage(package)}$labelSuffix'] = childMap;
+      for (final dep in children) {
+        toWalk.add((await _getPackage(dep), package.name, childMap));
+      }
+    }
+
+    buffer.write(tree.fromMap(packageTree));
+  }
+
+  Iterable<String> _childrenOf(
+    Package package,
+    Set<String> workspacePackageNames,
+  ) {
+    if (!workspacePackageNames.contains(package.name)) {
+      return package.dependencies.keys;
+    }
+    return {
+      ...package.dependencies.keys,
+      if (_includeDev) ...package.devDependencies.keys,
+      ...package.pubspec.dependencyOverrides.keys,
+    };
+  }
+
+  String _edgeAnnotation(
+    Package parent,
+    String childName,
+    Set<String> workspacePackageNames,
+  ) {
+    if (!workspacePackageNames.contains(parent.name)) {
+      final dep = parent.dependencies[childName]!;
+      return log.gray('(${dep.constraint})');
+    }
+    final dep = parent.dependencies[childName];
+    final devDep = _includeDev ? parent.devDependencies[childName] : null;
+    final overrideDep = parent.pubspec.dependencyOverrides[childName];
+    final parts = <String>[
+      if (dep != null)
+        '${dep.constraint}'
+      else if (devDep != null)
+        '${devDep.constraint}, dev',
+      if (overrideDep != null) 'override: ${overrideDep.constraint}',
+    ];
+    return log.gray('(${parts.join(', ')})');
+  }
 
   /// Gets the names of the non-immediate dependencies of the workspace
   /// packages.
