@@ -47,7 +47,7 @@ DirectoryDescriptor validPackage({
   file('LICENSE', 'Eh, do what you want.'),
   file('README.md', "This package isn't real."),
   file('CHANGELOG.md', '# $version\nFirst version\n'),
-  dir('lib', [file('test_pkg.dart', 'int i = 1;')]),
+  dir('lib', [file('test_pkg.dart', 'main() => "test_pkg";')]),
 ]);
 
 /// Returns a descriptor of a snapshot that can't be run by the current VM.
