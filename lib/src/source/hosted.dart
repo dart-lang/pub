@@ -1428,28 +1428,41 @@ class HostedSource extends CachedSource {
     }
   }
 
-  /// Writes the provenance repository for [id] in the cache.
+  /// Writes the verified provenance repository for [id] in the cache, and
+  /// records that the package is attested from [id]'s version on (see
+  /// [packageProvenancePath]).
   void writeProvenance(PackageId id, SystemCache cache, String provenance) {
     final path = provenancePath(id, cache);
     ensureDir(p.dirname(path));
     writeTextFile(path, provenance);
-    // Also remember, independently of the version, that this package was
-    // attested at least once. See [packageProvenancePath].
-    final packagePath = packageProvenancePath(
-      id.description.description as HostedDescription,
-      cache,
-    );
+
+    final description = id.description.description as HostedDescription;
+    final previous = packageProvenanceFromCache(description, cache);
+    // The lowest attested version seen: a version attested later than a
+    // higher one lowers the threshold, it never raises it.
+    final since =
+        previous != null && previous.since < id.version
+            ? previous.since
+            : id.version;
+    final packagePath = packageProvenancePath(description, cache);
     ensureDir(p.dirname(packagePath));
-    writeTextFile(packagePath, provenance);
+    writeTextFile(
+      packagePath,
+      jsonEncode({'repository': provenance, 'since': since.toString()}),
+    );
   }
 
   /// Next to the per-version provenance files there is a per-package file
-  /// recording the repository the package was last attested from.
+  /// recording the repository the package was last attested from, and the
+  /// lowest version an attestation was verified for.
   ///
   /// Whether an archive is verified must not be decided by the package
   /// repository alone: a compromised repository could simply stop reporting
-  /// `slsa_level` for a package. Once we have seen an attestation for any
-  /// version of a package, we keep requiring one.
+  /// `slsa_level` for a package. Once an attestation has been verified for a
+  /// version of a package, one is expected for that version and every later
+  /// one. Earlier versions may predate the first attested version and stay
+  /// installable, so that `dart pub downgrade`, an older pin in another
+  /// project and `dart pub cache repair` keep working.
   ///
   /// Package names cannot contain `-`, so this never collides with the
   /// `<name>-<version>.provenance` files.
@@ -1465,19 +1478,54 @@ class HostedSource extends CachedSource {
     );
   }
 
-  /// Loads the repository of the last attestation seen for the package
-  /// described by [description], or `null` if it was never attested.
-  String? packageProvenanceFromCache(
+  /// Loads what [packageProvenancePath] records for the package described by
+  /// [description], or `null` if no attestation was verified for it on this
+  /// machine (or the record cannot be read).
+  ({String repository, Version since})? packageProvenanceFromCache(
     HostedDescription description,
     SystemCache cache,
   ) {
+    final path = packageProvenancePath(description, cache);
+    final String text;
     try {
-      final text =
-          readTextFile(packageProvenancePath(description, cache)).trim();
-      return text.isEmpty ? null : text;
+      text = readTextFile(path);
     } on io.IOException {
       return null;
     }
+    try {
+      final json = jsonDecode(text);
+      if (json case {
+        'repository': final String repository,
+        'since': final String since,
+      } when repository.isNotEmpty) {
+        return (repository: repository, since: Version.parse(since));
+      }
+    } on FormatException {
+      // Fall through.
+    }
+    log.fine('Ignoring malformed provenance record at $path.');
+    return null;
+  }
+
+  /// Why an attestation is expected for [id], if it is: because `pubspec.lock`
+  /// records a verified provenance for this version, or because one was
+  /// verified for this or an earlier version of the package on this machine.
+  AttestationExpectation? attestationExpectation(
+    PackageId id,
+    SystemCache cache,
+  ) {
+    final description = id.description as ResolvedHostedDescription;
+    final locked = description.provenance;
+    if (locked != null) return LockedProvenance(locked);
+    final previous = packageProvenanceFromCache(description.description, cache);
+    if (previous != null && id.version >= previous.since) {
+      return PreviouslyAttested(
+        repository: previous.repository,
+        since: previous.since,
+        path: packageProvenancePath(description.description, cache),
+      );
+    }
+    return null;
   }
 
   /// Re-downloads all packages that have been previously downloaded into the
@@ -1724,14 +1772,13 @@ class HostedSource extends CachedSource {
     Uint8List? contentHash;
     String? attestationJson;
 
-    // The repository we have previously seen an attestation from for this
-    // package, if any.
-    final previousProvenance = packageProvenanceFromCache(description, cache);
     // Attestations are fetched when the repository says there is one, but also
-    // when we have seen one before: the repository must not be able to skip
+    // when the lockfile records one for this version or one has been verified
+    // for the package on this machine: the repository must not be able to skip
     // verification by simply not reporting `slsa_level`.
+    final expectation = attestationExpectation(id, cache);
     final expectAttestation =
-        versionInfo.slsaLevel != null || previousProvenance != null;
+        versionInfo.slsaLevel != null || expectation != null;
 
     final archiveUrl = versionInfo.archiveUrl;
     log.io('Get package from $archiveUrl.');
@@ -1839,7 +1886,7 @@ See $contentHashesDocumentationUrl.
         archiveSha256: contentHash!,
         extractedPath: destPath,
         slsaLevel: versionInfo.slsaLevel,
-        previousProvenance: previousProvenance,
+        expectation: expectation,
       );
       if (verifiedProvenance != null) {
         writeProvenance(id, cache, verifiedProvenance);
@@ -1914,7 +1961,7 @@ with a proxy in front of it that does not forward attestation requests.
     required Uint8List archiveSha256,
     required String extractedPath,
     required int? slsaLevel,
-    required String? previousProvenance,
+    required AttestationExpectation? expectation,
   }) {
     AttestationVerificationResult? result;
     if (attestationJson != null) {
@@ -1968,17 +2015,15 @@ This indicates a problem on the package repository: `${description.url}`.
 ''');
     }
 
-    // Throws if a previously attested package is no longer attested, and warns
-    // if it changed repository.
-    ProvenancePolicy.enforcePolicy(
-      packageName: id.name,
+    // Throws if an attestation was expected and there is none, and warns if
+    // the package was built from another repository than expected.
+    ProvenancePolicy.check(
+      package: id.name,
       version: id.version,
-      currentProvenance: result?.provenance,
-      previousLockedProvenance:
-          previousProvenance == null
-              ? null
-              : ProvenanceInfo(repository: previousProvenance),
-      onWarning: log.warning,
+      verified: result?.provenance,
+      expectation: expectation,
+      repositoryUrl: description.url,
+      onRepositoryChange: log.warning,
     );
     return result?.repository;
   }
@@ -2339,15 +2384,18 @@ class ResolvedHostedDescription extends ResolvedDescription {
         provenance: provenance,
       );
 
-  /// Returns a description with [newProvenance], if it is not `null`.
+  /// Returns a description with [newProvenance] as its provenance.
   ///
-  /// A known provenance is never cleared: that would silently drop the
-  /// repository binding of an already verified package.
+  /// `null` clears a known provenance: the lockfile records what the download
+  /// established, and a package that was downloaded unverified must not keep
+  /// asserting a repository binding. (A download that lacks an attestation
+  /// the lockfile records fails instead, see
+  /// [HostedSource.attestationExpectation].)
   ResolvedHostedDescription withProvenance(String? newProvenance) =>
       ResolvedHostedDescription(
         description,
         sha256: sha256,
-        provenance: newProvenance ?? provenance,
+        provenance: newProvenance,
       );
 }
 

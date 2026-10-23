@@ -323,6 +323,45 @@ The attestation is not a substitute for the repository being trustworthy about
 *which* versions are attested; it is what allows the client to check the archive
 without trusting the repository about its *contents*.
 
+#### What the client verifies
+
+For an attested version the client checks that:
+
+* the Sigstore bundle verifies against the Sigstore public-good trusted root,
+  and was signed by a trusted publishing workflow (currently
+  `dart-lang/setup-dart/.github/workflows/publish.yml`);
+* the SLSA build provenance it carries names the downloaded archive by its
+  sha256; and
+* the repository the provenance says the archive was built from is the
+  `repository` of the `pubspec.yaml` *inside* the archive.
+
+A passing verification thus proves that the archive was built, unmodified, by
+the trusted workflow from the GitHub repository that the archive itself names.
+It does **not** prove that this repository is the one authorized to publish the
+package: that binding is established by the package repository at publish time,
+when it accepts (or rejects) the upload. The client records the verified
+repository in `pubspec.lock` (`provenance`) and warns when a later version of
+the package was built from another repository; it cannot tell a legitimate move
+from a hijack.
+
+#### When the client expects an attestation
+
+The client fetches and verifies an attestation, and fails the download if there
+is none, when any of the following holds:
+
+* the version listing reports `slsa_level` for the version;
+* `pubspec.lock` records a `provenance` for the version, i.e. it was verified
+  when the lockfile was last resolved — the only signal that follows the project
+  to other machines; or
+* an attestation has been verified for the same or an earlier version of the
+  package on this machine. Versions before the first attested one are not
+  expected to be attested, so they stay installable (`dart pub downgrade`, an
+  older pin in another project).
+
+A repository that attests a package should therefore keep attesting every later
+version of it; clients that have verified one version will reject later
+unattested ones.
+
 ## Publishing Packages
 
 **GET** `<hosted-url>/api/packages/versions/new`
