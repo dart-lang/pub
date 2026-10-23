@@ -233,6 +233,7 @@ server, this could work in many different ways.
   "latest": {
     "version": "<version>",
     "retracted": true || false, /* optional field, false if omitted */
+    "slsa_level": 2, /* optional field, omitted if the version is not attested */
     "archive_url": "https://.../archive.tar.gz",
     "archive_sha256": "95cbaad58e2cf32d1aa852f20af1fcda1820ead92a4b1447ea7ba1ba18195d27"
     "pubspec": {
@@ -243,6 +244,7 @@ server, this could work in many different ways.
     {
       "version": "<package>",
       "retracted": true || false, /* optional field, false if omitted */
+      "slsa_level": 2, /* optional field, omitted if the version is not attested */
       "archive_url": "https://.../archive.tar.gz",
       "archive_sha256": "95cbaad58e2cf32d1aa852f20af1fcda1820ead92a4b1447ea7ba1ba18195d27"
       "pubspec": {
@@ -284,6 +286,81 @@ The `advisoriesUpdated` property is optional, if specified the client may assume
 that the advisories end-point is supported by the server. If present this must
 be a timestamp of when the result from the advisories end-point for this package
 changed.
+
+The `slsa_level` property is optional. If present, the version has an
+attestation, and the client will fetch and verify it, see
+[Fetching Attestations](#fetching-attestations).
+
+### Fetching Attestations
+
+**GET** `<hosted-url>/api/packages/<package>/versions/<version>/attestation`
+
+**Response**
+* `Content-Type: application/json`
+
+The response body is the Sigstore bundle that was supplied when the version was
+published, verbatim.
+
+A repository that reports `slsa_level` for a version **must** serve the
+attestation for that version: a client that has been told a version is attested
+will fail the download if the attestation cannot be retrieved, rather than
+install it unverified. Repositories that do not support attestations should
+respond `404` here and omit `slsa_level`.
+
+Two consequences of this for repository implementers:
+
+* The attestation must be retrievable *before* a version listing that
+  advertises it (with `slsa_level`) is served. A client that gets a `404` here
+  does not retry: it fails the download. Repositories that publish the version
+  listing through a separate system (e.g. an exported bucket) must order the
+  two accordingly.
+* A proxy or mirror that passes the version listing through verbatim, but does
+  not forward requests to this end-point, breaks every attested package for its
+  users. Such a proxy must either forward this end-point or strip `slsa_level`
+  from the listings it serves.
+
+The attestation is not a substitute for the repository being trustworthy about
+*which* versions are attested; it is what allows the client to check the archive
+without trusting the repository about its *contents*.
+
+#### What the client verifies
+
+For an attested version the client checks that:
+
+* the Sigstore bundle verifies against the Sigstore public-good trusted root,
+  and was signed by a trusted publishing workflow (currently
+  `dart-lang/setup-dart/.github/workflows/publish.yml`);
+* the SLSA build provenance it carries names the downloaded archive by its
+  sha256; and
+* the repository the provenance says the archive was built from is the
+  `repository` of the `pubspec.yaml` *inside* the archive.
+
+A passing verification thus proves that the archive was built, unmodified, by
+the trusted workflow from the GitHub repository that the archive itself names.
+It does **not** prove that this repository is the one authorized to publish the
+package: that binding is established by the package repository at publish time,
+when it accepts (or rejects) the upload. The client records the verified
+repository in `pubspec.lock` (`provenance`) and warns when a later version of
+the package was built from another repository; it cannot tell a legitimate move
+from a hijack.
+
+#### When the client expects an attestation
+
+The client fetches and verifies an attestation, and fails the download if there
+is none, when any of the following holds:
+
+* the version listing reports `slsa_level` for the version;
+* `pubspec.lock` records a `provenance` for the version, i.e. it was verified
+  when the lockfile was last resolved — the only signal that follows the project
+  to other machines; or
+* an attestation has been verified for the same or an earlier version of the
+  package on this machine. Versions before the first attested one are not
+  expected to be attested, so they stay installable (`dart pub downgrade`, an
+  older pin in another project).
+
+A repository that attests a package should therefore keep attesting every later
+version of it; clients that have verified one version will reject later
+unattested ones.
 
 ## Publishing Packages
 
