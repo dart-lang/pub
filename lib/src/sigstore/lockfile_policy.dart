@@ -3,9 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:pub_semver/pub_semver.dart';
+import 'package:sigstore/provenance.dart';
 
 import '../exceptions.dart';
-import 'provenance.dart';
 
 /// Exception thrown when package integrity or provenance policies fail.
 class PackageProvenanceException extends DataException {

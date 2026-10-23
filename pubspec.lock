@@ -41,6 +41,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
+  boring:
+    dependency: transitive
+    description:
+      name: boring
+      sha256: "82d3b79a85dd84ed4b9d935f71fa51884b2e72387eb4c181cdab822f4d723e0f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.2"
+  change_case:
+    dependency: transitive
+    description:
+      name: change_case
+      sha256: e41ef3df58521194ef8d7649928954805aeb08061917cf658322305e61568003
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.0"
   checks:
     dependency: "direct dev"
     description:
@@ -69,10 +85,10 @@ packages:
     dependency: transitive
     description:
       name: code_assets
-      sha256: bf394f466ba9205f1812a0433b392d6af280f155f56651eda7c18cc32ed493b8
+      sha256: "828110d598123b5ea96c00c9f3c72105bf79f8ee36c20a39b26209ade421ec57"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.1"
+    version: "2.1.0"
   collection:
     dependency: "direct main"
     description:
@@ -233,6 +249,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  native_toolchain_c:
+    dependency: transitive
+    description:
+      name: native_toolchain_c
+      sha256: "90eaad8059ebc2004a63810a4696ea9acdb02473e47ed3b6b3bafb100ac77e31"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.19.5"
+  native_toolchain_cmake:
+    dependency: transitive
+    description:
+      name: native_toolchain_cmake
+      sha256: "8ba223410102665483e873b83d2156720233a6a0181c07f9dc41cb2e961336b0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.2"
   node_preamble:
     dependency: transitive
     description:
@@ -257,6 +289,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.1"
+  platform:
+    dependency: transitive
+    description:
+      name: platform
+      sha256: a36d119c13416516a7b5913fbe8af8531e11633d784c550b2125f76c758524ec
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.0"
   pool:
     dependency: "direct main"
     description:
@@ -265,6 +305,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.1"
+  process:
+    dependency: transitive
+    description:
+      name: process
+      sha256: "4242ba3508d37e01808bdf71ad1d5bb93a8d671bf2e7450e6b1b353fb0808891"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.6"
   pub_semver:
     dependency: "direct main"
     description:
@@ -324,11 +372,12 @@ packages:
   sigstore:
     dependency: "direct main"
     description:
-      name: sigstore
-      sha256: "04c0dda858b534915faa82a9a877e94169c9b9d4546bba5a83f940c78b32736f"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.0"
+      path: "pkgs/sigstore"
+      ref: "233e5ab23f23ec1ff52f79a39efb77db74d5c73d"
+      resolved-ref: "233e5ab23f23ec1ff52f79a39efb77db74d5c73d"
+      url: "https://github.com/dart-lang/tools.git"
+    source: git
+    version: "0.2.5-wip"
   source_map_stack_trace:
     dependency: transitive
     description:
@@ -506,4 +555,4 @@ packages:
     source: hosted
     version: "2.2.2"
 sdks:
-  dart: ">=3.10.0 <4.0.0"
+  dart: ">=3.13.3 <4.0.0"

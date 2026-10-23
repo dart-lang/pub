@@ -2,18 +2,18 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:sigstore/provenance.dart';
 
 import '../system_cache.dart';
 import 'lockfile_policy.dart';
-import 'provenance.dart';
 import 'sigstore.dart';
 import 'trusted_root.dart';
 
+export 'package:sigstore/provenance.dart';
+
 export 'lockfile_policy.dart';
-export 'provenance.dart';
 export 'sigstore.dart';
 export 'trusted_root.dart';
 
@@ -205,13 +205,13 @@ class PubAttestationVerifier {
 
       final errors = checkProvenancePolicy(
         packageName: packageName,
-        packageVersion: packageVersion,
+        packageVersion: packageVersion.toString(),
         archiveSha256: Digest(archiveSha256).toString(),
         provenance: provenance,
         signer: signer,
         oidcIssuer: issuer,
         declaredPackageName: declaredPackageName,
-        declaredPackageVersion: declaredPackageVersion,
+        declaredPackageVersion: declaredPackageVersion?.toString(),
         expectedRepository: expectedRepository,
         requireRepository: requireRepository,
         trustedSignerWorkflows: _trustedSignerWorkflows,
@@ -288,136 +288,4 @@ class PubAttestationVerifier {
       );
     }
   }
-}
-
-/// Checks a cryptographically verified attestation against pub's policy, and
-/// returns the list of violations - empty if the attestation is acceptable.
-///
-/// [archiveSha256] is the lowercase hex-encoded sha256 of the archive, and
-/// [signer] the identity from the signing certificate. Both must come from
-/// verified material.
-///
-/// This is separate from [PubAttestationVerifier.verify] so that the policy can
-/// be exercised without doing (or faking) cryptographic verification.
-List<String> checkProvenancePolicy({
-  required String packageName,
-  required Version packageVersion,
-  required String archiveSha256,
-  required BuildProvenance provenance,
-  required GitHubWorkflowIdentity signer,
-  String? oidcIssuer,
-  String? declaredPackageName,
-  Version? declaredPackageVersion,
-  String? expectedRepository,
-  bool requireRepository = true,
-  Set<String> trustedSignerWorkflows = defaultTrustedSignerWorkflows,
-  bool requireTaggedSignerRef = false,
-}) {
-  final errors = <String>[];
-
-  if (oidcIssuer != null && oidcIssuer != githubActionsOidcIssuer) {
-    errors.add(
-      'Attestation was issued by "$oidcIssuer", '
-      'expected "$githubActionsOidcIssuer".',
-    );
-  }
-
-  // Who signed? Only a small set of workflows may sign packages for pub.dev.
-  final trusted = trustedSignerWorkflows.map((w) => w.toLowerCase()).toSet();
-  if (!trusted.contains(signer.workflow.toLowerCase())) {
-    errors.add(
-      'Attestation was signed by "${signer.workflow}", which is not a '
-      'workflow trusted to publish packages. Trusted workflows: '
-      '${(trustedSignerWorkflows.toList()..sort()).join(', ')}.',
-    );
-  } else if (requireTaggedSignerRef && !signer.ref.startsWith('refs/tags/')) {
-    // TODO(https://github.com/dart-lang/pub/issues/4942): Pin the signing
-    // workflow by the `job_workflow_sha` certificate extension once
-    // `package:sigstore` exposes it. A ref is mutable, a sha is not.
-    errors.add(
-      'Attestation was signed by "${signer.workflow}" at "${signer.ref}", '
-      'but only tagged releases of the publishing workflow are trusted.',
-    );
-  } else if (!signer.ref.startsWith('refs/tags/') &&
-      !signer.ref.startsWith('refs/heads/')) {
-    errors.add(
-      'Attestation was signed by "${signer.workflow}" at "${signer.ref}", '
-      'which is not a branch or tag ref.',
-    );
-  }
-  final builder = provenance.builder;
-  if (builder != null &&
-      builder.workflow.toLowerCase() != signer.workflow.toLowerCase()) {
-    errors.add(
-      'Attestation states it was built by "${builder.workflow}" but was '
-      'signed by "${signer.workflow}".',
-    );
-  }
-
-  // What was signed? Without this an attestation for one package could be
-  // served for another - all packages share the same signer identity.
-  // `dart-lang/setup-dart` names the archive `package.tar.gz`, so the package
-  // name and version are bound through the `pubspec.yaml` inside the archive
-  // (covered by `archiveSha256`).
-  final expectedSubject = '$packageName-$packageVersion.tar.gz';
-  final subject =
-      provenance.subjects
-          .where((s) => s.name == expectedSubject || s.name == 'package.tar.gz')
-          .firstOrNull;
-  if (subject == null) {
-    errors.add(
-      'Attestation is for '
-      '${provenance.subjects.map((s) => '"${s.name}"').join(', ')}, '
-      'not for "$expectedSubject".',
-    );
-  } else if (subject.sha256 != archiveSha256.toLowerCase()) {
-    errors.add(
-      'Attestation is for an archive with sha256 "${subject.sha256}", '
-      'but the downloaded archive has sha256 "$archiveSha256".',
-    );
-  }
-
-  if (declaredPackageName != null && declaredPackageName != packageName) {
-    errors.add(
-      'The pubspec.yaml of the attested archive declares `name: '
-      '$declaredPackageName`, expected `$packageName`.',
-    );
-  }
-  if (declaredPackageVersion != null &&
-      declaredPackageVersion != packageVersion) {
-    errors.add(
-      'The pubspec.yaml of the attested archive declares `version: '
-      '$declaredPackageVersion`, expected `$packageVersion`.',
-    );
-  }
-
-  // Where was it built? This is the binding the whole feature rests on.
-  if (expectedRepository == null || expectedRepository.trim().isEmpty) {
-    if (requireRepository) {
-      errors.add(
-        'The pubspec.yaml of $packageName $packageVersion does not have a '
-        '`repository` field, so the attestation cannot be bound to the '
-        'repository it claims to come from '
-        '("${provenance.sourceRepository.url}").',
-      );
-    }
-  } else {
-    final expected = GitHubRepository.tryParse(expectedRepository);
-    if (expected == null) {
-      errors.add(
-        'Package attestation verification is currently only supported for '
-        'GitHub repositories, but the pubspec.yaml of $packageName '
-        '$packageVersion declares `repository: $expectedRepository`.',
-      );
-    } else if (expected != provenance.sourceRepository) {
-      errors.add(
-        'Attestation states the package was built from '
-        '"${provenance.sourceRepository.url}", but the pubspec.yaml of '
-        '$packageName $packageVersion declares `repository: '
-        '$expectedRepository`.',
-      );
-    }
-  }
-
-  return errors;
 }
