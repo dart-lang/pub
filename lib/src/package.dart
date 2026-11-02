@@ -177,14 +177,11 @@ class Package {
     );
 
     final workspacePackages =
-        pubspec.workspace.expand((workspaceEntry) {
-          final WorkspaceEntry(path: workspacePath, :followLinks) =
-              workspaceEntry;
+        pubspec.workspace.expand((workspacePath) {
           final packages = <Package>[];
           var globHint = '';
-          if (!followLinks ||
-              pubspec.languageVersion.supportsWorkspaceGlobs &&
-                  _hasGlobWildcards(workspacePath)) {
+          if (pubspec.languageVersion.supportsWorkspaceGlobs &&
+              _hasGlobWildcards(workspacePath)) {
             final Glob glob;
             try {
               glob = Glob(workspacePath);
@@ -196,11 +193,11 @@ class Package {
                     .listFileSystemSync(
                       currentFileSystem,
                       root: p.absolute(dir),
-                      followLinks: followLinks,
+                      followLinks: false,
                     )
                     .toList();
             for (final globResult in globResults) {
-              if (!followLinks && globResult is Link) continue;
+              if (globResult is! Directory) continue;
               final pubspecPath = p.join(globResult.path, 'pubspec.yaml');
               if (!fileExists(pubspecPath)) continue;
               packages.add(

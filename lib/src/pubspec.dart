@@ -64,8 +64,8 @@ class Pubspec extends PubspecBase {
   final ResolvedDescription _containingDescription;
 
   /// Directories of packages that should resolve together with this package.
-  late List<WorkspaceEntry> workspace = () {
-    final result = <WorkspaceEntry>[];
+  late List<String> workspace = () {
+    final result = <String>[];
     final workspaceNode =
         _overridesFileFields?.nodes['workspace'] ?? fields.nodes['workspace'];
     if (workspaceNode != null && !languageVersion.supportsWorkspaces) {
@@ -81,65 +81,26 @@ environment:
 ''',
       );
     }
-    if (workspaceNode == null || workspaceNode.value == null) {
-      return <WorkspaceEntry>[];
-    }
+    if (workspaceNode == null || workspaceNode.value == null) return <String>[];
 
     if (workspaceNode is! YamlList) {
       _error('"workspace" must be a list of strings', workspaceNode.span);
     }
     for (final t in workspaceNode.nodes) {
-      final entry =
-          t is YamlMap
-              ? _parseWorkspaceGlob(t)
-              : WorkspaceEntry(switch (t.value) {
-                final String value => value,
-                _ => _error('"workspace" must be a list of strings', t.span),
-              });
-      if (!p.isRelative(entry.path)) {
+      final value = t.value;
+      if (value is! String) {
+        _error('"workspace" must be a list of strings', t.span);
+      }
+      if (!p.isRelative(value)) {
         _error('"workspace" members must be relative paths', t.span);
       }
-      if (p.equals(entry.path, '.') || !p.isWithin('.', entry.path)) {
+      if (p.equals(value, '.') || !p.isWithin('.', value)) {
         _error('"workspace" members must be subdirectories', t.span);
       }
-      result.add(entry);
+      result.add(value);
     }
     return result;
   }();
-
-  /// Parses a `workspace` entry on the form
-  /// `{glob: <pattern>, follow_links: <bool>}`.
-  WorkspaceEntry _parseWorkspaceGlob(YamlMap node) {
-    if (!languageVersion.supportsWorkspaceGlobOptions) {
-      _error(
-        'Workspace entries with a `glob` key require at least language '
-        'version ${LanguageVersion.firstVersionWithWorkspaceGlobOptions}',
-        node.span,
-        hint: '''
-Consider updating the SDK constraint to:
-
-environment:
-  sdk: '^${sdk.version}'
-''',
-      );
-    }
-    for (final key in node.nodes.keys.cast<YamlNode>()) {
-      if (key.value != 'glob' && key.value != 'follow_links') {
-        _error('Unknown workspace entry key `${key.value}`', key.span);
-      }
-    }
-    final glob = node.nodes['glob'];
-    final globValue = glob?.value;
-    if (globValue is! String) {
-      _error('A workspace entry must have a string `glob`', node.span);
-    }
-    final followLinks = node.nodes['follow_links'];
-    final followLinksValue = followLinks?.value ?? true;
-    if (followLinksValue is! bool) {
-      _error('`follow_links` must be a boolean', followLinks!.span);
-    }
-    return WorkspaceEntry(globValue, followLinks: followLinksValue);
-  }
 
   /// The resolution mode.
   late Resolution resolution = () {
@@ -377,7 +338,7 @@ environment:
     Map? fields,
     SourceRegistry? sources,
     Map<String, SdkConstraint>? sdkConstraints,
-    this.workspace = const <WorkspaceEntry>[],
+    this.workspace = const <String>[],
     this.dependencyOverridesFromOverridesFile = false,
     this.resolution = Resolution.none,
   }) : _dependencies =
@@ -501,7 +462,7 @@ environment:
     Iterable<PackageRange>? dependencyOverrides,
     Map? fields,
     Map<String, SdkConstraint>? sdkConstraints,
-    List<WorkspaceEntry>? workspace,
+    List<String>? workspace,
     //this.dependencyOverridesFromOverridesFile = false,
     Resolution? resolution,
   }) {
@@ -891,26 +852,6 @@ class SdkConstraint {
 
   @override
   int get hashCode => Object.hash(effectiveConstraint, originalConstraint);
-}
-
-/// An entry of the `workspace` field of a pubspec.
-class WorkspaceEntry {
-  /// The directory or glob, relative to the pubspec.
-  final String path;
-
-  /// Whether glob expansion traverses and matches symbolic links.
-  final bool followLinks;
-
-  const WorkspaceEntry(this.path, {this.followLinks = true});
-
-  @override
-  bool operator ==(Object other) =>
-      other is WorkspaceEntry &&
-      other.path == path &&
-      other.followLinks == followLinks;
-
-  @override
-  int get hashCode => Object.hash(path, followLinks);
 }
 
 enum Resolution {
