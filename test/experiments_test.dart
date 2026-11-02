@@ -25,14 +25,18 @@ Future<void> main() async {
       'foo',
       '1.0.0',
       pubspec: {
-        'experiments': ['abc'],
+        'experiments': {
+          'enable': ['abc'],
+        },
       },
     );
     await d
         .appDir(
           dependencies: {'foo': '^1.0.0'},
           pubspec: {
-            'experiments': ['abc'],
+            'experiments': {
+              'enable': ['abc'],
+            },
           },
         )
         .create();
@@ -61,7 +65,9 @@ See https://dart.dev/go/experiments for more information.'''),
       'foo',
       '1.0.0',
       pubspec: {
-        'experiments': ['abc'],
+        'experiments': {
+          'enable': ['abc'],
+        },
       },
     );
     await d.dir(appPath, [
@@ -81,7 +87,9 @@ See https://dart.dev/go/experiments for more information.'''),
             deps: {'foo': '^1.0.0'},
             resolutionWorkspace: true,
             extras: {
-              'experiments': ['abc'],
+              'experiments': {
+                'enable': ['abc'],
+              },
             },
           ),
         ]),
@@ -108,21 +116,27 @@ See https://dart.dev/go/experiments for more information.'''),
       'foo',
       '1.0.0-dev',
       pubspec: {
-        'experiments': ['abc'],
+        'experiments': {
+          'enable': ['abc'],
+        },
       },
     );
     server.serve(
       'foo',
       '1.0.1-dev', // This version is newer, but uses a disabled experiment.
       pubspec: {
-        'experiments': ['abcd'],
+        'experiments': {
+          'enable': ['abcd'],
+        },
       },
     );
     await d
         .appDir(
           dependencies: {'foo': '^1.0.0-dev'},
           pubspec: {
-            'experiments': ['abc'],
+            'experiments': {
+              'enable': ['abc'],
+            },
           },
         )
         .create();
@@ -140,7 +154,9 @@ See https://dart.dev/go/experiments for more information.'''),
       'foo',
       '1.1.0-dev',
       pubspec: {
-        'experiments': ['abc'],
+        'experiments': {
+          'enable': ['abc'],
+        },
       },
     );
     await d.appDir(dependencies: {'foo': '^1.0.0-dev'}).create();
@@ -157,7 +173,8 @@ To enable it add to your pubspec.yaml:
 
 ```
 experiments:
-  - abc
+  enable:
+    - abc
 ```
 
 Read more about experiments at https://dart.dev/go/experiments.''',
@@ -174,7 +191,9 @@ Read more about experiments at https://dart.dev/go/experiments.''',
         'foo',
         '1.0.0',
         extras: {
-          'experiments': ['abc'],
+          'experiments': {
+            'enable': ['abc'],
+          },
         },
       ),
     ]).create();
@@ -200,7 +219,9 @@ Read more about experiments at https://dart.dev/go/experiments.''',
       'foo',
       '1.0.0',
       pubspec: {
-        'experiments': ['shipped'],
+        'experiments': {
+          'enable': ['shipped'],
+        },
       },
     );
     await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
@@ -221,7 +242,9 @@ Read more about experiments at https://dart.dev/go/experiments.''',
     await d
         .appDir(
           pubspec: {
-            'experiments': <String>['abcd'],
+            'experiments': {
+              'enable': <String>['abcd'],
+            },
           },
         )
         .create();
@@ -247,7 +270,9 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
     await d
         .appDir(
           pubspec: {
-            'experiments': ['abc', 'abc'],
+            'experiments': {
+              'enable': ['abc', 'abc'],
+            },
           },
         )
         .create();
@@ -266,7 +291,9 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
     await d
         .appDir(
           pubspec: {
-            'experiments': ['main-only'],
+            'experiments': {
+              'enable': ['main-only'],
+            },
           },
         )
         .create();
@@ -298,7 +325,9 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
     await d
         .appDir(
           pubspec: {
-            'experiments': ['dart-feature'],
+            'experiments': {
+              'enable': ['dart-feature'],
+            },
           },
         )
         .create();
@@ -350,7 +379,9 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
     await d
         .appDir(
           pubspec: {
-            'experiments': ['data-assets', 'variance'],
+            'experiments': {
+              'enable': ['data-assets', 'variance'],
+            },
           },
         )
         .create();
@@ -389,7 +420,9 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
     await d
         .appDir(
           pubspec: {
-            'experiments': ['dart-feature'],
+            'experiments': {
+              'enable': ['dart-feature'],
+            },
           },
         )
         .create();
@@ -423,14 +456,18 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
       'foo',
       '1.0.0',
       pubspec: {
-        'experiments': ['abandoned'],
+        'experiments': {
+          'enable': ['abandoned'],
+        },
       },
     );
     await d
         .appDir(
           dependencies: {'foo': '^1.0.0'},
           pubspec: {
-            'experiments': ['shipped-and-expired'],
+            'experiments': {
+              'enable': ['shipped-and-expired'],
+            },
           },
         )
         .create();
@@ -452,7 +489,9 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
         .appDir(
           dependencies: {'foo': '^1.0.0'},
           pubspec: {
-            'experiments': ['abandoned'],
+            'experiments': {
+              'enable': ['abandoned'],
+            },
           },
         )
         .create();
@@ -467,7 +506,9 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
         .appDir(
           dependencies: {'foo': '^1.0.0'},
           pubspec: {
-            'experiments': ['no-shipped-and-expired'],
+            'experiments': {
+              'enable': ['no-shipped-and-expired'],
+            },
           },
         )
         .create();
@@ -492,14 +533,18 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
       'foo',
       '1.0.0',
       pubspec: {
-        'experiments': ['no-shipped'],
+        'experiments': {
+          'enable': ['no-shipped'],
+        },
       },
     );
     await d
         .appDir(
           dependencies: {'foo': '^1.0.0'},
           pubspec: {
-            'experiments': ['no-shipped', 'no-abc'],
+            'experiments': {
+              'enable': ['no-shipped', 'no-abc'],
+            },
           },
         )
         .create();
@@ -522,7 +567,9 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
     await d
         .appDir(
           pubspec: {
-            'experiments': ['shipped', 'no-shipped'],
+            'experiments': {
+              'enable': ['shipped', 'no-shipped'],
+            },
           },
         )
         .create();
@@ -536,28 +583,15 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
     );
   });
 
-  test('rejects invalid experiments schema', () async {
-    await _setupSdks();
-    for (final schema in <Object>[
-      123,
-      [123],
-    ]) {
-      await d.appDir(pubspec: {'experiments': schema}).create();
-      await pubGet(
-        error: contains('`experiments` must be a list of strings'),
-        environment: _environment,
-        exitCode: DATA,
-      );
-    }
-  });
-
   test('Can global activate a package using experiments', () async {
     final server = await servePackages();
     server.serve(
       'foo',
       '1.0.0',
       pubspec: {
-        'experiments': ['abc'],
+        'experiments': {
+          'enable': ['abc'],
+        },
       },
     );
     await _setupSdks();
@@ -568,6 +602,457 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
       environment: _environment,
     );
   });
+
+  test(
+    'supports package-scoped experiments (<package>.<experiment>)',
+    () async {
+      final server = await servePackages();
+      await _setupSdks();
+      server.serve(
+        'foo',
+        '1.0.0',
+        pubspec: {
+          'experiments': {
+            'declare': {
+              'new_api': {
+                'description': 'New experimental API',
+                'docUrl': 'https://example.com/new_api',
+              },
+              'graduated_api': {
+                'description': 'Graduated API',
+                'enabledIn': '0.9.0',
+              },
+              'retired_api': {'description': 'Retired API', 'expired': true},
+            },
+          },
+        },
+      );
+      server.serve(
+        'bar',
+        '1.0.0-dev',
+        deps: {'foo': '^1.0.0'},
+        pubspec: {
+          'experiments': {
+            'enable': ['foo.new_api', 'foo.graduated_api'],
+          },
+        },
+      );
+
+      // Fails when `bar` requires `foo.new_api` and root does not opt in.
+      await d.appDir(dependencies: {'bar': '^1.0.0-dev'}).create();
+      await pubGet(
+        error: contains('The experiment `foo.new_api` has not been enabled.'),
+        environment: _environment,
+      );
+
+      // Succeeds when root opts into `foo.new_api` (using map syntax with
+      // both `enable` and `declare`). Graduated and retired experiments emit
+      // warnings and are omitted from package_config.json.
+      await d
+          .appDir(
+            dependencies: {'bar': '^1.0.0-dev'},
+            pubspec: {
+              'experiments': {
+                'enable': [
+                  'foo.new_api',
+                  'foo.graduated_api',
+                  'foo.retired_api',
+                ],
+                'declare': {
+                  'app_exp': {'description': 'App experiment'},
+                },
+              },
+            },
+          )
+          .create();
+      await pubGet(
+        output: contains(
+          '* `foo.new_api` for bar, myapp - New experimental API',
+        ),
+        warning: allOf(
+          contains(
+            'The experiment `foo.graduated_api` has been enabled by default '
+            'since foo 0.9.0. Remove it from `experiments` in the pubspec.yaml '
+            'of myapp.',
+          ),
+          contains(
+            'The experiment `foo.retired_api` has been retired and no longer '
+            'has any effect. Remove it from `experiments` in the pubspec.yaml '
+            'of myapp.',
+          ),
+        ),
+        environment: _environment,
+      );
+      expect(_experimentsByPackage(_readPackageConfig()), {
+        'bar': ['foo.new_api'],
+        'myapp': ['foo.new_api'],
+      });
+
+      // A dependency that only lists graduated/retired package experiments does
+      // not require the root package to opt in.
+      server.serve(
+        'baz',
+        '1.0.0',
+        deps: {'foo': '^1.0.0'},
+        pubspec: {
+          'experiments': {
+            'enable': ['foo.graduated_api', 'foo.retired_api'],
+          },
+        },
+      );
+      await d.appDir(dependencies: {'baz': '^1.0.0'}).create();
+      await pubGet(
+        output: allOf(
+          contains('+ baz 1.0.0'),
+          isNot(contains('Experiments enabled')),
+        ),
+        environment: _environment,
+      );
+      expect(_experimentsByPackage(_readPackageConfig()), isEmpty);
+    },
+  );
+
+  test('selects version where package experiment has graduated, or fails if '
+      'constrained to ungraduated version without opt-in', () async {
+    final server = await servePackages();
+    await _setupSdks();
+    server.serve(
+      'foo',
+      '0.8.0',
+      pubspec: {
+        'experiments': {
+          'declare': {
+            'graduated_api': {'description': 'Experimental in 0.8.0'},
+          },
+        },
+      },
+    );
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'experiments': {
+          'declare': {
+            'graduated_api': {
+              'description': 'Graduated in 0.9.0',
+              'enabledIn': '0.9.0',
+            },
+          },
+        },
+      },
+    );
+    server.serve(
+      'bar',
+      '1.0.0-dev',
+      deps: {'foo': '>=0.8.0 <2.0.0'},
+      pubspec: {
+        'experiments': {
+          'enable': ['foo.graduated_api'],
+        },
+      },
+    );
+
+    // When `myapp` pins `foo: 0.8.0` without opting in to
+    // `foo.graduated_api`, solving fails with the experiment hint.
+    await d
+        .appDir(dependencies: {'bar': '^1.0.0-dev', 'foo': '0.8.0'})
+        .create();
+    await pubGet(
+      error: contains(
+        'The experiment `foo.graduated_api` has not been enabled.',
+      ),
+      environment: _environment,
+    );
+
+    // When `myapp` allows `foo: ^1.0.0` (where `graduated_api` is graduated),
+    // solving succeeds without opt-in.
+    await d
+        .appDir(dependencies: {'bar': '^1.0.0-dev', 'foo': '>=0.8.0 <2.0.0'})
+        .create();
+    await pubGet(output: contains('+ foo 1.0.0'), environment: _environment);
+    expect(_experimentsByPackage(_readPackageConfig()), isEmpty);
+  });
+
+  test('supports intra-workspace declared experiments', () async {
+    await servePackages();
+    await _setupSdks();
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myapp',
+        '1.0.0',
+        sdk: '^3.5.0',
+        extras: {
+          'workspace': ['pkgs/a', 'pkgs/b'],
+        },
+      ),
+      d.dir('pkgs', [
+        d.dir('a', [
+          d.libPubspec(
+            'a',
+            '1.0.0',
+            resolutionWorkspace: true,
+            extras: {
+              'experiments': {
+                'declare': {
+                  'exp_one': {'description': 'Workspace experiment one'},
+                  'exp_graduated': {
+                    'description': 'Graduated workspace experiment',
+                    'enabledIn': '1.0.0',
+                  },
+                },
+              },
+            },
+          ),
+        ]),
+        d.dir('b', [
+          d.libPubspec(
+            'b',
+            '1.0.0',
+            deps: {'a': '^1.0.0'},
+            resolutionWorkspace: true,
+            extras: {
+              'experiments': {
+                'enable': ['a.exp_one', 'a.exp_graduated'],
+              },
+            },
+          ),
+        ]),
+      ]),
+    ]).create();
+
+    await pubGet(
+      output: contains('* `a.exp_one` for b - Workspace experiment one'),
+      warning: contains(
+        'The experiment `a.exp_graduated` has been enabled by default since a '
+        '1.0.0. Remove it from `experiments` in the pubspec.yaml of b.',
+      ),
+      environment: {..._environment, '_PUB_TEST_SDK_VERSION': '3.5.0'},
+    );
+    expect(_experimentsByPackage(_readPackageConfig()), {
+      'b': ['a.exp_one'],
+    });
+  });
+
+  test(
+    'errors when a package-scoped experiment references a missing package or '
+    'undeclared experiment',
+    () async {
+      final server = await servePackages();
+      await _setupSdks();
+      server.serve(
+        'foo',
+        '1.0.0',
+        pubspec: {
+          'experiments': {
+            'declare': {
+              'new_api': {
+                'description': 'New experimental API',
+                'docUrl': 'https://example.com/new_api',
+              },
+            },
+          },
+        },
+      );
+      server.serve('plain_pkg', '1.0.0');
+
+      await d
+          .appDir(
+            pubspec: {
+              'experiments': {
+                'enable': ['missing_pkg.new_api'],
+              },
+            },
+          )
+          .create();
+      await pubGet(
+        error: contains(
+          'The experiment `missing_pkg.new_api` in the pubspec.yaml of myapp '
+          'refers to package `missing_pkg`, which is not in the dependency '
+          'graph.',
+        ),
+        environment: _environment,
+        exitCode: DATA,
+      );
+
+      await d
+          .appDir(
+            dependencies: {'foo': '^1.0.0'},
+            pubspec: {
+              'experiments': {
+                'enable': ['foo.unknown_api'],
+              },
+            },
+          )
+          .create();
+      await pubGet(
+        error: contains(
+          '`foo.unknown_api` is not a known experiment of package `foo` '
+          '(1.0.0).\n\n'
+          'Available experiments in `foo` (1.0.0) are:\n'
+          '* `foo.new_api`: New experimental API (https://example.com/new_api)',
+        ),
+        environment: _environment,
+        exitCode: DATA,
+      );
+
+      await d
+          .appDir(
+            dependencies: {'plain_pkg': '^1.0.0'},
+            pubspec: {
+              'experiments': {
+                'enable': ['plain_pkg.some_api'],
+              },
+            },
+          )
+          .create();
+      await pubGet(
+        error: contains(
+          '`plain_pkg.some_api` is not a known experiment of package '
+          '`plain_pkg` (1.0.0).\n\n'
+          'Package `plain_pkg` (1.0.0) does not declare any experiments.',
+        ),
+        environment: _environment,
+        exitCode: DATA,
+      );
+    },
+  );
+
+  test(
+    'rejects malformed package-scoped experiment names and declare schema',
+    () async {
+      await _setupSdks();
+      for (final bad in ['no-foo.bar', 'foo.', '.bar', 'foo.bar.baz']) {
+        await d
+            .appDir(
+              pubspec: {
+                'experiments': {
+                  'enable': [bad],
+                },
+              },
+            )
+            .create();
+        await pubGet(
+          error: contains(
+            'Package experiment `$bad` must have the form '
+            '`<package>.<experiment>`.',
+          ),
+          environment: _environment,
+          exitCode: DATA,
+        );
+      }
+
+      for (final badDeclared in ['no-exp', 'foo.bar']) {
+        await d
+            .appDir(
+              pubspec: {
+                'experiments': {
+                  'declare': {
+                    badDeclared: {'description': 'Bad name'},
+                  },
+                },
+              },
+            )
+            .create();
+        await pubGet(
+          error: contains(
+            'Declared experiment name must be a valid identifier '
+            '(matching `^[a-zA-Z0-9_-]+\$` and not starting with `no-`).',
+          ),
+          environment: _environment,
+          exitCode: DATA,
+        );
+      }
+
+      final invalidSchemas = <(Object, String)>[
+        (
+          <String>['abc'],
+          '`experiments` must be a mapping with `enable` and/or `declare` '
+              'keys.',
+        ),
+        (
+          123,
+          '`experiments` must be a mapping with `enable` and/or `declare` '
+              'keys.',
+        ),
+        (
+          {'unknown': <String>[]},
+          '`experiments` mapping may only contain `enable` and `declare` keys.',
+        ),
+        (
+          {'enable': 'not-a-list'},
+          '`experiments.enable` must be a list of strings',
+        ),
+        (
+          {
+            'enable': [123],
+          },
+          '`experiments.enable` must be a list of strings',
+        ),
+        ({'declare': <String>[]}, '`experiments.declare` must be a mapping'),
+        (
+          {
+            'declare': {'exp': 'not-a-map'},
+          },
+          'Declared experiment `exp` must be a mapping.',
+        ),
+        (
+          {
+            'declare': {
+              'exp': {'description': 'ok', 'bogus': 1},
+            },
+          },
+          'Unknown field `bogus` in declared experiment `exp`.',
+        ),
+        (
+          {
+            'declare': {'exp': <String, Object?>{}},
+          },
+          'Declared experiment `exp` must have a string "description".',
+        ),
+        (
+          {
+            'declare': {
+              'exp': {'description': 'ok', 'docUrl': 123},
+            },
+          },
+          '"docUrl" of declared experiment `exp` must be a string.',
+        ),
+        (
+          {
+            'declare': {
+              'exp': {'description': 'ok', 'enabledIn': 123},
+            },
+          },
+          '"enabledIn" of declared experiment `exp` must be a version string.',
+        ),
+        (
+          {
+            'declare': {
+              'exp': {'description': 'ok', 'enabledIn': 'not-a-version'},
+            },
+          },
+          'Invalid "enabledIn" version in declared experiment `exp`:',
+        ),
+        (
+          {
+            'declare': {
+              'exp': {'description': 'ok', 'expired': 'not-a-bool'},
+            },
+          },
+          '"expired" of declared experiment `exp` must be a boolean.',
+        ),
+      ];
+
+      for (final (schema, expectedError) in invalidSchemas) {
+        await d.appDir(pubspec: {'experiments': schema}).create();
+        await pubGet(
+          error: contains(expectedError),
+          environment: _environment,
+          exitCode: DATA,
+        );
+      }
+    },
+  );
 
   test(
     'solver error reporting handles multiple disallowed experiments, '
@@ -587,14 +1072,18 @@ Read more about experiments at https://dart.dev/go/experiments.'''),
         'foo',
         '1.0.0-dev',
         pubspec: {
-          'experiments': ['def', 'ghi'],
+          'experiments': {
+            'enable': ['def', 'ghi'],
+          },
         },
       );
       await d
           .appDir(
             dependencies: {'foo': '^1.0.0-dev'},
             pubspec: {
-              'experiments': ['abc'],
+              'experiments': {
+                'enable': ['abc'],
+              },
             },
           )
           .create();
@@ -610,9 +1099,10 @@ To enable them add to your pubspec.yaml:
 
 ```
 experiments:
-  - abc
-  - def
-  - ghi
+  enable:
+    - abc
+    - def
+    - ghi
 ```
 
 Read more about experiments at https://dart.dev/go/experiments.''',
@@ -625,7 +1115,9 @@ Read more about experiments at https://dart.dev/go/experiments.''',
         'bar',
         '1.0.0-dev',
         pubspec: {
-          'experiments': ['main-only'],
+          'experiments': {
+            'enable': ['main-only'],
+          },
         },
       );
       await d.appDir(dependencies: {'bar': '^1.0.0-dev'}).create();
@@ -645,7 +1137,7 @@ Read more about experiments at https://dart.dev/go/experiments.''',
     Future<void> createPublishablePackage({
       required String version,
       required String sdkConstraint,
-      required List<String> experiments,
+      required Map<String, Object?> experiments,
       Map<String, Object?> dependencies = const {},
     }) async {
       await d.validPackage(version: version).create();
@@ -670,7 +1162,9 @@ Read more about experiments at https://dart.dev/go/experiments.''',
         await createPublishablePackage(
           version: '1.0.0',
           sdkConstraint: '>=3.1.0-0 <4.0.0',
-          experiments: ['abc'],
+          experiments: {
+            'enable': ['abc'],
+          },
         );
 
         await runPub(
@@ -694,7 +1188,9 @@ Read more about experiments at https://dart.dev/go/experiments.''',
       await createPublishablePackage(
         version: '1.0.0-0',
         sdkConstraint: '^3.1.0',
-        experiments: ['abc'],
+        experiments: {
+          'enable': ['abc'],
+        },
       );
 
       await runPub(
@@ -717,7 +1213,9 @@ Read more about experiments at https://dart.dev/go/experiments.''',
       await createPublishablePackage(
         version: '1.0.0-0',
         sdkConstraint: '>=3.1.0-0 <4.0.0',
-        experiments: ['abc'],
+        experiments: {
+          'enable': ['abc'],
+        },
       );
 
       await runPub(
@@ -726,6 +1224,28 @@ Read more about experiments at https://dart.dev/go/experiments.''',
         environment: _environment,
       );
     });
+
+    test(
+      'allows publishing a stable package that only declares experiments',
+      () async {
+        await _setupSdks();
+        await createPublishablePackage(
+          version: '1.0.0',
+          sdkConstraint: '^3.1.0',
+          experiments: {
+            'declare': {
+              'new_api': {'description': 'Experimental API'},
+            },
+          },
+        );
+
+        await runPub(
+          args: ['publish', '--dry-run'],
+          output: contains('Package has 0 warnings.'),
+          environment: _environment,
+        );
+      },
+    );
   });
 }
 
