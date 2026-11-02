@@ -1132,6 +1132,121 @@ Read more about experiments at https://dart.dev/go/experiments.''',
       );
     },
   );
+
+  group('publishing validation for experiments', () {
+    Future<void> createPublishablePackage({
+      required String version,
+      required String sdkConstraint,
+      required Map<String, Object?> experiments,
+      Map<String, Object?> dependencies = const {},
+    }) async {
+      await d.validPackage(version: version).create();
+      await d.dir(appPath, [
+        d.file('CHANGELOG.md', '# $version\n* Changelog.\n'),
+        d.pubspec({
+          'name': 'test_pkg',
+          'version': version,
+          'description': 'A starter package that does nothing.',
+          'homepage': 'https://example.com',
+          'environment': {'sdk': sdkConstraint},
+          if (dependencies.isNotEmpty) 'dependencies': dependencies,
+          'experiments': experiments,
+        }),
+      ]).create();
+    }
+
+    test(
+      'rejects publishing a non-prerelease package that enables experiments',
+      () async {
+        await _setupSdks();
+        await createPublishablePackage(
+          version: '1.0.0',
+          sdkConstraint: '>=3.1.0-0 <4.0.0',
+          experiments: {
+            'enable': ['abc'],
+          },
+        );
+
+        await runPub(
+          args: ['publish', '--dry-run'],
+          output: allOf(
+            contains(
+              'Packages that enable experiments must be published as a '
+              'pre-release version (for example, "1.0.0-0").',
+            ),
+            contains('Package validation found the following error:'),
+          ),
+          exitCode: DATA,
+          environment: _environment,
+        );
+      },
+    );
+
+    test('rejects publishing a package that enables SDK experiments without a '
+        'prerelease SDK constraint', () async {
+      await _setupSdks();
+      await createPublishablePackage(
+        version: '1.0.0-0',
+        sdkConstraint: '^3.1.0',
+        experiments: {
+          'enable': ['abc'],
+        },
+      );
+
+      await runPub(
+        args: ['publish', '--dry-run'],
+        output: allOf(
+          contains(
+            'Packages that enable SDK experiments must have a pre-release SDK '
+            'constraint',
+          ),
+          contains('Package validation found the following error:'),
+        ),
+        exitCode: DATA,
+        environment: _environment,
+      );
+    });
+
+    test('allows publishing a prerelease package with a prerelease SDK '
+        'constraint that enables SDK experiments', () async {
+      await _setupSdks();
+      await createPublishablePackage(
+        version: '1.0.0-0',
+        sdkConstraint: '>=3.1.0-0 <4.0.0',
+        experiments: {
+          'enable': ['abc'],
+        },
+      );
+
+      await runPub(
+        args: ['publish', '--dry-run'],
+        output: contains('Package has 0 warnings.'),
+        environment: _environment,
+      );
+    });
+
+    test(
+      'allows publishing a stable package that only declares experiments',
+      () async {
+        await _setupSdks();
+        await createPublishablePackage(
+          version: '1.0.0',
+          sdkConstraint: '^3.1.0',
+          experiments: {
+            'declare': {
+              'new_api': {'description': 'Experimental API'},
+            },
+          },
+        );
+
+        await runPub(
+          args: ['publish', '--dry-run'],
+          output: contains('Package has 0 warnings.'),
+          environment: _environment,
+        );
+      },
+    );
+  });
 }
 
 /// The environment making pub use the SDKs created by [_setupSdks].
