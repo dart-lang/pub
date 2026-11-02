@@ -18,6 +18,7 @@ import 'command_runner.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'executable.dart';
+import 'experiment.dart';
 import 'io.dart';
 import 'language_version.dart';
 import 'lock_file.dart';
@@ -500,20 +501,40 @@ See $workspacesDocUrl for more information.''',
     SystemCache cache, {
     VersionConstraint? entrypointSdkConstraint,
   }) async {
+    final lockedPubspecs = <String, Pubspec>{};
+    if (lockFile.packages.isNotEmpty) {
+      for (final name in lockFile.packages.keys.sorted()) {
+        final id = lockFile.packages[name]!;
+        lockedPubspecs[name] = await cache.describe(id);
+      }
+    }
+    final resolvedExperiments = <String, Experiment>{
+      ...availableExperiments,
+      for (final pubspec in lockedPubspecs.values)
+        for (final MapEntry(:key, :value)
+            in pubspec.declaredExperiments.entries)
+          '${pubspec.name}.$key': value,
+      if (!isCachedGlobal)
+        for (final package in workspaceRoot.transitiveWorkspace)
+          for (final MapEntry(:key, :value)
+              in package.pubspec.declaredExperiments.entries)
+            '${package.name}.$key': value,
+    };
+
     final entries = <PackageConfigEntry>[];
     if (lockFile.packages.isNotEmpty) {
       final relativeFromPath = p.join(workspaceRoot.dir, '.dart_tool');
       for (final name in lockFile.packages.keys.sorted()) {
         final id = lockFile.packages[name]!;
         final rootPath = cache.getDirectory(id, relativeFrom: relativeFromPath);
-        final pubspec = await cache.describe(id);
+        final pubspec = lockedPubspecs[name]!;
         entries.add(
           PackageConfigEntry(
             name: name,
             rootUri: p.toUri(rootPath),
             packageUri: p.toUri('lib/'),
             languageVersion: pubspec.languageVersion,
-            experiments: _experimentsNeedingOptIn(pubspec),
+            experiments: _experimentsNeedingOptIn(pubspec, resolvedExperiments),
           ),
         );
       }
@@ -534,7 +555,10 @@ See $workspacesDocUrl for more information.''',
             ),
             packageUri: p.toUri('lib/'),
             languageVersion: package.pubspec.languageVersion,
-            experiments: _experimentsNeedingOptIn(package.pubspec),
+            experiments: _experimentsNeedingOptIn(
+              package.pubspec,
+              resolvedExperiments,
+            ),
           ),
         );
       }
@@ -565,9 +589,13 @@ See $workspacesDocUrl for more information.''',
   ///
   /// Experiments that don't require opting in (or can't be disabled) are left
   /// out.
-  static List<String> _experimentsNeedingOptIn(Pubspec pubspec) => [
+  static List<String> _experimentsNeedingOptIn(
+    Pubspec pubspec,
+    Map<String, Experiment> resolvedExperiments,
+  ) => [
     for (final name in pubspec.experiments)
-      if (isEffectiveExperimentFlag(name)) name,
+      if (isEffectiveExperimentFlag(name, experiments: resolvedExperiments))
+        name,
   ];
 
   /// Gets all dependencies of the [workspaceRoot] package.
@@ -647,6 +675,8 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       );
     }
 
+    result.validatePackageExperiments();
+
     // We have to download files also with --dry-run to ensure we know the
     // archive hashes for downloaded files.
     final newLockFile = await result.downloadCachedPackages(
@@ -667,6 +697,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       enforceLockfile: enforceLockfile,
       reportMode: reportMode,
       expiredExperimentUsers: result.expiredExperimentUsers,
+      resolvedExperiments: result.resolvedExperiments,
     );
 
     await report.show(summary: true);

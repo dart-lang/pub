@@ -9,7 +9,8 @@ import 'package:pub_semver/pub_semver.dart';
 import '../validator.dart';
 
 /// A validator that checks that packages enabling experiments are published as
-/// pre-release versions and have a pre-release SDK constraint.
+/// pre-release versions (and, when enabling SDK experiments, have a pre-release
+/// SDK constraint).
 class ExperimentsValidator extends Validator {
   @override
   Future<void> validate() async {
@@ -25,21 +26,26 @@ class ExperimentsValidator extends Validator {
       );
     }
 
-    final dartConstraint = package.pubspec.dartSdkConstraint.originalConstraint;
-    final dartMin = dartConstraint is VersionRange ? dartConstraint.min : null;
-    final flutterConstraint =
-        package.pubspec.sdkConstraints['flutter']?.originalConstraint;
-    final flutterMin =
-        flutterConstraint is VersionRange ? flutterConstraint.min : null;
-    final hasPreReleaseSdkConstraint =
-        (dartMin != null && dartMin.isPreRelease) ||
-        (flutterMin != null && flutterMin.isPreRelease);
+    final hasSdkExperiments = enabledExperiments.any((e) => !e.contains('.'));
+    if (hasSdkExperiments) {
+      final dartConstraint =
+          package.pubspec.dartSdkConstraint.originalConstraint;
+      final dartMin =
+          dartConstraint is VersionRange ? dartConstraint.min : null;
+      final flutterConstraint =
+          package.pubspec.sdkConstraints['flutter']?.originalConstraint;
+      final flutterMin =
+          flutterConstraint is VersionRange ? flutterConstraint.min : null;
+      final hasPreReleaseSdkConstraint =
+          (dartMin != null && dartMin.isPreRelease) ||
+          (flutterMin != null && flutterMin.isPreRelease);
 
-    if (!hasPreReleaseSdkConstraint) {
-      errors.add(
-        'Packages that enable SDK experiments must have a pre-release SDK '
-        'constraint (for example, `sdk: ^3.8.0-0`).',
-      );
+      if (!hasPreReleaseSdkConstraint) {
+        errors.add(
+          'Packages that enable SDK experiments must have a pre-release SDK '
+          'constraint (for example, `sdk: ^3.8.0-0`).',
+        );
+      }
     }
   }
 }
