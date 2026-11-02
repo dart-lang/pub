@@ -110,11 +110,6 @@ class Incompatibility {
       return '${_terse(depender, details, allowEvery: true)} depends on '
           '${_terse(dependee, details)}';
     } else if (cause is ExperimentIncompatibilityCause) {
-      if (terms.length == 2) {
-        return '${_terse(terms.first, details, allowEvery: true)} with '
-            '${_terse(terms.last, details)} requires enabling '
-            '${cause.description}';
-      }
       assert(terms.length == 1);
       final dependee = terms.first;
       return '${_terse(dependee, details, allowEvery: true)} requires '

@@ -6,7 +6,6 @@ import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command_runner.dart';
-import '../experiment.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package_name.dart';
@@ -71,9 +70,6 @@ class SolveReport {
   /// of those packages.
   final Map<String, List<String>> expiredExperimentUsers;
 
-  /// All experiments known in this resolution (both SDK and package-declared).
-  final Map<String, Experiment> resolvedExperiments;
-
   SolveReport(
     this._type,
     this._location,
@@ -88,11 +84,9 @@ class SolveReport {
     required bool enforceLockfile,
     required SolveReportMode reportMode,
     this.expiredExperimentUsers = const {},
-    Map<String, Experiment>? resolvedExperiments,
   }) : _dryRun = dryRun,
        _reportMode = reportMode,
-       _enforceLockfile = enforceLockfile,
-       resolvedExperiments = resolvedExperiments ?? availableExperiments;
+       _enforceLockfile = enforceLockfile;
 
   /// Displays a report of the results of the version resolution in
   /// [_newLockFile] relative to the [_previousLockFile] file.
@@ -359,15 +353,14 @@ $contentHashesDocumentationUrl
         in expiredExperimentUsers.entries) {
       final isOptOut = rawName.startsWith('no-');
       final name = isOptOut ? rawName.substring(3) : rawName;
-      final enabledIn = resolvedExperiments[name]?.enabledIn;
-      final owner = name.contains('.') ? name.split('.').first : 'Dart';
+      final enabledIn = availableExperiments[name]?.enabledIn;
       final status =
           enabledIn == null
               ? 'has been retired and no longer has any effect'
               : isOptOut
-              ? 'has been enabled by default since $owner $enabledIn and can '
+              ? 'has been enabled by default since Dart $enabledIn and can '
                   'no longer be disabled'
-              : 'has been enabled by default since $owner $enabledIn';
+              : 'has been enabled by default since Dart $enabledIn';
       final target = isOptOut ? '`$rawName`' : 'it';
       warning(
         'The experiment `$name` $status. Remove $target from `experiments` in '
@@ -379,7 +372,7 @@ $contentHashesDocumentationUrl
     for (final MapEntry(key: rawName, value: packages)
         in experimentUsers.entries) {
       final name = rawName.startsWith('no-') ? rawName.substring(3) : rawName;
-      final description = resolvedExperiments[name]?.description;
+      final description = availableExperiments[name]?.description;
       message(
         '* `$rawName` for ${packages.join(', ')}'
         '${description == null ? '' : ' - $description'}',

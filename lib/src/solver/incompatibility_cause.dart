@@ -90,9 +90,7 @@ class ExperimentIncompatibilityCause extends IncompatibilityCause {
   String? get hint {
     final unknownSdkExperiments = [
       for (final experiment in experiments)
-        if (!experiment.contains('.') &&
-            !availableExperiments.containsKey(experiment))
-          experiment,
+        if (!availableExperiments.containsKey(experiment)) experiment,
     ];
     if (unknownSdkExperiments.isNotEmpty) {
       final first = unknownSdkExperiments.first;
@@ -103,7 +101,6 @@ Read more about experiments at https://dart.dev/go/experiments.''';
     }
 
     for (final experiment in experiments) {
-      if (experiment.contains('.')) continue;
       final sdkExperiment = availableExperiments[experiment];
       if (sdkExperiment != null &&
           !sdkExperiment.isAvailableOnChannel(DartSdk.channel)) {
@@ -133,7 +130,7 @@ Read more about experiments at https://dart.dev/go/experiments.''';
       ...optedIn,
       for (final e in experiments)
         if (!optedIn.contains(e)) e,
-    ].map((e) => '    - $e').join('\n');
+    ].map((e) => '  - $e').join('\n');
     return '''
 $notEnabledDescription
 
@@ -143,7 +140,6 @@ To enable $pronoun add to your pubspec.yaml:
 
 ```
 experiments:
-  enable:
 $yamlEntries
 ```
 

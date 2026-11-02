@@ -137,16 +137,12 @@ Set<String> get experimentsNotRequiringOptIn => {
 
 /// Whether [flag] (an `<experiment>` or `no-<experiment>` entry from
 /// `experiments`) has an effect and should be passed on to tools.
-bool isEffectiveExperimentFlag(
-  String flag, {
-  Map<String, Experiment>? experiments,
-}) {
-  final knownExperiments = experiments ?? availableExperiments;
+bool isEffectiveExperimentFlag(String flag) {
   if (flag.startsWith('no-')) {
-    final experiment = knownExperiments[flag.substring(3)];
+    final experiment = availableExperiments[flag.substring(3)];
     return experiment == null || experiment.canBeDisabled;
   }
-  final experiment = knownExperiments[flag];
+  final experiment = availableExperiments[flag];
   return experiment == null || experiment.requiresOptIn;
 }
 

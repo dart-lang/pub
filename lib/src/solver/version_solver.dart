@@ -112,10 +112,6 @@ class VersionSolver {
        _allowedExperiments = {
          ..._root.allExperimentsInWorkspace,
          ...experimentsNotRequiringOptIn,
-         for (final package in _root.transitiveWorkspace)
-           for (final MapEntry(:key, :value)
-               in package.pubspec.declaredExperiments.entries)
-             if (!value.requiresOptIn) '${package.name}.$key',
        };
 
   /// Prime the solver with [constraints].
