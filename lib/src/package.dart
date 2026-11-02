@@ -188,18 +188,23 @@ class Package {
             } on FormatException catch (e) {
               fail('Failed to parse glob `$workspacePath`. $e');
             }
-            final globResults =
-                glob
-                    .listFileSystemSync(
-                      currentFileSystem,
-                      root: p.absolute(dir),
-                      followLinks: false,
-                    )
-                    .toList();
+            final globRoot = p.absolute(dir);
+            final globResults = glob.listFileSystemSync(
+              currentFileSystem,
+              root: globRoot,
+              followLinks: false,
+            );
+            final skippedSymlinks = <String>[];
             for (final globResult in globResults) {
-              if (globResult is! Directory) continue;
+              if (globResult is File) continue;
               final pubspecPath = p.join(globResult.path, 'pubspec.yaml');
               if (!fileExists(pubspecPath)) continue;
+              if (_isBehindSymlink(globResult.path, root: globRoot)) {
+                skippedSymlinks.add(
+                  p.relative(globResult.path, from: globRoot),
+                );
+                continue;
+              }
               packages.add(
                 Package.load(
                   globResult.path,
@@ -207,6 +212,13 @@ class Package {
                   withPubspecOverrides: withPubspecOverrides,
                 ),
               );
+            }
+            if (skippedSymlinks.isNotEmpty) {
+              globHint = '''
+\n\nGlobs do not follow symlinks, so these packages were not included:
+${skippedSymlinks.join('\n')}
+List them as literal workspace entries to include them.
+''';
             }
           } else {
             final pubspecPath = p.join(
@@ -604,6 +616,23 @@ See https://dart.dev/go/workspaces-stray-files for details.
 /// conflicting with Windows `\` path separators.
 bool _hasGlobWildcards(String s) =>
     s.contains('*') || s.contains('?') || s.contains('[') || s.contains('{');
+
+/// Returns whether [path] is a symlink, or is reached through one, below
+/// [root].
+///
+/// `package:glob` lists literal path segments directly instead of inspecting
+/// them, so `followLinks: false` doesn't stop it from traversing a symlink in a
+/// glob such as `linked/*`, except on Windows where its globs are case
+/// insensitive and every segment is listed.
+bool _isBehindSymlink(String path, {required String root}) {
+  var current = root;
+  for (final segment in p.split(p.relative(path, from: root))) {
+    current = p.join(current, segment);
+    if (linkExists(current)) return true;
+  }
+  return false;
+}
+
 String _useBackSlashesOnWindows(String path) {
   if (platform.isWindows) {
     return p.joinAll(p.split(path));
