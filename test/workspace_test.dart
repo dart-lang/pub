@@ -2026,6 +2026,132 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
     ]).validate();
   });
 
+  group('follow_links', () {
+    Future<void> createWorkspace(Object workspaceEntry) async {
+      await dir('external', [libPubspec('shared', '1.0.0')]).create();
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': [workspaceEntry],
+          },
+          sdk: '^3.14.0',
+        ),
+        dir('pkgs', [
+          dir('a', [
+            libPubspec('a', '1.1.1', resolutionWorkspace: true),
+            dir('linux', [
+              dir('.plugin_symlinks', [
+                link('external', p.join(sandbox, 'external')),
+              ]),
+            ]),
+          ]),
+        ]),
+      ]).create();
+    }
+
+    test('symlinks are matched by globs by default', () async {
+      await createWorkspace('pkgs/**');
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+        error: contains('does not have `resolution: workspace`'),
+        exitCode: 1,
+      );
+    });
+
+    test('`glob` entries follow symlinks by default', () async {
+      await createWorkspace({'glob': 'pkgs/**'});
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+        error: contains('does not have `resolution: workspace`'),
+        exitCode: 1,
+      );
+    });
+
+    test('symlinks are ignored when false', () async {
+      await createWorkspace({'glob': 'pkgs/**', 'follow_links': false});
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'});
+      await dir(appPath, [
+        packageConfigFile([
+          packageConfigEntry(name: 'myapp', path: '.'),
+          packageConfigEntry(name: 'a', path: 'pkgs/a'),
+        ], generatorVersion: '3.14.0'),
+      ]).validate();
+    });
+
+    test('directly matched symlinks are ignored when false', () async {
+      await dir('external', [
+        libPubspec('shared', '1.0.0', resolutionWorkspace: true),
+      ]).create();
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': [
+              {'glob': 'pkgs/*', 'follow_links': false},
+            ],
+          },
+          sdk: '^3.14.0',
+        ),
+        dir('pkgs', [
+          dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+          link('external', p.join(sandbox, 'external')),
+        ]),
+      ]).create();
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'});
+      await dir(appPath, [
+        packageConfigFile([
+          packageConfigEntry(name: 'myapp', path: '.'),
+          packageConfigEntry(name: 'a', path: 'pkgs/a'),
+        ], generatorVersion: '3.14.0'),
+      ]).validate();
+    });
+
+    test('a pattern without wildcards is still a glob', () async {
+      await dir('external', [
+        libPubspec('shared', '1.0.0', resolutionWorkspace: true),
+      ]).create();
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': [
+              {'glob': 'pkgs/external', 'follow_links': false},
+            ],
+          },
+          sdk: '^3.14.0',
+        ),
+        dir('pkgs', [link('external', p.join(sandbox, 'external'))]),
+      ]).create();
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'},
+        error: contains('No workspace packages matching `pkgs/external`'),
+        exitCode: 1,
+      );
+    });
+
+    test('literal entries can still be symlinks', () async {
+      await dir('external', [
+        libPubspec('shared', '1.0.0', resolutionWorkspace: true),
+      ]).create();
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/external'],
+          },
+          sdk: '^3.14.0',
+        ),
+        dir('pkgs', [link('external', p.join(sandbox, 'external'))]),
+      ]).create();
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.14.0'});
+    });
+  });
+
   test(
     'literal workspace entries are resolved with newer language versions',
     () async {

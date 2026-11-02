@@ -350,7 +350,103 @@ workspace: ['a', 'b', 'c']
           sources,
           containingDescription: ResolvedRootDescription.fromDir('.'),
         ).workspace,
-        ['a', 'b', 'c'],
+        [
+          const WorkspaceEntry('a'),
+          const WorkspaceEntry('b'),
+          const WorkspaceEntry('c'),
+        ],
+      );
+    });
+
+    test('parses workspace glob entries', () {
+      expect(
+        Pubspec.parse(
+          '''
+environment:
+  sdk: ^3.14.0
+workspace:
+  - a
+  - glob: b/**
+  - glob: c/**
+    follow_links: false
+''',
+          sources,
+          containingDescription: ResolvedRootDescription.fromDir('.'),
+        ).workspace,
+        [
+          const WorkspaceEntry('a'),
+          const WorkspaceEntry('b/**'),
+          const WorkspaceEntry('c/**', followLinks: false),
+        ],
+      );
+    });
+
+    test('errors on workspace glob entries for earlier language versions', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^3.13.0
+workspace:
+  - glob: a/**
+''',
+        (p) => p.workspace,
+        expectedContains:
+            'Workspace entries with a `glob` key require at least '
+            'language version 3.14',
+      );
+    });
+
+    test('throws if a workspace glob entry has an unknown key', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^3.14.0
+workspace:
+  - glob: a/**
+    links: false
+''',
+        (p) => p.workspace,
+        expectedContains: 'Unknown workspace entry key `links`',
+      );
+    });
+
+    test('throws if a workspace glob entry has no glob', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^3.14.0
+workspace:
+  - follow_links: false
+''',
+        (p) => p.workspace,
+        expectedContains: 'A workspace entry must have a string `glob`',
+      );
+    });
+
+    test('throws if follow_links is not a boolean', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^3.14.0
+workspace:
+  - glob: a/**
+    follow_links: 'no'
+''',
+        (p) => p.workspace,
+        expectedContains: '`follow_links` must be a boolean',
+      );
+    });
+
+    test('throws if a workspace glob is outside the package', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^3.14.0
+workspace:
+  - glob: ../a/**
+''',
+        (p) => p.workspace,
+        expectedContains: '"workspace" members must be subdirectories',
       );
     });
 
