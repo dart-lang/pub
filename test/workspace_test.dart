@@ -2026,6 +2026,108 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
     ]).validate();
   });
 
+  group('symlinks', () {
+    Future<void> expectOnlyPackageA() async {
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
+      await dir(appPath, [
+        packageConfigFile([
+          packageConfigEntry(name: 'myapp', path: '.'),
+          packageConfigEntry(name: 'a', path: 'pkgs/a'),
+        ], generatorVersion: '3.11.0'),
+      ]).validate();
+    }
+
+    test('are not followed by globs', () async {
+      await dir('plugin', [libPubspec('plugin', '1.0.0')]).create();
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/**'],
+          },
+          sdk: '^3.11.0',
+        ),
+        dir('pkgs', [
+          dir('a', [
+            libPubspec('a', '1.1.1', resolutionWorkspace: true),
+            dir('linux', [
+              dir('.plugin_symlinks', [
+                link('plugin', p.join(sandbox, 'plugin')),
+              ]),
+            ]),
+          ]),
+        ]),
+      ]).create();
+      await expectOnlyPackageA();
+    });
+
+    test('are not matched by globs', () async {
+      await dir('plugin', [
+        libPubspec('plugin', '1.0.0', resolutionWorkspace: true),
+      ]).create();
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/*'],
+          },
+          sdk: '^3.11.0',
+        ),
+        dir('pkgs', [
+          dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+          link('plugin', p.join(sandbox, 'plugin')),
+        ]),
+      ]).create();
+      await expectOnlyPackageA();
+    });
+
+    test('forming a cycle are not followed by globs', () async {
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/**'],
+          },
+          sdk: '^3.11.0',
+        ),
+        dir('pkgs', [
+          dir('a', [
+            libPubspec('a', '1.1.1', resolutionWorkspace: true),
+            link('cycle', p.join(sandbox, appPath, 'pkgs')),
+          ]),
+        ]),
+      ]).create();
+      await expectOnlyPackageA();
+    });
+
+    test('can be listed as literal workspace entries', () async {
+      await dir('plugin', [
+        libPubspec('plugin', '1.0.0', resolutionWorkspace: true),
+      ]).create();
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/plugin'],
+          },
+          sdk: '^3.11.0',
+        ),
+        dir('pkgs', [link('plugin', p.join(sandbox, 'plugin'))]),
+      ]).create();
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
+      await dir(appPath, [
+        packageConfigFile([
+          packageConfigEntry(name: 'myapp', path: '.'),
+          packageConfigEntry(name: 'plugin', path: 'pkgs/plugin'),
+        ], generatorVersion: '3.11.0'),
+      ]).validate();
+    });
+  });
+
   test(
     'literal workspace entries are resolved with newer language versions',
     () async {

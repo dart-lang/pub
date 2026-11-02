@@ -193,9 +193,11 @@ class Package {
                     .listFileSystemSync(
                       currentFileSystem,
                       root: p.absolute(dir),
+                      followLinks: false,
                     )
                     .toList();
             for (final globResult in globResults) {
+              if (globResult is! Directory) continue;
               final pubspecPath = p.join(globResult.path, 'pubspec.yaml');
               if (!fileExists(pubspecPath)) continue;
               packages.add(
