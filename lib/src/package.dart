@@ -194,17 +194,11 @@ class Package {
               root: globRoot,
               followLinks: false,
             );
-            final skippedSymlinks = <String>[];
             for (final globResult in globResults) {
-              if (globResult is File) continue;
+              if (globResult is! Directory) continue;
               final pubspecPath = p.join(globResult.path, 'pubspec.yaml');
               if (!fileExists(pubspecPath)) continue;
-              if (_isBehindSymlink(globResult.path, root: globRoot)) {
-                skippedSymlinks.add(
-                  p.relative(globResult.path, from: globRoot),
-                );
-                continue;
-              }
+              if (_isBehindSymlink(globResult.path, root: globRoot)) continue;
               packages.add(
                 Package.load(
                   globResult.path,
@@ -212,13 +206,6 @@ class Package {
                   withPubspecOverrides: withPubspecOverrides,
                 ),
               );
-            }
-            if (skippedSymlinks.isNotEmpty) {
-              globHint = '''
-\n\nGlobs do not follow symlinks, so these packages were not included:
-${skippedSymlinks.join('\n')}
-List them as literal workspace entries to include them.
-''';
             }
           } else {
             final pubspecPath = p.join(

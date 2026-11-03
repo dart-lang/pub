@@ -2146,34 +2146,6 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
       ]).create();
       await expectOnlyPackage();
     });
-
-    test('are hinted at when a glob matches nothing else', () async {
-      await dir('plugin', [
-        libPubspec('plugin', '1.0.0', resolutionWorkspace: true),
-      ]).create();
-      await dir(appPath, [
-        libPubspec(
-          'myapp',
-          '1.2.3',
-          extras: {
-            'workspace': ['pkgs/*'],
-          },
-          sdk: '^3.11.0',
-        ),
-        dir('pkgs', [link('plugin', p.join(sandbox, 'plugin'))]),
-      ]).create();
-      await pubGet(
-        environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'},
-        error: contains('''
-No workspace packages matching `pkgs/*`.
-That was included in the workspace of `.${s}pubspec.yaml`.
-
-Globs do not follow symlinks, so these packages were not included:
-pkgs${s}plugin
-List them as literal workspace entries to include them.'''),
-        exitCode: 1,
-      );
-    });
   });
 
   test(
