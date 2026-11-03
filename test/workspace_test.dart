@@ -2027,12 +2027,15 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
   });
 
   group('symlinks', () {
-    Future<void> expectOnlyPackageA() async {
+    Future<void> expectOnlyPackage({
+      String name = 'a',
+      String path = 'pkgs/a',
+    }) async {
       await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
       await dir(appPath, [
         packageConfigFile([
           packageConfigEntry(name: 'myapp', path: '.'),
-          packageConfigEntry(name: 'a', path: 'pkgs/a'),
+          packageConfigEntry(name: name, path: path),
         ], generatorVersion: '3.11.0'),
       ]).validate();
     }
@@ -2059,7 +2062,7 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
           ]),
         ]),
       ]).create();
-      await expectOnlyPackageA();
+      await expectOnlyPackage();
     });
 
     test('are not matched by globs', () async {
@@ -2080,7 +2083,7 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
           link('plugin', p.join(sandbox, 'plugin')),
         ]),
       ]).create();
-      await expectOnlyPackageA();
+      await expectOnlyPackage();
     });
 
     test('forming a cycle are not followed by globs', () async {
@@ -2100,7 +2103,7 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
           ]),
         ]),
       ]).create();
-      await expectOnlyPackageA();
+      await expectOnlyPackage();
     });
 
     test('can be listed as literal workspace entries', () async {
@@ -2118,13 +2121,30 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
         ),
         dir('pkgs', [link('plugin', p.join(sandbox, 'plugin'))]),
       ]).create();
-      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
+      await expectOnlyPackage(name: 'plugin', path: 'pkgs/plugin');
+    });
+
+    test('in a literal glob segment are not followed', () async {
+      await dir('external', [
+        dir('plugin', [
+          libPubspec('plugin', '1.0.0', resolutionWorkspace: true),
+        ]),
+      ]).create();
       await dir(appPath, [
-        packageConfigFile([
-          packageConfigEntry(name: 'myapp', path: '.'),
-          packageConfigEntry(name: 'plugin', path: 'pkgs/plugin'),
-        ], generatorVersion: '3.11.0'),
-      ]).validate();
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['{linked,pkgs}/*'],
+          },
+          sdk: '^3.11.0',
+        ),
+        link('linked', p.join(sandbox, 'external')),
+        dir('pkgs', [
+          dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+        ]),
+      ]).create();
+      await expectOnlyPackage();
     });
   });
 
