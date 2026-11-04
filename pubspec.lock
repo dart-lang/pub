@@ -41,6 +41,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
+  checked_yaml:
+    dependency: transitive
+    description:
+      name: checked_yaml
+      sha256: "959525d3162f249993882720d52b7e0c833978df229be20702b33d48d91de70f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.4"
   checks:
     dependency: "direct dev"
     description:
@@ -97,6 +105,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.7"
+  dart_apitool:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "6e94a0652c4c1c5566062408cd4263a7682a8e17"
+      resolved-ref: "6e94a0652c4c1c5566062408cd4263a7682a8e17"
+      url: "https://github.com/mosuem/dart_apitool.git"
+    source: git
+    version: "0.24.0"
   dart_flutter_team_lints:
     dependency: "direct dev"
     description:
@@ -113,6 +130,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.1"
+  freezed_annotation:
+    dependency: transitive
+    description:
+      name: freezed_annotation
+      sha256: "7294967ff0a6d98638e7acb774aac3af2550777accd8149c90af5b014e6d44d8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.0"
   frontend_server_client:
     dependency: "direct main"
     description:
@@ -169,6 +194,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
+  json_annotation:
+    dependency: transitive
+    description:
+      name: json_annotation
+      sha256: "2a743920d81b7910627f68ee2c9ac1fc0bfee32b9fc3403587d7c6791ca12f80"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.12.0"
   lints:
     dependency: transitive
     description:
@@ -249,6 +282,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+  pubspec_parse:
+    dependency: transitive
+    description:
+      name: pubspec_parse
+      sha256: "0560ba233314abbed0a48a2956f7f022cce7c3e1e73df540277da7544cad4082"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.5.0"
   shelf:
     dependency: "direct main"
     description:
