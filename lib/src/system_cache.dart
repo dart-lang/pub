@@ -293,7 +293,7 @@ Consider setting the `PUB_CACHE` variable manually.
     try {
       // TODO: Pass some maxAge to getVersions
       available = await getVersions(package);
-    } on PackageNotFoundException {
+    } on ApplicationException {
       return null;
     }
     if (available.isEmpty) {
