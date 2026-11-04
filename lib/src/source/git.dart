@@ -737,6 +737,12 @@ class GitSource extends CachedSource {
       await _revParse(path, revision);
       return false;
     } on git.GitException catch (_) {
+      if (cache.isOffline) {
+        throw PackageNotFoundException(
+          'revision $revision of ${description.url} is not available in cache',
+          hint: 'Try again without --offline!',
+        );
+      }
       await _updateRepoCache(description, cache);
       await _firstRevision(path, revision);
       return true;
@@ -745,6 +751,8 @@ class GitSource extends CachedSource {
 
   /// Ensures that the canonical clone of the repository referred to by
   /// [description] exists and is up-to-date.
+  ///
+  /// When offline, an existing canonical clone is used as is.
   ///
   /// Returns `true` if it had to update anything.
   Future<bool> _ensureRepoCache(
@@ -759,6 +767,8 @@ class GitSource extends CachedSource {
     if (!entryExists(path)) {
       await _createRepoCache(description, cache);
       return true;
+    } else if (cache.isOffline) {
+      return false;
     } else {
       return await _updateRepoCache(description, cache);
     }
@@ -768,12 +778,20 @@ class GitSource extends CachedSource {
   /// [description].
   ///
   /// This assumes that the canonical clone doesn't yet exist.
+  ///
+  /// Throws a [PackageNotFoundException] when offline.
   Future<void> _createRepoCache(
     GitDescription description,
     SystemCache cache,
   ) async {
     final path = _repoCachePath(description, cache);
     assert(!cache.gitCache.updatedRepos.contains(path));
+    if (cache.isOffline) {
+      throw PackageNotFoundException(
+        'could not find git repository ${description.url} in cache',
+        hint: 'Try again without --offline!',
+      );
+    }
     try {
       await _cloneViaTemp(description.url, path, cache, mirror: true);
     } catch (_) {
