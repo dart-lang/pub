@@ -123,6 +123,22 @@ class Package {
   List<String> get executableNames =>
       executablePaths.map(p.basenameWithoutExtension).toList();
 
+  /// Returns a list of paths to all Dart scripts in this package's `tool`
+  /// directory.
+  List<String> get toolPaths {
+    final toolDir = p.join(dir, 'tool');
+    if (!dirExists(toolDir)) return <String>[];
+    return [
+      for (final tool in listDir(toolDir, includeDirs: false))
+        if (p.extension(tool) == '.dart') p.relative(tool, from: dir),
+    ]..sort();
+  }
+
+  /// Returns the names (without `.dart` extension) of all Dart scripts in this
+  /// package's `tool` directory.
+  List<String> get toolNames =>
+      toolPaths.map(p.basenameWithoutExtension).toList();
+
   /// Returns whether or not this package is in a Git repo.
   late final bool inGitRepo = computeInGitRepoCache();
 

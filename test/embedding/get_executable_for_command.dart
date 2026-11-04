@@ -215,6 +215,11 @@ void testGetExecutableForCommand() {
           d.file('myapp.dart', 'main() {print(42);}'),
           d.file('tool.dart', 'main() {print(42);}'),
         ]),
+        d.dir('tool', [
+          d.file('helper.dart', 'main() {print(42);}'),
+          d.file('tool.dart', 'main() {print("from tool");}'),
+        ]),
+        d.dir('lib', [d.file('lib.dart', '')]),
       ]).create();
       final dir = d.path(appPath);
 
@@ -244,6 +249,30 @@ void testGetExecutableForCommand() {
         dir,
         executable: p.join(d.sandbox, appPath, 'bin', 'tool.dart'),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
+        resolution: ResolutionAttempt.fastPath,
+      );
+      await testGetExecutable(
+        ':helper',
+        dir,
+        executable: p.join(d.sandbox, appPath, 'tool', 'helper.dart'),
+        packageConfig: p.join('.dart_tool', 'package_config.json'),
+        resolution: ResolutionAttempt.fastPath,
+      );
+      await testGetExecutable(
+        ':helper',
+        p.join(dir, 'lib'),
+        executable: p.join(d.sandbox, appPath, 'tool', 'helper.dart'),
+        packageConfig: p.join('..', '.dart_tool', 'package_config.json'),
+        resolution: ResolutionAttempt.fastPath,
+      );
+      await testGetExecutable(
+        ':unknown',
+        dir,
+        errorMessage: contains(
+          'Could not find `bin/unknown.dart` or `tool/unknown.dart` in '
+          'package `myapp`.',
+        ),
+        issue: CommandResolutionIssue.noBinaryFound,
         resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
@@ -347,6 +376,7 @@ void testGetExecutableForCommand() {
           d.file('myapp.dart', 'main() {print(42);}'),
           d.file('tool.dart', 'main() {print(42);}'),
         ]),
+        d.dir('tool', [d.file('myapp_tool.dart', 'main() {print(42);}')]),
         d.dir('pkgs', [
           d.dir('a', [
             d.libPubspec(
@@ -361,6 +391,7 @@ void testGetExecutableForCommand() {
               d.file('a.dart', 'main() {print(42);}'),
               d.file('tool.dart', 'main() {print(42);}'),
             ]),
+            d.dir('tool', [d.file('a_tool.dart', 'main() {print(42);}')]),
             d.dir('sub', [
               d.libPubspec('sub', '1.0.0', resolutionWorkspace: true),
             ]),
@@ -371,6 +402,7 @@ void testGetExecutableForCommand() {
               d.file('b.dart', 'main() {print(42);}'),
               d.file('tool.dart', 'main() {print(42);}'),
             ]),
+            d.dir('tool', [d.file('b_tool.dart', 'main() {print(42);}')]),
           ]),
         ]),
       ]).create();
@@ -437,6 +469,74 @@ void testGetExecutableForCommand() {
         allowSnapshot: false,
         executable: p.join(d.sandbox, appPath, 'pkgs', 'a', 'bin', 'tool.dart'),
         packageConfig: p.join('..', '..', '.dart_tool', 'package_config.json'),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        resolution: ResolutionAttempt.fastPath,
+      );
+      await testGetExecutable(
+        ':a_tool',
+        p.join(d.sandbox, appPath, 'pkgs', 'a'),
+        allowSnapshot: false,
+        executable: p.join(
+          d.sandbox,
+          appPath,
+          'pkgs',
+          'a',
+          'tool',
+          'a_tool.dart',
+        ),
+        packageConfig: p.join('..', '..', '.dart_tool', 'package_config.json'),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        resolution: ResolutionAttempt.fastPath,
+      );
+      await testGetExecutable(
+        'a:a_tool',
+        p.join(d.sandbox, appPath),
+        allowSnapshot: false,
+        executable: p.join(
+          d.sandbox,
+          appPath,
+          'pkgs',
+          'a',
+          'tool',
+          'a_tool.dart',
+        ),
+        packageConfig: p.join('.dart_tool', 'package_config.json'),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        resolution: ResolutionAttempt.fastPath,
+      );
+      await testGetExecutable(
+        'myapp:myapp_tool',
+        p.join(d.sandbox, appPath, 'pkgs', 'a'),
+        allowSnapshot: false,
+        executable: p.join(d.sandbox, appPath, 'tool', 'myapp_tool.dart'),
+        packageConfig: p.join('..', '..', '.dart_tool', 'package_config.json'),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        resolution: ResolutionAttempt.fastPath,
+      );
+      await testGetExecutable(
+        'b:b_tool',
+        p.join(d.sandbox, appPath, 'pkgs', 'a'),
+        allowSnapshot: false,
+        executable: p.join(
+          d.sandbox,
+          appPath,
+          'pkgs',
+          'b',
+          'tool',
+          'b_tool.dart',
+        ),
+        packageConfig: p.join('..', '..', '.dart_tool', 'package_config.json'),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        resolution: ResolutionAttempt.fastPath,
+      );
+      await testGetExecutable(
+        ':myapp_tool',
+        p.join(d.sandbox, appPath, 'pkgs', 'a'),
+        errorMessage: contains(
+          'Could not find `bin/myapp_tool.dart` or `tool/myapp_tool.dart` in '
+          'package `a`.',
+        ),
+        issue: CommandResolutionIssue.noBinaryFound,
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
         resolution: ResolutionAttempt.fastPath,
       );
