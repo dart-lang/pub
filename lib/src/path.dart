@@ -23,6 +23,9 @@ extension PathContextExt on path.Context {
   /// A default context for manipulating POSIX paths.
   path.Context get posix => path.posix;
 
+  /// A default context for manipulating Windows paths.
+  path.Context get windows => path.windows;
+
   /// A default context for manipulating URLs.
   ///
   /// URL path equality is undefined for paths that differ only in their
