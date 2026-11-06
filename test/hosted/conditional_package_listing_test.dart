@@ -214,4 +214,79 @@ void main() {
         File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync();
     expect(lockFile, contains('version: "1.0.0"'));
   });
+
+  test('pub get revalidates expired cached listing with If-None-Match and '
+      'refreshes _fetchedAt on 304 Not Modified', () async {
+    final server = await servePackages(serveEtags: true);
+    server.serve('foo', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+    await pubGet();
+
+    final cachePath = p.join(
+      d.sandbox,
+      'cache',
+      'hosted',
+      'localhost%58${server.port}',
+      '.cache',
+      'foo-versions.json',
+    );
+    expect(File(cachePath).existsSync(), isTrue);
+
+    // Make the cached listing older than the 3-day maxAge.
+    final staleTime = DateTime.now().toUtc().subtract(const Duration(days: 5));
+    final cached =
+        jsonDecode(File(cachePath).readAsStringSync()) as Map<String, dynamic>;
+    cached['_fetchedAt'] = staleTime.toIso8601String();
+    File(cachePath).writeAsStringSync(jsonEncode(cached));
+
+    var conditionalRequests = 0;
+    server.handle(RegExp(r'/api/packages/foo$'), (request) {
+      if (request.headers['if-none-match'] == cached['_etag']) {
+        conditionalRequests++;
+        return shelf.Response.notModified(
+          headers: {'etag': cached['_etag'] as String},
+        );
+      }
+      return shelf.Response.badRequest(body: 'Expected If-None-Match');
+    });
+
+    // Running pub get with an existing lockfile checks package status/hashes.
+    // Because the cache is >3 days old, it revalidates with If-None-Match
+    // and receives 304 Not Modified.
+    server.requestedPaths.clear();
+    await pubGet();
+    expect(conditionalRequests, 1);
+    expect(
+      server.requestedPaths.where((p) => p == 'api/packages/foo'),
+      hasLength(1),
+    );
+
+    // The cached listing's _fetchedAt timestamp on disk should be refreshed,
+    // while preserving _etag and versions.
+    final refreshed =
+        jsonDecode(File(cachePath).readAsStringSync()) as Map<String, dynamic>;
+    final refreshedTime = DateTime.parse(refreshed['_fetchedAt'] as String);
+    expect(refreshedTime.isAfter(staleTime), isTrue);
+    expect(refreshed['_etag'], cached['_etag']);
+    expect(refreshed['versions'], cached['versions']);
+
+    // A subsequent pub get sees the refreshed timestamp (<3 days old) and
+    // does not contact the server again.
+    server.requestedPaths.clear();
+    await pubGet();
+    expect(
+      server.requestedPaths.where((p) => p == 'api/packages/foo'),
+      isEmpty,
+    );
+
+    // A subsequent pub upgrade when the cached listing is still fresh (<1 day
+    // old) sends If-None-Match and handles 304 without rewriting the cache file
+    // on disk.
+    await pubUpgrade();
+    expect(conditionalRequests, 2);
+    final afterUpgrade =
+        jsonDecode(File(cachePath).readAsStringSync()) as Map<String, dynamic>;
+    expect(afterUpgrade['_fetchedAt'], refreshed['_fetchedAt']);
+  });
 }
