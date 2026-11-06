@@ -72,12 +72,56 @@ void main() {
         args: ['--offline'],
         exitCode: exit_codes.UNAVAILABLE,
         error: allOf(
-          contains('could not find git repository'),
-          contains('in cache'),
+          contains('could not find git repository ../foo.git in cache'),
           contains('Try again without --offline!'),
         ),
       );
     });
+
+    test(
+      'fails gracefully if the ref is not in the cached repository',
+      () async {
+        ensureGit();
+
+        final repo = d.git('foo.git', [
+          d.libDir('foo'),
+          d.libPubspec('foo', '1.0.0'),
+        ]);
+        await repo.create();
+
+        await d
+            .appDir(
+              dependencies: {
+                'foo': {'git': '../foo.git'},
+              },
+            )
+            .create();
+
+        await pubGet();
+
+        // The cached clone of foo does not have this branch.
+        await repo.runGit(['branch', 'new']);
+        await d
+            .appDir(
+              dependencies: {
+                'foo': {
+                  'git': {'url': '../foo.git', 'ref': 'new'},
+                },
+              },
+            )
+            .create();
+
+        await pubCommand(
+          command,
+          args: ['--offline'],
+          exitCode: exit_codes.UNAVAILABLE,
+          error: allOf(
+            contains("Could not find git ref 'new'"),
+            contains('Try again without --offline!'),
+          ),
+        );
+      },
+    );
   });
 
   test('get fails gracefully if the locked revision is not in cache', () async {
@@ -112,14 +156,52 @@ void main() {
 
     // The repository is still there: only --offline keeps pub from fetching
     // the locked revision, so this fails instead of succeeding.
-    //
-    // TODO: report 'is not available in cache' with the --offline hint. The
-    // solver marks the locked version as invalid and the cached revision of
-    // the ref has the same version, so the failure is reported as no
-    // matching versions.
     await pubGet(
       args: ['--offline'],
-      error: contains('version solving failed'),
+      exitCode: exit_codes.UNAVAILABLE,
+      error: allOf(
+        contains('of ../foo.git is not available in cache'),
+        contains('Try again without --offline!'),
+      ),
     );
   });
+
+  test(
+    'get does not need the repository when the revision is checked out',
+    () async {
+      ensureGit();
+
+      await d.git('foo.git', [
+        d.libDir('foo'),
+        d.libPubspec('foo', '1.0.0'),
+      ]).create();
+
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'git': '../foo.git'},
+            },
+          )
+          .create();
+
+      await pubGet();
+
+      final originalFooSpec = packageSpec('foo');
+
+      // Keep the checkout of the locked revision, delete the cached repository.
+      final repoCacheDir = p.join(d.sandbox, cachePath, 'git', 'cache');
+      deleteEntry(repoCacheDir);
+      deleteEntry(p.join(d.sandbox, packageConfigFilePath));
+
+      await pubGet(args: ['--offline']);
+      expect(packageSpec('foo'), originalFooSpec);
+
+      deleteEntry(p.join(d.sandbox, packageConfigFilePath));
+      await pubGet();
+      expect(packageSpec('foo'), originalFooSpec);
+
+      // The cached repository was not cloned again.
+      expect(listDir(repoCacheDir), isEmpty);
+    },
+  );
 }
