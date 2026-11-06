@@ -510,11 +510,16 @@ class HostedSource extends CachedSource {
 
       if (is304) {
         final versions = cachedListing!.versions;
+        final now = DateTime.now().toUtc();
+        final age = now.difference(cachedListing.timestamp);
         cache.hostedCache._responseCache[ref] = _CachedVersionListing(
-          DateTime.now().toUtc(),
+          now,
           versions,
           etag: etag,
         );
+        if (age.isNegative || age >= const Duration(days: 1)) {
+          await _refreshVersionListingCacheTimestamp(ref, cache, now);
+        }
         log.io('Version listing for "$packageName" is not modified (304).');
         return versions;
       }
@@ -867,7 +872,20 @@ class HostedSource extends CachedSource {
   /// than [maxAge] old it is parsed and returned along with its `_etag` (if
   /// present and valid).
   ///
-  /// Otherwise deletes a cached response if it exists and returns `null`.
+  /// If a cached version listing response for [ref] exists on disk and is less
+  /// than [maxAge] old it is parsed, stored in
+  /// [HostedSourceCache._responseCache], and returned along with its `_etag`
+  /// (if present and valid).
+  ///
+  /// The cache entry's age is measured from the earlier of its `_fetchedAt`
+  /// timestamp and the file's modification time. If the cached response is
+  /// older than [maxAge], it is kept on disk and in
+  /// [HostedSourceCache._responseCache] (so a subsequent fetch can still send
+  /// `If-None-Match` and reuse the parsed listing on `304 Not Modified`), and
+  /// `null` is returned.
+  ///
+  /// If the cached file on disk is corrupted, it is deleted and `null` is
+  /// returned.
   ///
   /// If [maxAge] is not given, we will try to get the cached version no matter
   /// how old it is.
@@ -876,20 +894,11 @@ class HostedSource extends CachedSource {
     SystemCache cache, {
     Duration? maxAge,
   }) {
-    final cachedInfo = cache.hostedCache._responseCache[ref];
-    if (cachedInfo != null) {
-      final cacheAge = DateTime.now().difference(cachedInfo.timestamp);
-      if (maxAge == null || (!cacheAge.isNegative && maxAge > cacheAge)) {
-        // The cached value is not too old.
-        return cachedInfo;
-      }
-    }
-    final cachePath = _versionListingCachePath(ref, cache);
-    final stat = io.File(cachePath).statSync();
-    final now = DateTime.now();
-    if (stat.type == io.FileSystemEntityType.file) {
-      final fileAge = now.difference(stat.modified);
-      if (maxAge == null || (!fileAge.isNegative && fileAge < maxAge)) {
+    var cachedInfo = cache.hostedCache._responseCache[ref];
+    if (cachedInfo == null) {
+      final cachePath = _versionListingCachePath(ref, cache);
+      final stat = io.File(cachePath).statSync();
+      if (stat.type == io.FileSystemEntityType.file) {
         try {
           final cachedDoc = jsonDecode(readTextFile(cachePath));
           if (cachedDoc is! Map) {
@@ -904,47 +913,78 @@ class HostedSource extends CachedSource {
             );
           }
           final parsedTimestamp = DateTime.parse(timestamp);
-          final cacheAge = DateTime.now().difference(parsedTimestamp);
-          if (maxAge != null && (cacheAge.isNegative || cacheAge > maxAge)) {
-            // Too old according to internal timestamp - delete.
-            tryDeleteEntry(cachePath);
-            cache.hostedCache._responseCache.remove(ref);
-          } else {
-            final res = _versionInfoFromPackageListing(
-              cachedDoc,
-              ref,
-              Uri.file(cachePath),
-              cache,
-            );
-            final rawEtag = cachedDoc['_etag'];
-            final validEtag =
-                rawEtag is String && _isValidETag(rawEtag)
-                    ? rawEtag.trim()
-                    : null;
-            final listing = _CachedVersionListing(
-              parsedTimestamp,
-              res,
-              etag: validEtag,
-            );
-            cache.hostedCache._responseCache[ref] = listing;
-            return listing;
-          }
+          final res = _versionInfoFromPackageListing(
+            cachedDoc,
+            ref,
+            Uri.file(cachePath),
+            cache,
+          );
+          final rawEtag = cachedDoc['_etag'];
+          final validEtag =
+              rawEtag is String && _isValidETag(rawEtag)
+                  ? rawEtag.trim()
+                  : null;
+          final effectiveTimestamp =
+              parsedTimestamp.isBefore(stat.modified)
+                  ? parsedTimestamp
+                  : stat.modified;
+          cachedInfo = _CachedVersionListing(
+            effectiveTimestamp,
+            res,
+            etag: validEtag,
+          );
+          cache.hostedCache._responseCache[ref] = cachedInfo;
         } on io.IOException {
           // Could not read the file. Delete if it exists.
           tryDeleteEntry(cachePath);
-          cache.hostedCache._responseCache.remove(ref);
         } on FormatException {
           // Decoding error - bad file or bad timestamp. Delete the file.
           tryDeleteEntry(cachePath);
-          cache.hostedCache._responseCache.remove(ref);
         }
-      } else {
-        // File too old
-        tryDeleteEntry(cachePath);
-        cache.hostedCache._responseCache.remove(ref);
+      }
+    }
+    if (cachedInfo != null) {
+      final cacheAge = DateTime.now().difference(cachedInfo.timestamp);
+      if (maxAge == null || (!cacheAge.isNegative && maxAge > cacheAge)) {
+        // The cached value is not too old.
+        return cachedInfo;
       }
     }
     return null;
+  }
+
+  /// Matches the top-level `"_fetchedAt"` field at the end of a cached version
+  /// listing JSON object (optionally followed only by `"_etag"`).
+  static final RegExp _fetchedAtTailRegExp = RegExp(
+    r'"_fetchedAt"\s*:\s*"[^"\\]*"(?=(?:\s*,\s*"_etag"\s*:\s*"(?:[^"\\]|\\.)*")?\s*\}\s*$)',
+  );
+
+  /// Updates the `_fetchedAt` timestamp in the cached version listing file for
+  /// [ref] on disk after a `304 Not Modified` response.
+  Future<void> _refreshVersionListingCacheTimestamp(
+    PackageRef ref,
+    SystemCache cache,
+    DateTime now,
+  ) async {
+    final path = _versionListingCachePath(ref, cache);
+    try {
+      final content = readTextFile(path);
+      final index = content.lastIndexOf('"_fetchedAt"');
+      if (index != -1) {
+        final match = _fetchedAtTailRegExp.matchAsPrefix(content, index);
+        if (match != null) {
+          final updated = content.replaceRange(
+            match.start,
+            match.end,
+            '"_fetchedAt":"${now.toUtc().toIso8601String()}"',
+          );
+          await writeTextFileAsync(path, updated, dontLogContents: true);
+        }
+      }
+    } on io.IOException catch (e) {
+      // Not being able to update this cache is not fatal.
+      log.fine('Failed updating cache file timestamp. $e');
+    }
   }
 
   Future<void> _cacheAdvisoriesResponse(
