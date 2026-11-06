@@ -22,6 +22,7 @@ import 'validator/deprecated_fields.dart';
 import 'validator/devtools_extension.dart';
 import 'validator/directory.dart';
 import 'validator/executable.dart';
+import 'validator/experiments.dart';
 import 'validator/file_case.dart';
 import 'validator/flutter_constraint.dart';
 import 'validator/flutter_plugin_format.dart';
@@ -161,6 +162,7 @@ abstract class Validator {
       ReadmeValidator(),
       ChangelogValidator(),
       SdkConstraintValidator(),
+      ExperimentsValidator(),
       StrictDependenciesValidator(),
       FlutterConstraintValidator(),
       FlutterPluginFormatValidator(),

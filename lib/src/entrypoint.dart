@@ -492,6 +492,9 @@ See $workspacesDocUrl for more information.''',
   /// Returns the contents of the `.dart_tool/package_config` file generated
   /// from this entrypoint based on [lockFile].
   ///
+  /// Each entry lists the experiments its package opts in to, see
+  /// [Pubspec.experiments].
+  ///
   /// If [isCachedGlobal] no entry will be created for [workspaceRoot].
   Future<String> _packageConfigFile(
     SystemCache cache, {
@@ -510,6 +513,7 @@ See $workspacesDocUrl for more information.''',
             rootUri: p.toUri(rootPath),
             packageUri: p.toUri('lib/'),
             languageVersion: pubspec.languageVersion,
+            experiments: _experimentsNeedingOptIn(pubspec),
           ),
         );
       }
@@ -530,6 +534,7 @@ See $workspacesDocUrl for more information.''',
             ),
             packageUri: p.toUri('lib/'),
             languageVersion: package.pubspec.languageVersion,
+            experiments: _experimentsNeedingOptIn(package.pubspec),
           ),
         );
       }
@@ -555,6 +560,15 @@ See $workspacesDocUrl for more information.''',
     ).convert(packageConfig.toJson());
     return '$jsonText\n';
   }
+
+  /// The experiments of [pubspec] that tools must be told about.
+  ///
+  /// Experiments that don't require opting in (or can't be disabled) are left
+  /// out.
+  static List<String> _experimentsNeedingOptIn(Pubspec pubspec) => [
+    for (final name in pubspec.experiments)
+      if (isEffectiveExperimentFlag(name)) name,
+  ];
 
   /// Gets all dependencies of the [workspaceRoot] package.
   ///
@@ -647,10 +661,12 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       lockFile,
       newLockFile,
       result.availableVersions,
+      result.experimentUsers,
       cache,
       dryRun: dryRun,
       enforceLockfile: enforceLockfile,
       reportMode: reportMode,
+      expiredExperimentUsers: result.expiredExperimentUsers,
     );
 
     await report.show(summary: true);

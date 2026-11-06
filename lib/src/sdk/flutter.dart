@@ -117,4 +117,7 @@ class FlutterSdk extends Sdk {
 
     return null;
   }
+
+  @override
+  String get experimentsPath => p.join(rootDirectory!, '.sdk_experiments.json');
 }

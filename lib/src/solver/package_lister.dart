@@ -56,6 +56,11 @@ class PackageLister {
 
   final Map<String, Version> sdkOverrides;
 
+  final Set<String> allowedExperiments;
+
+  /// The experiments explicitly opted in to by the workspace packages.
+  final Set<String> enabledExperiments;
+
   /// A map from dependency names to constraints indicating which versions of
   /// [_ref] have already had their dependencies on the given versions returned
   /// by [incompatibilitiesFor].
@@ -115,6 +120,8 @@ class PackageLister {
     this._allowedRetractedVersion, {
     bool downgrade = false,
     this.sdkOverrides = const {},
+    required this.allowedExperiments,
+    this.enabledExperiments = const {},
   }) : _isDowngrade = downgrade,
        _rootPackage = null;
 
@@ -124,6 +131,8 @@ class PackageLister {
     this._systemCache, {
     required Set<String> overriddenPackages,
     required Map<String, Version>? sdkOverrides,
+    required this.allowedExperiments,
+    this.enabledExperiments = const {},
   }) : _ref = PackageRef.root(package),
        // Treat the package as locked so we avoid the logic for finding the
        // boundaries of various constraints, which is useless for the root
@@ -247,7 +256,20 @@ class PackageLister {
         (cachedVersions == null ||
             !cachedVersions.any((version) => version.version == id.version))) {
       if (_listedLockedVersion) return const [];
-
+      // Check if this version uses any disallowed experiments.
+      if (!id.isRoot) {
+        final disallowed = <String>[
+          for (final experiment in pubspec.experiments)
+            if (!allowedExperiments.contains(experiment)) experiment,
+        ];
+        if (disallowed.isNotEmpty) {
+          return [
+            Incompatibility([
+              Term(id.toRange(), true),
+            ], ExperimentIncompatibilityCause(disallowed, enabledExperiments)),
+          ];
+        }
+      }
       final depender = id.toRange();
       _listedLockedVersion = true;
       for (var sdk in sdks.values) {
@@ -300,6 +322,9 @@ class PackageLister {
       if (sdkIncompatibility != null) return [sdkIncompatibility];
     }
 
+    final experimentIncompatility = await _checkExperiments(index);
+    if (experimentIncompatility != null) return [experimentIncompatility];
+
     // Don't recompute dependencies that have already been emitted.
     final dependencies = Map<String, PackageRange>.from(pubspec.dependencies);
     for (var package in dependencies.keys.toList()) {
@@ -343,6 +368,41 @@ class PackageLister {
       Term(depender, true),
       Term(target, false),
     ], DependencyIncompatibilityCause(depender, target));
+  }
+
+  /// If the version at [index] in [_versions] isn't compatible with the allowed
+  /// experiments, returns an [Incompatibility] indicating this fact.
+  ///
+  /// Otherwise, returns `null`.
+  Future<Incompatibility?> _checkExperiments(int index) async {
+    final versions = await _versions;
+    final pubspec = await _describeSafe(versions[index]);
+    final disallowedExperiments = <String>[
+      for (final e in pubspec.experiments)
+        if (!allowedExperiments.contains(e)) e,
+    ];
+
+    if (disallowedExperiments.isEmpty) return null;
+
+    final (boundsFirstIndex, boundsLastIndex) = await _findBounds(
+      index,
+      (pubspec) => disallowedExperiments.every(pubspec.experiments.contains),
+    );
+    final incompatibleVersions = VersionRange(
+      min: boundsFirstIndex == 0 ? null : versions[boundsFirstIndex].version,
+      includeMin: true,
+      max:
+          boundsLastIndex == versions.length - 1
+              ? null
+              : versions[boundsLastIndex + 1].version,
+      alwaysIncludeMaxPreRelease: true,
+    );
+    _knownInvalidVersions = incompatibleVersions.union(_knownInvalidVersions);
+
+    return Incompatibility(
+      [Term(_ref.withConstraint(incompatibleVersions), true)],
+      ExperimentIncompatibilityCause(disallowedExperiments, enabledExperiments),
+    );
   }
 
   /// If the version at [index] in [_versions] isn't compatible with the current

@@ -52,6 +52,8 @@ class GlobalActivateCommand extends PubCommand {
       hide: true,
     );
 
+    argParser.addMultiOption('experiments', help: 'Experiments(s) to enable.');
+
     argParser.addFlag(
       'no-executables',
       negatable: false,
@@ -131,6 +133,7 @@ class GlobalActivateCommand extends PubCommand {
           overwriteBinStubs: overwrite,
           path: argResults.option('git-path'),
           ref: argResults.option('git-ref'),
+          allowedExperiments: argResults.multiOption('experiments'),
         );
 
       case 'hosted':
@@ -171,6 +174,7 @@ class GlobalActivateCommand extends PubCommand {
           ref.withConstraint(constraint),
           executables,
           overwriteBinStubs: overwrite,
+          allowedExperiments: argResults.multiOption('experiments'),
         );
 
       case 'path':

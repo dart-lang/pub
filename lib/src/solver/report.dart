@@ -11,6 +11,7 @@ import '../log.dart' as log;
 import '../package_name.dart';
 import '../path.dart';
 import '../pubspec.dart';
+import '../sdk.dart';
 import '../source/hosted.dart';
 import '../source/root.dart';
 import '../system_cache.dart';
@@ -61,6 +62,14 @@ class SolveReport {
   static const maxAdvisoryFootnotesPerLine = 5;
   final advisoryDisplayHandles = <String>[];
 
+  /// For each experiment enabled by some package in the new resolution, the
+  /// names of the packages opting in to it.
+  final Map<String, List<String>> experimentUsers;
+
+  /// For each expired experiment listed by some workspace package, the names
+  /// of those packages.
+  final Map<String, List<String>> expiredExperimentUsers;
+
   SolveReport(
     this._type,
     this._location,
@@ -69,10 +78,12 @@ class SolveReport {
     this._previousLockFile,
     this._newLockFile,
     this._availableVersions,
+    this.experimentUsers,
     this._cache, {
     required bool dryRun,
     required bool enforceLockfile,
     required SolveReportMode reportMode,
+    this.expiredExperimentUsers = const {},
   }) : _dryRun = dryRun,
        _reportMode = reportMode,
        _enforceLockfile = enforceLockfile;
@@ -87,6 +98,7 @@ class SolveReport {
     final changes = await _reportChanges();
     _checkContentHashesMatchOldLockfile();
     if (summary) await summarize(changes);
+    reportExperiments();
   }
 
   void _checkContentHashesMatchOldLockfile() {
@@ -334,6 +346,39 @@ $contentHashesDocumentationUrl
         message('  [^$footnote]: ${advisoryDisplayHandles[footnote]}');
       }
     }
+  }
+
+  void reportExperiments() {
+    for (final MapEntry(key: rawName, value: packages)
+        in expiredExperimentUsers.entries) {
+      final isOptOut = rawName.startsWith('no-');
+      final name = isOptOut ? rawName.substring(3) : rawName;
+      final enabledIn = availableExperiments[name]?.enabledIn;
+      final status =
+          enabledIn == null
+              ? 'has been retired and no longer has any effect'
+              : isOptOut
+              ? 'has been enabled by default since Dart $enabledIn and can '
+                  'no longer be disabled'
+              : 'has been enabled by default since Dart $enabledIn';
+      final target = isOptOut ? '`$rawName`' : 'it';
+      warning(
+        'The experiment `$name` $status. Remove $target from `experiments` in '
+        'the pubspec.yaml of ${packages.join(', ')}.',
+      );
+    }
+    if (experimentUsers.isEmpty) return;
+    message('Experiments enabled:');
+    for (final MapEntry(key: rawName, value: packages)
+        in experimentUsers.entries) {
+      final name = rawName.startsWith('no-') ? rawName.substring(3) : rawName;
+      final description = availableExperiments[name]?.description;
+      message(
+        '* `$rawName` for ${packages.join(', ')}'
+        '${description == null ? '' : ' - $description'}',
+      );
+    }
+    message('See https://dart.dev/go/experiments for more information.');
   }
 
   static DependencyType dependencyType(LockFile lockFile, String name) =>

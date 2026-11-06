@@ -57,6 +57,7 @@ const _validPubspecKeys = [
   'name',
   'version',
   'description',
+  'experiments',
   'homepage',
   'repository',
   'issue_tracker',
