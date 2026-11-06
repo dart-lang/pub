@@ -9,6 +9,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -89,8 +91,8 @@ void main() {
     },
   );
 
-  test('pub recovers gracefully if cached listing is corrupted when 304 is '
-      'received', () async {
+  test('pub discards corrupted cached listing before sending If-None-Match and '
+      'refetches', () async {
     final server = await servePackages(serveEtags: true);
     server.serve('foo', '1.0.0');
 
@@ -113,14 +115,34 @@ void main() {
       cachePath,
     ).writeAsStringSync('{"_etag": "W/\\"invalid\\"", "corrupted": true}');
 
-    // pub upgrade will attempt to validate via ETag, and when it fails to
-    // parse the cached response on 304, it deletes the cache and refetches.
+    // When the cached listing is corrupted on disk, pub discards it before
+    // sending If-None-Match and fetches a fresh listing from the server.
     await pubUpgrade();
 
     final lockFile =
         File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync();
     expect(lockFile, contains('version: "1.0.0"'));
   });
+
+  test(
+    'pub fails cleanly without recursing if a broken server responds 304 Not '
+    'Modified to an unconditional request',
+    () async {
+      final server = await servePackages();
+      var requestCount = 0;
+      server.handle(RegExp(r'/api/packages/foo$'), (request) {
+        requestCount++;
+        return shelf.Response.notModified();
+      });
+
+      await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+      await pubGet(
+        error: contains('304 Not Modified trying to find package foo'),
+        exitCode: exit_codes.UNAVAILABLE,
+      );
+      expect(requestCount, 1);
+    },
+  );
 
   test(
     'retracting a package version updates ETag and is observed on pub upgrade',
