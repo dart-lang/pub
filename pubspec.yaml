@@ -24,6 +24,13 @@ dependencies:
   pool: ^1.0.0
   pub_semver: ^2.2.0
   shelf: ^1.4.2
+  # TODO(https://github.com/dart-lang/tools/pull/2710): Depend on the hosted
+  # `^0.2.5` once `package:sigstore/provenance.dart` is published.
+  sigstore:
+    git:
+      url: https://github.com/dart-lang/tools.git
+      ref: 233e5ab23f23ec1ff52f79a39efb77db74d5c73d
+      path: pkgs/sigstore
   source_span: ^1.10.2
   stack_trace: ^1.12.1
   tar: ^2.0.0
