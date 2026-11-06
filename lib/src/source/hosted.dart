@@ -470,10 +470,11 @@ class HostedSource extends CachedSource {
     // Only attach If-None-Match when running on native platforms (dart:io).
     // In browser environments (e.g. web tests), If-None-Match triggers a CORS
     // preflight OPTIONS request which package repositories may not support.
-    final (cachedEtag, cachedDoc) =
+    final cachedListing =
         const bool.fromEnvironment('dart.library.io')
-            ? _cachedVersionListingDoc(ref, cache)
-            : (null, null);
+            ? _cachedVersionListingResponse(ref, cache)
+            : null;
+    final etag = cachedListing?.etag;
     final String? bodyText;
     final dynamic body;
     final List<HostedVersionInfo> result;
@@ -489,11 +490,14 @@ class HostedSource extends CachedSource {
             () async {
               final request = http.Request('GET', url);
               request.attachPubApiHeaders();
-              if (cachedEtag != null) {
-                request.headers[HttpHeaders.ifNoneMatchHeader] = cachedEtag;
+              if (etag != null) {
+                request.headers[HttpHeaders.ifNoneMatchHeader] = etag;
               }
               final response = await client.fetch(request);
               if (response.statusCode == HttpStatus.notModified) {
+                if (etag == null) {
+                  throw PubHttpResponseException(response);
+                }
                 return (null, null, true);
               }
               return (
@@ -507,25 +511,14 @@ class HostedSource extends CachedSource {
       );
 
       if (is304) {
-        if (cachedDoc != null) {
-          try {
-            final res = _versionInfoFromPackageListing(
-              cachedDoc,
-              ref,
-              Uri.file(_versionListingCachePath(ref, cache)),
-              cache,
-            );
-            cache.hostedCache._responseCache[ref] = (DateTime.now(), res);
-            log.io('Version listing for "$packageName" is not modified (304).');
-            return res;
-          } on FormatException {
-            // Cached document was invalid, fall through to refetch.
-          }
-        }
-        // If the cache was missing/corrupted despite having an ETag, refetch
-        // unconditionally.
-        tryDeleteEntry(_versionListingCachePath(ref, cache));
-        return await _fetchVersionsNoPrefetching(ref, cache);
+        final versions = cachedListing!.versions;
+        cache.hostedCache._responseCache[ref] = _CachedVersionListing(
+          DateTime.now().toUtc(),
+          versions,
+          etag: etag,
+        );
+        log.io('Version listing for "$packageName" is not modified (304).');
+        return versions;
       }
 
       bodyText = responseBody!;
@@ -550,6 +543,9 @@ class HostedSource extends CachedSource {
           cache,
           etag: responseEtag,
         );
+      } else {
+        tryDeleteEntry(_versionListingCachePath(ref, cache));
+        cache.hostedCache._responseCache.remove(ref);
       }
       return result;
     } on Exception catch (error, stackTrace) {
@@ -592,16 +588,15 @@ class HostedSource extends CachedSource {
     }
 
     final cache = refAndCache.cache;
+    List<HostedVersionInfo>? cachedVersions;
     if (preschedule != null) {
       /// If we have a cached response - preschedule dependencies of that.
-      prescheduleDependenciesOfLatest(
-        await _cachedVersionListingResponse(ref, cache),
-        cache,
-      );
+      cachedVersions = _cachedVersionListingResponse(ref, cache)?.versions;
+      prescheduleDependenciesOfLatest(cachedVersions, cache);
     }
     final result = await _fetchVersionsNoPrefetching(ref, cache);
 
-    if (preschedule != null) {
+    if (preschedule != null && !identical(result, cachedVersions)) {
       // Preschedule the dependencies from the actual response.
       // This might overlap with those from the cached response. But the
       // scheduler ensures each listing will be fetched at most once.
@@ -871,31 +866,32 @@ class HostedSource extends CachedSource {
   }
 
   /// If a cached version listing response for [ref] exists on disk and is less
-  /// than [maxAge] old it is parsed and returned.
+  /// than [maxAge] old it is parsed and returned along with its `_etag` (if
+  /// present and valid).
   ///
   /// Otherwise deletes a cached response if it exists and returns `null`.
   ///
   /// If [maxAge] is not given, we will try to get the cached version no matter
   /// how old it is.
-  Future<List<HostedVersionInfo>?> _cachedVersionListingResponse(
+  _CachedVersionListing? _cachedVersionListingResponse(
     PackageRef ref,
     SystemCache cache, {
     Duration? maxAge,
-  }) async {
+  }) {
     final cachedInfo = cache.hostedCache._responseCache[ref];
     if (cachedInfo != null) {
-      final (cacheTimestamp, versionInfo) = cachedInfo;
-      final cacheAge = DateTime.now().difference(cacheTimestamp);
-      if (maxAge == null || maxAge > cacheAge) {
+      final cacheAge = DateTime.now().difference(cachedInfo.timestamp);
+      if (maxAge == null || (!cacheAge.isNegative && maxAge > cacheAge)) {
         // The cached value is not too old.
-        return versionInfo;
+        return cachedInfo;
       }
     }
     final cachePath = _versionListingCachePath(ref, cache);
     final stat = io.File(cachePath).statSync();
     final now = DateTime.now();
     if (stat.type == io.FileSystemEntityType.file) {
-      if (maxAge == null || now.difference(stat.modified) < maxAge) {
+      final fileAge = now.difference(stat.modified);
+      if (maxAge == null || (!fileAge.isNegative && fileAge < maxAge)) {
         try {
           final cachedDoc = jsonDecode(readTextFile(cachePath));
           if (cachedDoc is! Map) {
@@ -911,9 +907,10 @@ class HostedSource extends CachedSource {
           }
           final parsedTimestamp = DateTime.parse(timestamp);
           final cacheAge = DateTime.now().difference(parsedTimestamp);
-          if (maxAge != null && cacheAge > maxAge) {
+          if (maxAge != null && (cacheAge.isNegative || cacheAge > maxAge)) {
             // Too old according to internal timestamp - delete.
             tryDeleteEntry(cachePath);
+            cache.hostedCache._responseCache.remove(ref);
           } else {
             final res = _versionInfoFromPackageListing(
               cachedDoc,
@@ -921,19 +918,32 @@ class HostedSource extends CachedSource {
               Uri.file(cachePath),
               cache,
             );
-            cache.hostedCache._responseCache[ref] = (parsedTimestamp, res);
-            return res;
+            final rawEtag = cachedDoc['_etag'];
+            final validEtag =
+                rawEtag is String && _isValidETag(rawEtag)
+                    ? rawEtag.trim()
+                    : null;
+            final listing = _CachedVersionListing(
+              parsedTimestamp,
+              res,
+              etag: validEtag,
+            );
+            cache.hostedCache._responseCache[ref] = listing;
+            return listing;
           }
         } on io.IOException {
           // Could not read the file. Delete if it exists.
           tryDeleteEntry(cachePath);
+          cache.hostedCache._responseCache.remove(ref);
         } on FormatException {
           // Decoding error - bad file or bad timestamp. Delete the file.
           tryDeleteEntry(cachePath);
+          cache.hostedCache._responseCache.remove(ref);
         }
       } else {
         // File too old
         tryDeleteEntry(cachePath);
+        cache.hostedCache._responseCache.remove(ref);
       }
     }
     return null;
@@ -967,30 +977,6 @@ class HostedSource extends CachedSource {
     return _etagRegExp.hasMatch(trimmed);
   }
 
-  /// Returns the cached ETag and decoded JSON document for [ref] if one is
-  /// stored in `.cache/<pkg>-versions.json`.
-  (String? etag, Map<String, dynamic>? doc) _cachedVersionListingDoc(
-    PackageRef ref,
-    SystemCache cache,
-  ) {
-    final cachePath = _versionListingCachePath(ref, cache);
-    try {
-      final cachedDoc = jsonDecode(readTextFile(cachePath));
-      if (cachedDoc is Map<String, dynamic>) {
-        final etag = cachedDoc['_etag'];
-        final validEtag =
-            etag is String && _isValidETag(etag) ? etag.trim() : null;
-        return (validEtag, cachedDoc);
-      }
-    } on io.IOException {
-      // Ignore read errors (e.g. file does not exist).
-    } on FormatException {
-      // Corrupted file on disk. Delete it so subsequent requests don't trip.
-      tryDeleteEntry(cachePath);
-    }
-    return (null, null);
-  }
-
   /// Saves the (decoded) response from package-listing of [ref].
   Future<void> _cacheVersionListingResponse(
     Map<String, dynamic> body,
@@ -1005,17 +991,19 @@ class HostedSource extends CachedSource {
       await writeTextFileAsync(
         path,
         jsonEncode(<String, dynamic>{
-          ...body,
-          '_fetchedAt': DateTime.now().toIso8601String(),
+          for (final MapEntry(:key, :value) in body.entries)
+            if (key != '_fetchedAt' && key != '_etag') key: value,
+          '_fetchedAt': DateTime.now().toUtc().toIso8601String(),
           if (validEtag != null) '_etag': validEtag,
         }),
       );
-      // Delete the entry in the in-memory cache to maintain the invariant that
-      // cached information in memory is the same as that on the disk.
-      cache.hostedCache._responseCache.remove(ref);
     } on io.IOException catch (e) {
       // Not being able to write this cache is not fatal. Just move on...
       log.fine('Failed writing cache file. $e');
+    } finally {
+      // Delete the entry in the in-memory cache to maintain the invariant that
+      // cached information in memory is the same as that on the disk.
+      cache.hostedCache._responseCache.remove(ref);
     }
   }
 
@@ -1046,7 +1034,8 @@ class HostedSource extends CachedSource {
   }) async {
     if (cache.isOffline) {
       // Do we have a cached version response on disk?
-      final versionListing = await _cachedVersionListingResponse(ref, cache);
+      final versionListing =
+          _cachedVersionListingResponse(ref, cache)?.versions;
 
       if (versionListing == null) {
         return null;
@@ -1061,11 +1050,8 @@ class HostedSource extends CachedSource {
     );
     if (maxAge != null) {
       // Do we have a cached version response on disk?
-      versionListing ??= await _cachedVersionListingResponse(
-        ref,
-        cache,
-        maxAge: maxAge,
-      );
+      versionListing ??=
+          _cachedVersionListingResponse(ref, cache, maxAge: maxAge)?.versions;
     }
     // Otherwise retrieve the info from the host.
     versionListing ??= await cache.hostedCache.scheduler
@@ -1149,11 +1135,8 @@ class HostedSource extends CachedSource {
     );
     if (maxAge != null) {
       // Do we have a cached version response on disk?
-      versionListing ??= await _cachedVersionListingResponse(
-        ref,
-        cache,
-        maxAge: maxAge,
-      );
+      versionListing ??=
+          _cachedVersionListingResponse(ref, cache, maxAge: maxAge)?.versions;
     }
     versionListing ??= await cache.hostedCache.scheduler.schedule(
       HostedRefAndCache(ref, cache),
@@ -2283,8 +2266,7 @@ final class HostedSourceCache {
   /// Invariant: Entries in this cache are the parsed version of the exact same
   /// information cached on disk. I.e. if the entry is present in this cache,
   /// there will not be a newer version on disk.
-  final Map<PackageRef, (DateTime, List<HostedVersionInfo>)> _responseCache =
-      {};
+  final Map<PackageRef, _CachedVersionListing> _responseCache = {};
 
   /// An in-memory cache to store the futures of fetched security advisories.
   final Map<PackageId, Future<List<Advisory>?>> _advisoriesCache = {};
@@ -2296,4 +2278,12 @@ final class HostedSourceCache {
         (HostedRefAndCache refAndCache) => hosted.fetchVersions(refAndCache),
         pool: pool,
       );
+}
+
+final class _CachedVersionListing {
+  final DateTime timestamp;
+  final List<HostedVersionInfo> versions;
+  final String? etag;
+
+  _CachedVersionListing(this.timestamp, this.versions, {this.etag});
 }
