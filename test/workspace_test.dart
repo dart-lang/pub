@@ -80,6 +80,66 @@ void main() {
     expect(workspaceRefMyApp, {'workspaceRoot': p.join('..', '..')});
   });
 
+  test('writes workspace_ref.json for a single package', () async {
+    await dir(appPath, [libPubspec('myapp', '1.2.3', sdk: '^3.5.0')]).create();
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+    final workspaceRef = jsonDecode(
+      File(
+        p.join(sandbox, appPath, '.dart_tool', 'pub', 'workspace_ref.json'),
+      ).readAsStringSync(),
+    );
+    expect(workspaceRef, {'workspaceRoot': p.join('..', '..')});
+  });
+
+  test(
+    'updates workspace_ref.json when a package leaves the workspace',
+    () async {
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/a'],
+          },
+          sdk: '^3.5.0',
+        ),
+        dir('pkgs', [
+          dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+        ]),
+      ]).create();
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+      final workspaceRefFile = File(
+        p.join(
+          sandbox,
+          appPath,
+          'pkgs',
+          'a',
+          '.dart_tool',
+          'pub',
+          'workspace_ref.json',
+        ),
+      );
+      expect(jsonDecode(workspaceRefFile.readAsStringSync()), {
+        'workspaceRoot': p.join('..', '..', '..', '..'),
+      });
+
+      // Make `a` a standalone package.
+      await dir(appPath, [
+        libPubspec('myapp', '1.2.3', sdk: '^3.5.0'),
+        dir('pkgs', [
+          dir('a', [libPubspec('a', '1.1.1', sdk: '^3.5.0')]),
+        ]),
+      ]).create();
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        workingDirectory: p.join(sandbox, appPath, 'pkgs', 'a'),
+      );
+      expect(jsonDecode(workspaceRefFile.readAsStringSync()), {
+        'workspaceRoot': p.join('..', '..'),
+      });
+    },
+  );
+
   test(
     'allows dependencies between workspace members, the source is overridden',
     () async {

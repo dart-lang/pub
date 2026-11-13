@@ -416,9 +416,11 @@ See $workspacesDocUrl for more information.''',
   ///
   /// Also writes the .dart_tool.package_graph.json file.
   ///
-  /// If the workspace is non-trivial: For each package in the workspace write:
+  /// For each package in the workspace write:
   /// `.dart_tool/pub/workspace_ref.json` with a pointer to the workspace root
-  /// package dir.
+  /// package dir. This is also done for a single package (a trivial workspace)
+  /// so that a stale reference is overwritten when a package stops being part
+  /// of a workspace.
   ///
   /// Also marks the package active in `PUB_CACHE/active_roots/`.
   Future<void> writePackageConfigFiles() async {
@@ -438,20 +440,18 @@ See $workspacesDocUrl for more information.''',
     );
     writeTextFileIfDifferent(packageGraphPath, await _packageGraphFile(cache));
 
-    if (workspaceRoot.workspaceChildren.isNotEmpty) {
-      for (final package in workspaceRoot.transitiveWorkspace) {
-        final workspaceRefDir = p.join(package.dir, '.dart_tool', 'pub');
-        final workspaceRefPath = p.join(workspaceRefDir, 'workspace_ref.json');
-        ensureDir(workspaceRefDir);
-        final relativeRootPath = p.relative(
-          workspaceRoot.dir,
-          from: workspaceRefDir,
-        );
-        final workspaceRef = const JsonEncoder.withIndent(
-          '  ',
-        ).convert({'workspaceRoot': relativeRootPath});
-        writeTextFileIfDifferent(workspaceRefPath, '$workspaceRef\n');
-      }
+    for (final package in workspaceRoot.transitiveWorkspace) {
+      final workspaceRefDir = p.join(package.dir, '.dart_tool', 'pub');
+      final workspaceRefPath = p.join(workspaceRefDir, 'workspace_ref.json');
+      ensureDir(workspaceRefDir);
+      final relativeRootPath = p.relative(
+        workspaceRoot.dir,
+        from: workspaceRefDir,
+      );
+      final workspaceRef = const JsonEncoder.withIndent(
+        '  ',
+      ).convert({'workspaceRoot': relativeRootPath});
+      writeTextFileIfDifferent(workspaceRefPath, '$workspaceRef\n');
     }
     if (lockFile.packages.values.any((id) => id.source is CachedSource)) {
       cache.markRootActive(packageConfigPath);
