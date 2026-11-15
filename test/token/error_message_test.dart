@@ -11,9 +11,12 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-void respondWithWwwAuthenticate(String headerValue) {
+void respondWithWwwAuthenticate(String headerValue, {int statusCode = 403}) {
   globalServer.expect('GET', '/api/packages/versions/new', (request) {
-    return shelf.Response(403, headers: {'www-authenticate': headerValue});
+    return shelf.Response(
+      statusCode,
+      headers: {'www-authenticate': headerValue},
+    );
   });
 }
 
@@ -44,7 +47,19 @@ void main() {
 
   test('prints www-authenticate message', () async {
     respondWithWwwAuthenticate('bearer realm="pub", message="custom message"');
-    await expectPubErrorMessage(contains('custom message'));
+    await expectPubErrorMessage(
+      contains('Message from server: custom message'),
+    );
+  });
+
+  test('prints www-authenticate message with 401', () async {
+    respondWithWwwAuthenticate(
+      'bearer realm="pub", message="custom message"',
+      statusCode: 401,
+    );
+    await expectPubErrorMessage(
+      contains('Message from server: custom message'),
+    );
   });
 
   test('sanitizes and prints dirty www-authenticate message', () {
@@ -84,6 +99,8 @@ void main() {
       'bearer realm="pub", '
       'bearer realm="pub", message="pub realm message"',
     );
-    await expectPubErrorMessage(contains('pub realm message'));
+    await expectPubErrorMessage(
+      contains('Message from server: pub realm message'),
+    );
   });
 }
