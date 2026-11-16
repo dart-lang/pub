@@ -219,10 +219,23 @@ class PackageLister {
             Term(id.toRange(), true),
           ], NoVersionsIncompatibilityCause()),
         ];
-      } on PackageNotFoundException {
+      } on PackageNotFoundException catch (error) {
         // We can only get here if the lockfile refers to a specific package
-        // version that doesn't exist (probably because it was yanked).
+        // version that doesn't exist (probably because it was yanked), or,
+        // when offline, that is not in the system cache.
         _knownInvalidVersions = _knownInvalidVersions.union(id.version);
+        if (_systemCache.isOffline &&
+            !id.description.description.hasMultipleVersions) {
+          // The other version of the package (such as the cached revision of a
+          // git ref) can have the same version number, so marking the locked
+          // version as invalid would report no matching versions. Report the
+          // missing package instead, with its hint.
+          return [
+            Incompatibility([
+              Term(id.toRef().withConstraint(VersionConstraint.any), true),
+            ], PackageNotFoundIncompatibilityCause(error)),
+          ];
+        }
         return [
           Incompatibility([
             Term(id.toRange(), true),
