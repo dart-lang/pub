@@ -54,6 +54,139 @@ void main() {
       expect(packageSpec('foo'), originalFooSpec);
     });
 
+    test('checks out a revision from the cached repository', () async {
+      ensureGit();
+
+      await d.git('foo.git', [
+        d.libDir('foo'),
+        d.libPubspec('foo', '1.0.0'),
+      ]).create();
+
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'git': '../foo.git'},
+            },
+          )
+          .create();
+
+      await pubGet();
+
+      final originalFooSpec = packageSpec('foo');
+
+      // Keep the cached repository, delete the checkout of the revision.
+      final gitCacheDir = p.join(d.sandbox, cachePath, 'git');
+      final checkoutDirs = _revisionCheckoutDirs(gitCacheDir, 'foo');
+      expect(checkoutDirs, hasLength(1));
+      deleteEntry(checkoutDirs.single);
+      // Delete the repo, so that the command fails if it tries to fetch it.
+      deleteEntry(p.join(d.sandbox, 'foo.git'));
+
+      await pubCommand(command, args: ['--offline'], warning: warning);
+
+      expect(packageSpec('foo'), originalFooSpec);
+      expect(_revisionCheckoutDirs(gitCacheDir, 'foo'), checkoutDirs);
+    });
+
+    test('checks out another ref of the cached repository', () async {
+      ensureGit();
+
+      final repo = d.git('foo.git', [
+        d.libDir('foo'),
+        d.libPubspec('foo', '1.0.0'),
+      ]);
+      await repo.create();
+      // A branch on the first commit, the default branch on a second one.
+      await repo.runGit(['branch', 'other']);
+      await d.git('foo.git', [
+        d.libDir('foo', 'foo 2'),
+        d.libPubspec('foo', '1.0.0'),
+      ]).commit();
+      final otherCommit = await repo.revParse('other');
+
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'git': '../foo.git'},
+            },
+          )
+          .create();
+
+      // The cached repository gets the branch, not its checkout.
+      await pubGet();
+      expect(packageSpec('foo')['rootUri'], isNot(contains(otherCommit)));
+
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {
+                'git': {'url': '../foo.git', 'ref': 'other'},
+              },
+            },
+          )
+          .create();
+      // Delete the repo, so that the command fails if it tries to fetch it.
+      deleteEntry(p.join(d.sandbox, 'foo.git'));
+
+      await pubCommand(command, args: ['--offline'], warning: warning);
+
+      expect(packageSpec('foo')['rootUri'], contains(otherCommit));
+    });
+
+    test('resolves a tag_pattern dependency from the tags in cache', () async {
+      ensureGit();
+
+      final repo = d.git('foo.git', [
+        d.libDir('foo'),
+        d.libPubspec('foo', '1.0.0'),
+      ]);
+      await repo.create();
+      await repo.tag('v1.0.0', tagType: d.TagType.annotated);
+
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {
+                'git': {'url': '../foo.git', 'tag_pattern': 'v{{version}}'},
+                'version': '^1.0.0',
+              },
+            },
+            pubspec: {
+              'environment': {'sdk': '^3.9.0'},
+            },
+          )
+          .create();
+
+      await pubGet(
+        output: contains('+ foo 1.0.0'),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+      );
+
+      // A new tag, not in the cached repository.
+      await d.git('foo.git', [
+        d.libDir('foo'),
+        d.libPubspec('foo', '1.5.0'),
+      ]).commit();
+      await repo.tag('v1.5.0', tagType: d.TagType.annotated);
+
+      // Without a lock file, the versions of foo are listed again.
+      deleteEntry(p.join(d.sandbox, appPath, 'pubspec.lock'));
+
+      await pubCommand(
+        command,
+        args: ['--offline'],
+        output: contains('+ foo 1.0.0'),
+        warning: warning,
+        environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+      );
+
+      // Online, the new tag is found.
+      await pubUpgrade(
+        output: contains('> foo 1.5.0'),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+      );
+    });
+
     test('fails gracefully if the repository is not in cache', () async {
       ensureGit();
 
@@ -170,6 +303,97 @@ void main() {
   });
 
   test(
+    'get fails gracefully if the locked repository is not in cache',
+    () async {
+      ensureGit();
+
+      await d.git('foo.git', [
+        d.libDir('foo'),
+        d.libPubspec('foo', '1.0.0'),
+      ]).create();
+
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'git': '../foo.git'},
+            },
+          )
+          .create();
+
+      await pubGet();
+
+      // Keep the lock file, empty the cache.
+      deleteEntry(p.join(d.sandbox, cachePath));
+
+      // The repository is still there: only --offline keeps pub from cloning
+      // it, so this fails instead of succeeding.
+      await pubGet(
+        args: ['--offline'],
+        exitCode: exit_codes.UNAVAILABLE,
+        error: allOf(
+          contains('could not find git repository $prettyFooUrl in cache'),
+          contains('Try again without --offline!'),
+        ),
+      );
+    },
+  );
+
+  test('get falls back to a cached tag when the locked tag_pattern revision '
+      'is not in cache', () async {
+    ensureGit();
+
+    final repo = d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]);
+    await repo.create();
+    await repo.tag('v1.0.0', tagType: d.TagType.annotated);
+
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {'url': '../foo.git', 'tag_pattern': 'v{{version}}'},
+              'version': '^1.0.0',
+            },
+          },
+          pubspec: {
+            'environment': {'sdk': '^3.9.0'},
+          },
+        )
+        .create();
+
+    await pubGet(
+      output: contains('+ foo 1.0.0'),
+      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+    );
+
+    // Lock a tagged revision that the first cache does not have: switch to a
+    // new cache, tag a new version and upgrade, then switch back.
+    renameInSandbox(cachePath, '$cachePath.old');
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.5.0'),
+    ]).commit();
+    await repo.tag('v1.5.0', tagType: d.TagType.annotated);
+    await pubUpgrade(
+      output: contains('> foo 1.5.0'),
+      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+    );
+    final cacheDir = p.join(d.sandbox, cachePath);
+    deleteEntry(cacheDir);
+    renameInSandbox('$cachePath.old', cacheDir);
+
+    // The locked version is not available offline, but the cached tags give
+    // another version of foo matching the constraint.
+    await pubGet(
+      args: ['--offline'],
+      output: contains('< foo 1.0.0'),
+      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+    );
+  });
+
+  test(
     'get does not need the repository when the revision is checked out',
     () async {
       ensureGit();
@@ -208,3 +432,10 @@ void main() {
     },
   );
 }
+
+/// The revision checkouts of [packageName] in [gitCacheDir], such as
+/// `PUB_CACHE/git/foo-<commit>`.
+List<String> _revisionCheckoutDirs(String gitCacheDir, String packageName) => [
+  for (final entry in listDir(gitCacheDir))
+    if (p.basename(entry).startsWith('$packageName-')) entry,
+]..sort();
