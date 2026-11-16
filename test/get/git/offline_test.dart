@@ -14,6 +14,9 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
+  // How pub prints the relative url `../foo.git` (`..\foo.git` on Windows).
+  final prettyFooUrl = p.join('..', 'foo.git');
+
   forBothPubGetAndUpgrade((command) {
     final warning =
         command == RunCommand.upgrade
@@ -72,7 +75,7 @@ void main() {
         args: ['--offline'],
         exitCode: exit_codes.UNAVAILABLE,
         error: allOf(
-          contains('could not find git repository ../foo.git in cache'),
+          contains('could not find git repository $prettyFooUrl in cache'),
           contains('Try again without --offline!'),
         ),
       );
@@ -160,7 +163,7 @@ void main() {
       args: ['--offline'],
       exitCode: exit_codes.UNAVAILABLE,
       error: allOf(
-        contains('of ../foo.git is not available in cache'),
+        contains('of $prettyFooUrl is not available in cache'),
         contains('Try again without --offline!'),
       ),
     );
