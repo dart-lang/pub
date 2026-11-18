@@ -318,22 +318,23 @@ changed.
 To publish a package a client must:
  1. Issue a `GET` request to `<hosted-url>/api/packages/versions/new`, this
     returns:
-   * `url` and `fields` for uploading the gzipped tar archive.
-   * `attestationUrl` and `attestationFields` for uploading attestation
-     (optional, present if attestation is supported by the server).
- 2. If `attestationUrl` is present and the client has an attestion bundle to
-    upload, it must follow the "Multi-part File Upload Procedure", using:
-      * `attestationUrl` as _upload-url_,
-      * `attestationFields` as _dictionary of fields_,
-      * `"attestation.json"` as _filename_, and,
-      * attestation bundle as _file contents_.
+    * `url` and `fields` for uploading the gzipped tar archive.
+    * `attestationUrl` and `attestationFields` for uploading attestation
+        (optional, present if attestation is supported by the server).
+ 2. If `attestationUrl` is present and the client has an attestation to upload
+    (see _"Package Attestation Collection"_ section), it must follow the
+    _"Multi-part File Upload Procedure"_, using:
+    * `attestationUrl` as _upload-url_,
+    * `attestationFields` as _dictionary of fields_,
+    * `"attestations.json"` as _filename_, and,
+    * _package attestation collection_ as _file contents_.
     If the upload is successful and server responds with a non-empty
     `<message>`, client shall display this message.
- 3. Follow the "Multi-part File Upload Procedure", using:
-      * `url` as _upload-url_,
-      * `fields` as _dictionary of fields_,
-      * `"package.tar.gz"` as _filename_, and,
-      * gzipped tar archive as _file contents_.
+ 3. Follow the _"Multi-part File Upload Procedure"_, using:
+    * `url` as _upload-url_,
+    * `fields` as _dictionary of fields_,
+    * `"package.tar.gz"` as _filename_, and,
+    * gzipped tar archive as _file contents_.
     If the upload is successful and server responds with a non-empty
     `<message>`, client shall display this message.
 
@@ -351,7 +352,7 @@ constraints.
 
 ## Multi-part File Upload Procedure
 Procedure for uploading a file to a _hosted pub package repository_. This
-procedure is referenced through-out this specification, and assumes you have:
+procedure is referenced throughout this specification, and assumes you have:
  * An _upload-url_ (`"<upload-url>"`),
  * A _dictionary of fields_ (`"<field-1>": "<value-1>"`, ...),
  * A _filename_ (`<filename>`), and,
@@ -407,8 +408,8 @@ Location: <finalize-upload-url>
 > return a `303` redirect with `Location` header.
 
 The client shall then issue a `GET` request to `<finalize-upload-url>`.
-As with `archive_url` the client will only attach an `Authorization`, if the
-`<hosted-url>` is a prefix of `<finalize-upload-url>`.
+As with `archive_url` the client will only attach an `Authorization` header if
+the `<hosted-url>` is a prefix of `<finalize-upload-url>`.
 If the server wants to accept the uploaded file the server should respond:
 
 ```http
@@ -445,6 +446,38 @@ Content-Type: application/vnd.pub.v2+json
 > similar blob storage service. Both the
 > `<upload-url>` and `<finalize-upload-url>` are allowed to contain
 > query-string parameters, and both of these URLs need only be temporary.
+
+## Package Attestation Collection
+Package repositories may optionally accept and serve cryptographic attestations
+for a package version using a _package attestation collection_ JSON object:
+
+```js
+{
+  "attestations": [
+    {
+      "type": "<type>",
+      "bundle": { /* type specific bundle */ },
+    },
+    ...
+  ],
+}
+```
+
+The `attestations` property is a list of attestation objects for a
+_package archive_ (`package.tar.gz`) associated with a specific
+_package version_. Each object in the `attestations` list is discriminated by
+its `type` property. Clients **must ignore** attestation types they do not
+understand. Servers **may reject** attestation types they do not understand.
+This ensures that we can introduce new attestation types in the future.
+
+### Supported Attestation Types
+Currently no attestation types are defined in this specification.
+
+> [!NOTE]
+> Which signing identities, OIDC issuers, transparency logs, timestamp
+> authorities, builder workflows, etc. a repository or client trusts is governed
+> by repository- and client-specific policy.
+
 
 ## List security advisories for a package
 
