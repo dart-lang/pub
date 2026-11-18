@@ -986,8 +986,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           }
 
           // For cached sources, make sure the directory exists and looks like a
-          // package. This is also done by [_arePackagesAvailable] but that may
-          // not be run if the lockfile is newer than the pubspec.
+          // package. The main loop in [isResolutionUpToDate] also checks that
+          // the `pubspec.yaml` exists, but it stops early at the first pubspec
+          // that is strictly newer than the lockfile, so it may not have
+          // reached this package.
           if (source is CachedSource && !dirExists(lockFilePackagePath) ||
               !fileExists(p.join(lockFilePackagePath, 'pubspec.yaml'))) {
             return false;
@@ -1261,14 +1263,19 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           'pubspec.yaml',
         ),
       );
-      if (p.isWithin(cache.rootDir, pubspecPath)) {
-        continue;
-      }
       final pubspecStat = tryStatFile(pubspecPath);
       if (pubspecStat == null) {
         log.fine('Could not find `$pubspecPath`');
         // A dependency is missing - do a full new resolution.
         return null;
+      }
+      // Cached packages are immutable, so their timestamps say nothing about
+      // this resolution: an entry in a shared cache may well have been
+      // downloaded by another project after this lockfile was written. They do
+      // have to exist though, which is why they are only skipped after the
+      // stat above. See https://github.com/dart-lang/pub/issues/4559.
+      if (p.isWithin(cache.rootDir, pubspecPath)) {
+        continue;
       }
 
       if (!lockFileModified.isAfter(pubspecStat.modified)) {
