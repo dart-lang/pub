@@ -71,6 +71,13 @@ class VersionSolver {
     for (final package in _root.transitiveWorkspace) package.name: package,
   };
 
+  /// The [Policies] to apply, if any, found in the workspace.
+  late final Policies? _policies = _root.workspacePolicies;
+
+  /// The reference timestamp used for evaluating cooldown policies consistently
+  /// across the entire solve.
+  final DateTime _now = DateTime.now().toUtc();
+
   /// The lockfile, indicating which package versions were previously selected.
   final LockFile _lockFile;
 
@@ -591,6 +598,8 @@ class VersionSolver {
           _systemCache,
           overriddenPackages: _overriddenPackages,
           sdkOverrides: _sdkOverrides,
+          policies: _policies,
+          now: _now,
         );
       }
 
@@ -615,6 +624,8 @@ class VersionSolver {
         _getAllowedRetracted(ref.name),
         downgrade: _type == SolveType.downgrade,
         sdkOverrides: _sdkOverrides,
+        policies: _policies,
+        now: _now,
       );
     });
   }

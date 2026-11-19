@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:collection/collection.dart' show IterableExtension;
+import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
 import '../command_runner.dart';
@@ -20,6 +21,7 @@ import '../path.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
+import '../source.dart';
 import '../source/git.dart';
 import '../source/hosted.dart';
 import '../source/path.dart';
@@ -202,6 +204,9 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       ),
     };
 
+    final now = DateTime.now().toUtc();
+    final cooldownPolicy = entrypoint.workspaceRoot.workspacePolicies?.cooldown;
+
     Future<_PackageDetails> analyzeDependency(PackageRef packageRef) async {
       final name = packageRef.name;
       final current = entrypoint.lockFile.packages[name];
@@ -274,6 +279,41 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         cache,
       );
 
+      // Check if the latest available release is blocked by the workspace
+      // cooldown policy so `pub outdated` can explain why that version is not
+      // resolvable.
+      CooldownBlockReason? latestCooldownBlockReason;
+      if (cooldownPolicy != null &&
+          latest != null &&
+          !(cooldownPolicy.exclude[latest.name]?.allows(latest.version) ??
+              false)) {
+        final desc = latest.description;
+        if (desc is ResolvedHostedDescription) {
+          final latestRef = latest.toRef();
+          final statusMap = <Version, PackageStatus>{};
+          if (cooldownPolicy.stability) {
+            final versions = await cache.getVersions(latestRef);
+            for (final v in versions) {
+              statusMap[v.version] = await latestRef.source.status(
+                latestRef,
+                v.version,
+                cache,
+              );
+            }
+          }
+          final status =
+              statusMap[latest.version] ??
+              await latestRef.source.status(latestRef, latest.version, cache);
+          latestCooldownBlockReason = cooldownPolicy.blockReason(
+            latest.name,
+            latest.version,
+            status.published,
+            now: now,
+            statusMap: statusMap,
+          );
+        }
+      }
+
       final id = current ?? upgradable ?? resolvable ?? latest;
       var packageAdvisories =
           await id?.source.getAdvisoriesForPackage(
@@ -344,6 +384,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         discontinuedReplacedBy: discontinuedReplacedBy,
         isCurrentRetracted: isCurrentRetracted,
         isLatest: isLatest,
+        latestCooldownBlockReason: latestCooldownBlockReason,
         advisories: packageAdvisories,
         isCurrentAffectedBySecurityAdvisory: isCurrentAffectedByAdvisory,
       );
@@ -757,6 +798,7 @@ Future<void> _outputHuman(
   bool displayExtraInfo(_PackageDetails package) =>
       package.isDiscontinued ||
       package.isCurrentRetracted ||
+      package.latestCooldownBlockReason != null ||
       (advisoriesToDisplay[package.name]!.isNotEmpty);
 
   if (rows.any(displayExtraInfo)) {
@@ -778,6 +820,19 @@ Future<void> _outputHuman(
           '    Version ${package.current!._id.version} is retracted. '
           'See https://dart.dev/go/package-retraction',
         );
+      }
+      if (package.latestCooldownBlockReason case final blockReason?) {
+        final version = package.latest!._id.version;
+        final reasonMessage = switch (blockReason) {
+          CooldownBlockReason.tooNew =>
+            'Version $version is too new for the cooldown policy.',
+          CooldownBlockReason.unstable =>
+            'Version $version is considered unstable by the cooldown policy.',
+          CooldownBlockReason.missingPublishedDate =>
+            'Version $version lacks a publication date required by the '
+                'cooldown policy.',
+        };
+        log.message('    $reasonMessage');
       }
       final displayedAdvisories = advisoriesToDisplay[package.name]!;
       if (displayedAdvisories.isNotEmpty) {
@@ -996,6 +1051,10 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final bool isCurrentRetracted;
   final bool isLatest;
 
+  /// The reason the latest version of this package is blocked by the workspace
+  /// cooldown policy, or `null` if it is not blocked.
+  final CooldownBlockReason? latestCooldownBlockReason;
+
   /// List of advisories affecting this package which are not present in the
   /// `ignored_advisories` list in the pubspec.
   final List<Advisory> advisories;
@@ -1012,6 +1071,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
     required this.discontinuedReplacedBy,
     required this.isCurrentRetracted,
     required this.isLatest,
+    required this.latestCooldownBlockReason,
     required this.advisories,
     required this.isCurrentAffectedBySecurityAdvisory,
   });

@@ -11,6 +11,7 @@ import '../log.dart' as log;
 import '../package_name.dart';
 import '../path.dart';
 import '../pubspec.dart';
+import '../source.dart';
 import '../source/hosted.dart';
 import '../source/root.dart';
 import '../system_cache.dart';
@@ -40,6 +41,8 @@ class SolveReport {
   // The report will contain "in [_location]" if given.
   final String? _location;
   final Pubspec _rootPubspec;
+  final Policies? _policies;
+  final DateTime _now = DateTime.now().toUtc();
   final LockFile _previousLockFile;
   final LockFile _newLockFile;
   final SystemCache _cache;
@@ -73,7 +76,9 @@ class SolveReport {
     required bool dryRun,
     required bool enforceLockfile,
     required SolveReportMode reportMode,
-  }) : _dryRun = dryRun,
+    Policies? policies,
+  }) : _policies = policies ?? _rootPubspec.policies,
+       _dryRun = dryRun,
        _reportMode = reportMode,
        _enforceLockfile = enforceLockfile;
 
@@ -481,13 +486,49 @@ $contentHashesDocumentationUrl
           notes.add(advisoriesMessage);
         }
       }
+
+      // When reporting available newer versions (e.g. in `pub get`),
+      // check whether the newest available version is blocked by the workspace
+      // cooldown policy so we can append `(blocked by cooldown)`.
+      Version? latestVersion;
+      var isLatestBlocked = false;
+      if (versions.isNotEmpty) {
+        latestVersion =
+            newerStable
+                ? maxAll(versions, Version.prioritize)
+                : maxAll(versions);
+        final policy = _policies?.cooldown;
+        final desc = newId.description;
+        if (policy != null &&
+            desc is ResolvedHostedDescription &&
+            !(policy.exclude[newId.name]?.allows(latestVersion) ?? false)) {
+          final ref = newId.toRef();
+          final statusMap = <Version, PackageStatus>{};
+          if (policy.stability) {
+            for (final v in versions) {
+              statusMap[v] = await ref.source.status(ref, v, _cache);
+            }
+          }
+          final latestStatus =
+              statusMap[latestVersion] ??
+              await ref.source.status(ref, latestVersion, _cache);
+          isLatestBlocked =
+              policy.blockReason(
+                newId.name,
+                latestVersion,
+                latestStatus.published,
+                now: _now,
+                statusMap: statusMap,
+              ) !=
+              null;
+        }
+      }
+
+      final cooldownSuffix = isLatestBlocked ? ' (blocked by cooldown)' : '';
+
       if (status.isRetracted) {
-        if (newerStable) {
-          notes.add(
-            'retracted, ${maxAll(versions, Version.prioritize)} available',
-          );
-        } else if (newId.version.isPreRelease && newerUnstable) {
-          notes.add('retracted, ${maxAll(versions)} available');
+        if (newerStable || (newId.version.isPreRelease && newerUnstable)) {
+          notes.add('retracted, $latestVersion available$cooldownSuffix');
         } else {
           notes.add('retracted');
         }
@@ -503,14 +544,9 @@ $contentHashesDocumentationUrl
             'discontinued replaced by ${status.discontinuedReplacedBy}',
           );
         }
-      } else if (newerStable) {
-        // If there are newer stable versions, only show those.
-        notes.add('${maxAll(versions, Version.prioritize)} available');
-      } else if (
-      // Only show newer prereleases for versions where a prerelease is
-      // already chosen.
-      newId.version.isPreRelease && newerUnstable) {
-        notes.add('${maxAll(versions)} available');
+      } else if (newerStable || (newId.version.isPreRelease && newerUnstable)) {
+        // Show newer versions (prioritizing stable versions if available).
+        notes.add('$latestVersion available$cooldownSuffix');
       }
 
       message = notes.isEmpty ? null : '(${notes.join(', ')})';

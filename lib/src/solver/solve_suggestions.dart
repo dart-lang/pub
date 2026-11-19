@@ -44,6 +44,7 @@ Future<String?> suggestResolutionAlternatives(
   );
 
   final visited = <String>{};
+  final cooldownSuggested = <String>{};
   final stopwatch = Stopwatch()..start();
   final suggestions = <_ResolutionSuggestion>[];
   void addSuggestionIfPresent(_ResolutionSuggestion? suggestion) {
@@ -62,6 +63,20 @@ Future<String?> suggestResolutionAlternatives(
     } else {
       for (final term in externalIncompatibility.terms) {
         final name = term.package.name;
+
+        // If a package cannot be resolved because versions are blocked by a
+        // cooldown policy, suggest adding an exclusion so the user has an
+        // actionable resolution path if they trust the newer release.
+        if (cause is CooldownIncompatibilityCause &&
+            cooldownSuggested.add(name)) {
+          suggestions.add(
+            _ResolutionSuggestion(
+              '* Consider excluding "$name" from the cooldown policy in '
+              'your pubspec.yaml.',
+              priority: 1,
+            ),
+          );
+        }
 
         if (!visited.add(name)) {
           continue;
