@@ -315,12 +315,14 @@ changed.
 }
 ```
 
-To publish a package a client must:
+To publish a package a client must do the following steps in order given:
+
  1. Issue a `GET` request to `<hosted-url>/api/packages/versions/new`, this
     returns:
     * `url` and `fields` for uploading the gzipped tar archive.
     * `attestationUrl` and `attestationFields` for uploading attestation
         (optional, present if attestation is supported by the server).
+
  2. If `attestationUrl` is present and the client has an attestation to upload
     (see _"Package Attestation Collection"_ section), it must follow the
     _"Multi-part File Upload Procedure"_, using:
@@ -328,13 +330,18 @@ To publish a package a client must:
     * `attestationFields` as _dictionary of fields_,
     * `"attestations.json"` as _filename_, and,
     * _package attestation collection_ as _file contents_.
+    
     If the upload is successful and server responds with a non-empty
     `<message>`, client shall display this message.
+    If attestion is uploaded, this must be done before the gzipped tar archive
+    is uploaded.
+
  3. Follow the _"Multi-part File Upload Procedure"_, using:
     * `url` as _upload-url_,
     * `fields` as _dictionary of fields_,
     * `"package.tar.gz"` as _filename_, and,
     * gzipped tar archive as _file contents_.
+    
     If the upload is successful and server responds with a non-empty
     `<message>`, client shall display this message.
 
