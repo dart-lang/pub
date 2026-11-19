@@ -1404,7 +1404,8 @@ Changed 1 constraint in b${s}pubspec.yaml:
     );
   });
 
-  test('suggests fixes for dependencies on workspace members', () async {
+  // TODO(https://github.com/dart-lang/pub/issues/4227): we want to enable this at some point.
+  test('No suggestions for workspaces', () async {
     final server = await servePackages();
     server.serve('dev_dep', '1.0.0');
     await dir(appPath, [
@@ -1425,15 +1426,9 @@ Changed 1 constraint in b${s}pubspec.yaml:
     ]).create();
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      error: allOf([
-        contains(
+      error:
           'Because myapp depends on both a 2.0.0 and a, '
           'version solving failed.',
-        ),
-        contains(
-          '* Consider downgrading your constraint on a: dart pub add a:^1.0.0',
-        ),
-      ]),
     );
   });
 
