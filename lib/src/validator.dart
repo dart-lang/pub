@@ -13,6 +13,7 @@ import 'package.dart';
 import 'path.dart';
 import 'sdk.dart';
 import 'system_cache.dart';
+import 'validator/analysis_options.dart';
 import 'validator/analyze.dart';
 import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
@@ -145,6 +146,7 @@ abstract class Validator {
   }) async {
     final validators = [
       FileCaseValidator(),
+      AnalysisOptionsValidator(),
       AnalyzeValidator(),
       GitignoreValidator(),
       GitStatusValidator(),
