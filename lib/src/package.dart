@@ -90,6 +90,21 @@ class Package {
       ...package.pubspec.dependencyOverrides,
   };
 
+  /// The [Policies] defined in the workspace, or `null` if none are defined.
+  ///
+  /// Should only be accessed on the workspace root.
+  ///
+  /// At most one workspace member may define a `policies` block (enforced by
+  /// [validateWorkspace]).
+  late final Policies? workspacePolicies = () {
+    for (final package in transitiveWorkspace) {
+      if (package.pubspec.policies case final policies?) {
+        return policies;
+      }
+    }
+    return null;
+  }();
+
   /// The immediate dependencies this package specifies in its pubspec.
   Map<String, PackageRange> get dependencies => pubspec.dependencies;
 

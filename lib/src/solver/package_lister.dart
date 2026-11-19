@@ -39,6 +39,42 @@ class PackageLister {
   /// constraints.
   final Policies? _policies;
 
+  /// The reference timestamp used for evaluating cooldown policies consistently
+  /// across a single solve.
+  final DateTime _now;
+
+  /// Whether we have already checked whether all versions of this package are
+  /// forbidden by the cooldown policy.
+  var _checkedAllCooldownForbidden = false;
+
+  /// Cached [PackageStatus] for all hosted versions of this package.
+  ///
+  /// Returns an empty map if the package listing cannot be found on the server
+  /// (for example, a locked package that was removed from the server), letting
+  /// [incompatibilitiesFor] fall through to standard `describe` /
+  /// `bestVersion` error handling.
+  Future<Map<Version, PackageStatus>> get _versionStatuses =>
+      _versionStatusesMemo.runOnce(() async {
+        final List<PackageId> versions;
+        try {
+          versions = await _versions;
+        } on PackageNotFoundException {
+          return const {};
+        }
+        final statusMap = <Version, PackageStatus>{};
+        for (final v in versions) {
+          if (v.description case ResolvedHostedDescription()) {
+            statusMap[v.version] = await v.toRef().source.status(
+              v.toRef(),
+              v.version,
+              _systemCache,
+            );
+          }
+        }
+        return statusMap;
+      });
+  final _versionStatusesMemo = AsyncMemoizer<Map<Version, PackageStatus>>();
+
   /// The version of this package in the lockfile.
   ///
   /// This is `null` if this package isn't locked or if the current version
@@ -125,9 +161,11 @@ class PackageLister {
     bool downgrade = false,
     this.sdkOverrides = const {},
     Policies? policies,
+    DateTime? now,
   }) : _isDowngrade = downgrade,
        _rootPackage = null,
-       _policies = policies;
+       _policies = policies,
+       _now = now ?? DateTime.now().toUtc();
 
   /// Creates a package lister for the root [package].
   PackageLister.root(
@@ -136,6 +174,7 @@ class PackageLister {
     required Set<String> overriddenPackages,
     required Map<String, Version>? sdkOverrides,
     Policies? policies,
+    DateTime? now,
   }) : _ref = PackageRef.root(package),
        // Treat the package as locked so we avoid the logic for finding the
        // boundaries of various constraints, which is useless for the root
@@ -146,7 +185,8 @@ class PackageLister {
        _allowedRetractedVersion = null,
        sdkOverrides = sdkOverrides ?? {},
        _rootPackage = package,
-       _policies = policies ?? package.pubspec.policies;
+       _policies = policies ?? package.pubspec.policies,
+       _now = now ?? DateTime.now().toUtc();
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
@@ -220,22 +260,15 @@ class PackageLister {
 
     final policiesWrapper = _policies;
 
-    final statusMap = <Version, PackageStatus>{};
-    if ((id.description, policiesWrapper?.cooldown) case (
-      ResolvedHostedDescription(),
-      final CooldownPolicy policy,
-    ) when !id.isRoot) {
-      final versions = await _versions;
-      for (final v in versions) {
-        if (v.description case ResolvedHostedDescription()) {
-          final status = await v.toRef().source.status(
-            v.toRef(),
-            v.version,
-            _systemCache,
-          );
-          statusMap[v.version] = status;
-        }
-      }
+    if ((id.description, policiesWrapper?.cooldown)
+        case (ResolvedHostedDescription(), final CooldownPolicy policy)
+        when !id.isRoot &&
+            !_checkedAllCooldownForbidden &&
+            policy.exclude[id.name] != VersionConstraint.any) {
+      _checkedAllCooldownForbidden = true;
+      final statusMap = await _versionStatuses;
+      final lockedOutsideListing =
+          _locked != null && !statusMap.containsKey(_locked.version);
 
       // Check whether ALL versions of this package violate the cooldown policy.
       // If so, emit a single general incompatibility for
@@ -243,35 +276,49 @@ class PackageLister {
       // allows the version solver to fail fast and produce an actionable
       // suggestion (such as suggesting excluding the package from the cooldown
       // policy) rather than exploring every version individually.
-      var allForbidden = true;
-      for (final v in versions) {
-        if (v.description case ResolvedHostedDescription()) {
-          final status = statusMap[v.version]!;
-          if (!policy.isBlocked(
+      if (statusMap.isNotEmpty && !lockedOutsideListing) {
+        final reasons = <CooldownBlockReason>{};
+        var allForbidden = true;
+        for (final MapEntry(key: version, value: status) in statusMap.entries) {
+          final reason = policy.blockReason(
             id.name,
-            v.version,
+            version,
             status.published,
-            statusMap,
-          )) {
+            now: _now,
+            statusMap: statusMap,
+          );
+          if (reason == null) {
             allForbidden = false;
             break;
           }
+          reasons.add(reason);
         }
-      }
-      if (allForbidden && versions.isNotEmpty) {
-        return [
-          Incompatibility(
-            [Term(PackageRange(id.toRef(), VersionConstraint.any), true)],
-            PackageVersionForbiddenCause(
-              reason:
-                  'all versions of ${id.name} are too new for the cooldown '
-                  'policy\n'
-                  'The cooldown policy is defined at '
-                  '${policiesWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml'}:'
-                  '${policiesWrapper.span.start.line + 1}',
+        if (allForbidden) {
+          _knownInvalidVersions = VersionConstraint.any;
+          final summary = switch (reasons.length == 1 ? reasons.single : null) {
+            CooldownBlockReason.tooNew =>
+              'all versions of ${id.name} are too new for the cooldown policy',
+            CooldownBlockReason.missingPublishedDate =>
+              'all versions of ${id.name} lack publication dates required by '
+                  'the cooldown policy',
+            _ =>
+              'all versions of ${id.name} are blocked by the cooldown policy',
+          };
+          final policyPath =
+              policiesWrapper!.span.sourceUrl?.path ?? 'pubspec.yaml';
+          final policyLine = policiesWrapper.span.start.line + 1;
+          return [
+            Incompatibility(
+              [Term(PackageRange(id.toRef(), VersionConstraint.any), true)],
+              CooldownIncompatibilityCause(
+                reason:
+                    '$summary\n'
+                    'The cooldown policy is defined at '
+                    '$policyPath:$policyLine',
+              ),
             ),
-          ),
-        ];
+          ];
+        }
       }
     }
 
@@ -306,45 +353,38 @@ class PackageLister {
     // blocked by minimum age, absolute cutoff date, or stability. If so,
     // mark it as forbidden with a detailed reason explaining the policy
     // constraint.
-    if ((id.description, policiesWrapper?.cooldown) case (
-      ResolvedHostedDescription(),
-      final CooldownPolicy policy,
-    )) {
-      final status = await id.toRef().source.status(
-        id.toRef(),
-        id.version,
-        _systemCache,
-      );
+    if ((id.description, policiesWrapper?.cooldown)
+        case (ResolvedHostedDescription(), final CooldownPolicy policy)
+        when !id.isRoot &&
+            !(policy.exclude[id.name]?.allows(id.version) ?? false)) {
+      final statusMap = await _versionStatuses;
+      final status =
+          statusMap[id.version] ??
+          await id.toRef().source.status(id.toRef(), id.version, _systemCache);
       final published = status.published;
-      if (policy.isBlocked(id.name, id.version, published, statusMap)) {
+      if (policy.blockReason(
+            id.name,
+            id.version,
+            published,
+            now: _now,
+            statusMap: statusMap,
+          )
+          case final blockReason?) {
         _knownInvalidVersions = _knownInvalidVersions.union(id.version);
-        String reasonPrefix;
-        if (published != null) {
-          final minAge = policy.minAge;
-          final before = policy.before;
-          if (minAge != null) {
-            final age = DateTime.now().difference(published);
-            final blockedByAge = age < minAge;
-            reasonPrefix =
-                blockedByAge
-                    ? 'version ${id.version} of ${id.name} is too new '
-                        '(released less than '
-                        '${minAge.inDays} days ago)\n'
-                    : 'version ${id.version} of ${id.name} is unstable '
-                        '(newer release within '
-                        '${minAge.inDays} days)\n';
-          } else if (before != null) {
-            reasonPrefix =
-                'version ${id.version} of ${id.name} is too new '
-                '(released after $before)\n';
-          } else {
-            reasonPrefix = 'version ${id.version} of ${id.name} is blocked\n';
-          }
-        } else {
-          reasonPrefix =
-              'version ${id.version} of ${id.name} lacks publication date '
-              'required by the cooldown policy\n';
-        }
+        final reasonPrefix = switch (blockReason) {
+          CooldownBlockReason.tooNew =>
+            policy.minAge != null
+                ? 'version ${id.version} of ${id.name} is too new '
+                    '(released less than ${policy.minAge!.inDays} days ago)\n'
+                : 'version ${id.version} of ${id.name} is too new '
+                    '(released after ${policy.before})\n',
+          CooldownBlockReason.unstable =>
+            'version ${id.version} of ${id.name} is unstable '
+                '(newer release within ${policy.minAge!.inDays} days)\n',
+          CooldownBlockReason.missingPublishedDate =>
+            'version ${id.version} of ${id.name} lacks publication date '
+                'required by the cooldown policy\n',
+        };
         final reason =
             '$reasonPrefix'
             'The cooldown policy is defined at '
@@ -353,7 +393,7 @@ class PackageLister {
         return [
           Incompatibility([
             Term(id.toRange(), true),
-          ], PackageVersionForbiddenCause(reason: reason)),
+          ], CooldownIncompatibilityCause(reason: reason)),
         ];
       }
     }

@@ -11,6 +11,7 @@ import '../log.dart' as log;
 import '../package_name.dart';
 import '../path.dart';
 import '../pubspec.dart';
+import '../source.dart';
 import '../source/hosted.dart';
 import '../source/root.dart';
 import '../system_cache.dart';
@@ -40,6 +41,8 @@ class SolveReport {
   // The report will contain "in [_location]" if given.
   final String? _location;
   final Pubspec _rootPubspec;
+  final Policies? _policies;
+  final DateTime _now = DateTime.now().toUtc();
   final LockFile _previousLockFile;
   final LockFile _newLockFile;
   final SystemCache _cache;
@@ -73,7 +76,9 @@ class SolveReport {
     required bool dryRun,
     required bool enforceLockfile,
     required SolveReportMode reportMode,
-  }) : _dryRun = dryRun,
+    Policies? policies,
+  }) : _policies = policies ?? _rootPubspec.policies,
+       _dryRun = dryRun,
        _reportMode = reportMode,
        _enforceLockfile = enforceLockfile;
 
@@ -483,8 +488,8 @@ $contentHashesDocumentationUrl
       }
 
       // When reporting available newer versions (e.g. in `pub get`),
-      // check whether the newest available version is blocked by the root
-      // package's cooldown policy so we can append `(blocked by cooldown)`.
+      // check whether the newest available version is blocked by the workspace
+      // cooldown policy so we can append `(blocked by cooldown)`.
       Version? latestVersion;
       var isLatestBlocked = false;
       if (versions.isNotEmpty) {
@@ -492,19 +497,30 @@ $contentHashesDocumentationUrl
             newerStable
                 ? maxAll(versions, Version.prioritize)
                 : maxAll(versions);
-        final policy = _rootPubspec.policies?.cooldown;
+        final policy = _policies?.cooldown;
         final desc = newId.description;
-        if (policy != null && desc is ResolvedHostedDescription) {
-          final latestStatus = await newId.toRef().source.status(
-            newId.toRef(),
-            latestVersion,
-            _cache,
-          );
-          isLatestBlocked = policy.isBlocked(
-            newId.name,
-            latestVersion,
-            latestStatus.published,
-          );
+        if (policy != null &&
+            desc is ResolvedHostedDescription &&
+            !(policy.exclude[newId.name]?.allows(latestVersion) ?? false)) {
+          final ref = newId.toRef();
+          final statusMap = <Version, PackageStatus>{};
+          if (policy.stability) {
+            for (final v in versions) {
+              statusMap[v] = await ref.source.status(ref, v, _cache);
+            }
+          }
+          final latestStatus =
+              statusMap[latestVersion] ??
+              await ref.source.status(ref, latestVersion, _cache);
+          isLatestBlocked =
+              policy.blockReason(
+                newId.name,
+                latestVersion,
+                latestStatus.published,
+                now: _now,
+                statusMap: statusMap,
+              ) !=
+              null;
         }
       }
 

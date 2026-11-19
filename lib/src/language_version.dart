@@ -127,7 +127,7 @@ class LanguageVersion implements Comparable<LanguageVersion> {
   );
 
   /// Language version where cooldown policies were introduced.
-  static const firstVersionWithCooldown = LanguageVersion(3, 14);
+  static const firstVersionWithCooldown = LanguageVersion(3, 15);
 
   /// Transform language version to string that can be parsed with
   /// [LanguageVersion.parse].

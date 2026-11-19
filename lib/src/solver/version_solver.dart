@@ -72,9 +72,11 @@ class VersionSolver {
   };
 
   /// The [Policies] to apply, if any, found in the workspace.
-  late final Policies? _policies = _root.transitiveWorkspace
-      .map((p) => p.pubspec.policies)
-      .firstWhereOrNull((policies) => policies != null);
+  late final Policies? _policies = _root.workspacePolicies;
+
+  /// The reference timestamp used for evaluating cooldown policies consistently
+  /// across the entire solve.
+  final DateTime _now = DateTime.now().toUtc();
 
   /// The lockfile, indicating which package versions were previously selected.
   final LockFile _lockFile;
@@ -597,6 +599,7 @@ class VersionSolver {
           overriddenPackages: _overriddenPackages,
           sdkOverrides: _sdkOverrides,
           policies: _policies,
+          now: _now,
         );
       }
 
@@ -622,6 +625,7 @@ class VersionSolver {
         downgrade: _type == SolveType.downgrade,
         sdkOverrides: _sdkOverrides,
         policies: _policies,
+        now: _now,
       );
     });
   }

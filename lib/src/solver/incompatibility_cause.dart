@@ -159,3 +159,9 @@ class PackageVersionForbiddenCause extends IncompatibilityCause {
   @override
   String? get hint => reason;
 }
+
+/// The incompatibility represents a package-version that is not allowed to be
+/// used in the solve because it violates a cooldown policy.
+final class CooldownIncompatibilityCause extends PackageVersionForbiddenCause {
+  CooldownIncompatibilityCause({required super.reason});
+}

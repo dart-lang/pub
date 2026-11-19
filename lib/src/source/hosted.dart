@@ -467,7 +467,6 @@ class HostedSource extends CachedSource {
         Uri.parse(archiveUrl),
         status,
         parsedContentHash,
-        publishedDate,
       );
     }).toList();
   }
@@ -2078,10 +2077,6 @@ class HostedVersionInfo {
   final Uri archiveUrl;
   final Version version;
 
-  /// The UTC date and time this package version was published, or `null` if
-  /// the package repository does not provide publication timestamps.
-  final DateTime? published;
-
   /// The sha256 digest of the archive according to the package-repository.
   final Uint8List? archiveSha256;
   final PackageStatus status;
@@ -2092,7 +2087,6 @@ class HostedVersionInfo {
     this.archiveUrl,
     this.status,
     this.archiveSha256,
-    this.published,
   );
 }
 

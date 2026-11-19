@@ -651,6 +651,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       dryRun: dryRun,
       enforceLockfile: enforceLockfile,
       reportMode: reportMode,
+      policies: workspaceRoot.workspacePolicies,
     );
 
     await report.show(summary: true);

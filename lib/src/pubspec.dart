@@ -136,8 +136,16 @@ environment:
   /// are defined.
   ///
   /// Parsed lazily on first access.
-  Policies? get policies => _policies ??= _parsePolicies();
+  Policies? get policies {
+    if (!_policiesParsed) {
+      _policies = _parsePolicies();
+      _policiesParsed = true;
+    }
+    return _policies;
+  }
+
   Policies? _policies;
+  bool _policiesParsed;
 
   Policies? _parsePolicies() {
     final policiesNode = fields.nodes['policies'];
@@ -158,14 +166,14 @@ environment:
 
     const knownPolicies = {'cooldown'};
     for (final keyNode in policiesNode.nodes.keys) {
-      if (keyNode case YamlNode(value: final String value)) {
-        if (!knownPolicies.contains(value)) {
-          _error(
-            'Invalid policies field "$value". '
-            'Only ${knownPolicies.map((e) => '"$e"').join(', ')} is supported.',
-            keyNode.span,
-          );
-        }
+      if (keyNode is! YamlNode) continue;
+      final value = keyNode.value;
+      if (value is! String || !knownPolicies.contains(value)) {
+        _error(
+          'Invalid policies field "$value". '
+          'Only ${knownPolicies.map((e) => '"$e"').join(', ')} is supported.',
+          keyNode.span,
+        );
       }
     }
 
@@ -181,6 +189,20 @@ environment:
   CooldownPolicy _parseCooldownPolicy(YamlNode cooldownNode) {
     if (cooldownNode is! YamlMap) {
       _error('"cooldown" must be a map', cooldownNode.span);
+    }
+
+    const knownCooldownFields = {'min_age', 'before', 'exclude', 'stability'};
+    for (final keyNode in cooldownNode.nodes.keys) {
+      if (keyNode is! YamlNode) continue;
+      final value = keyNode.value;
+      if (value is! String || !knownCooldownFields.contains(value)) {
+        _error(
+          'Invalid cooldown field "$value". '
+          'Only ${knownCooldownFields.map((e) => '"$e"').join(', ')} '
+          'are supported.',
+          keyNode.span,
+        );
+      }
     }
 
     final minAgeNode = cooldownNode.nodes['min_age'];
@@ -201,7 +223,7 @@ environment:
 
     final excludeNode = cooldownNode.nodes['exclude'];
     final exclude =
-        excludeNode != null
+        excludeNode != null && excludeNode.value != null
             ? _parseExclude(excludeNode)
             : const <String, VersionConstraint>{};
 
@@ -529,6 +551,7 @@ environment:
     this.resolution = Resolution.none,
     Policies? policies,
   }) : _policies = policies,
+       _policiesParsed = policies != null,
        _dependencies =
            dependencies == null
                ? null
@@ -568,7 +591,8 @@ environment:
     String? expectedName,
     Uri? location,
     required ResolvedDescription containingDescription,
-  }) : _overridesFileFields = overridesFields,
+  }) : _policiesParsed = false,
+       _overridesFileFields = overridesFields,
        _includeDefaultSdkConstraint = true,
        _givenSdkConstraints = null,
        dependencyOverridesFromOverridesFile =
@@ -1078,6 +1102,21 @@ final class Policies {
   Policies({this.cooldown, required this.span});
 }
 
+/// The reason a package version is blocked by a [CooldownPolicy].
+enum CooldownBlockReason {
+  /// The version was published too recently (violating `min_age`) or after
+  /// the `before` cutoff timestamp.
+  tooNew,
+
+  /// A newer version was published within the `min_age` stability window after
+  /// this version.
+  unstable,
+
+  /// The package repository did not provide a publication timestamp for this
+  /// version.
+  missingPublishedDate,
+}
+
 /// A policy that restricts dependency versions based on publication age or an
 /// absolute cutoff timestamp.
 ///
@@ -1115,79 +1154,85 @@ final class CooldownPolicy {
   /// releases within [minAge] will also be blocked.
   CooldownPolicy.minAge({
     required Duration this.minAge,
-    required this.exclude,
+    required Map<String, VersionConstraint> exclude,
     this.stability = false,
-  }) : before = null;
+  }) : exclude = Map.unmodifiable(exclude),
+       before = null;
 
   /// Creates a cooldown policy blocking package releases published after
   /// [before].
   ///
   /// Packages matching [exclude] constraints are exempt from this policy.
-  CooldownPolicy.before({required DateTime this.before, required this.exclude})
-    : minAge = null,
-      stability = false;
+  CooldownPolicy.before({
+    required DateTime this.before,
+    required Map<String, VersionConstraint> exclude,
+  }) : exclude = Map.unmodifiable(exclude),
+       minAge = null,
+       stability = false;
 
-  /// Returns `true` if the given package [version] is blocked by this policy.
+  /// Returns the [CooldownBlockReason] if [version] of [packageName] is blocked
+  /// by this policy, or `null` if it is allowed.
   ///
-  /// [packageName] is the name of the package.
-  /// [version] is the version being evaluated.
-  /// [published] is the publication date of the version, or `null` if unknown.
+  /// [published] is the publication date of [version], or `null` if unknown.
+  /// [now] is the reference timestamp used for evaluating [minAge], defaulting
+  /// to `DateTime.now().toUtc()`.
   /// [statusMap] contains status information (including publication dates) for
-  /// all known versions of the package, used for evaluating stability rules.
+  /// all known versions of the package, used for evaluating [stability] rules.
   ///
-  /// Packages exempt under [exclude] for the given [version] are never blocked.
-  /// Versions without a [published] date are considered blocked unless
-  /// excluded.
-  bool isBlocked(
+  /// Packages exempt under [exclude] for [version] are never blocked.
+  /// Versions without a [published] date are blocked with
+  /// [CooldownBlockReason.missingPublishedDate] unless excluded.
+  CooldownBlockReason? blockReason(
     String packageName,
     Version version,
-    DateTime? published, [
+    DateTime? published, {
+    DateTime? now,
     Map<Version, PackageStatus> statusMap = const {},
-  ]) {
+  }) {
     final constraint = exclude[packageName];
-    if (constraint != null && constraint.allows(version)) return false;
-    if (published == null) return true;
+    if (constraint != null && constraint.allows(version)) return null;
+    if (published == null) return CooldownBlockReason.missingPublishedDate;
 
     if (minAge case final minAge?) {
-      final age = DateTime.now().difference(published);
-      if (age < minAge) return true;
+      final referenceTime = now ?? DateTime.now().toUtc();
+      final age = referenceTime.difference(published);
+      if (age < minAge) return CooldownBlockReason.tooNew;
 
       if (stability) {
-        for (final entry in statusMap.entries) {
-          final v = entry.key;
-          final pubDate = entry.value.published;
-          if (v > version) {
-            if (pubDate != null) {
-              final diff = pubDate.difference(published);
-              // We only care if the newer version was published *after* this
-              // version (i.e., diff >= Duration.zero).
-              //
-              // If the newer version was published *before* this version,
-              // diff is negative (which is always less than minAge). This can
-              // happen if we publish a backported patch version for an older
-              // release line long after a newer major version was already
-              // released.
-              //
-              // For example, if 2.0.0 was published 30 days ago, and we publish
-              // a backport 1.0.1 today (0 days ago), then:
-              //   pubDate(2.0.0) - published(1.0.1) = -30 days.
-              // Since -30 days < 7 days (minAge), 1.0.1 would be incorrectly
-              // blocked by stability without the diff >= 0 check.
-              if (diff >= Duration.zero && diff < minAge) {
-                return true; // Blocked by stability!
-              }
-            } else {
+        for (final MapEntry(key: otherVersion, value: otherStatus)
+            in statusMap.entries) {
+          if (otherVersion > version) {
+            final otherPublished = otherStatus.published;
+            if (otherPublished == null) {
               // If a newer version has no published date, it is considered
               // "too new" and thus breaks stability of older versions.
-              return true;
+              return CooldownBlockReason.unstable;
+            }
+            final diff = otherPublished.difference(published);
+            // We only care if the newer version was published *after* this
+            // version (i.e., diff >= Duration.zero).
+            //
+            // If the newer version was published *before* this version,
+            // diff is negative (which is always less than minAge). This can
+            // happen if we publish a backported patch version for an older
+            // release line long after a newer major version was already
+            // released.
+            //
+            // For example, if 2.0.0 was published 30 days ago, and we publish
+            // a backport 1.0.1 today (0 days ago), then:
+            //   pubDate(2.0.0) - published(1.0.1) = -30 days.
+            // Since -30 days < 7 days (minAge), 1.0.1 would be incorrectly
+            // blocked by stability without the diff >= 0 check.
+            if (diff >= Duration.zero && diff < minAge) {
+              return CooldownBlockReason.unstable;
             }
           }
         }
       }
     } else if (before case final before?) {
-      if (published.isAfter(before)) return true;
+      if (published.isAfter(before)) return CooldownBlockReason.tooNew;
     }
 
-    return false;
+    return null;
   }
 }
