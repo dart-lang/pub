@@ -191,19 +191,94 @@ class GitSource extends CachedSource {
           containingDir: containingDir,
           tagPattern: tagPattern,
         ),
-        resolvedRef,
+        _validatedResolvedRef(resolvedRef),
       ),
     );
   }
 
+  /// Matches whitespace and ASCII control characters, none of which can occur
+  /// in a git ref name.
+  ///
+  /// See https://git-scm.com/docs/git-check-ref-format ("They cannot have
+  /// ASCII control characters (i.e. bytes whose values are lower than \040, or
+  /// \177 DEL), space, ...").
+  static final _refForbiddenCharacters = RegExp(r'[\s\x00-\x1f\x7f]');
+
+  /// Matches a full hexadecimal commit id: 40 digits for SHA-1 repositories,
+  /// 64 for SHA-256 repositories (see
+  /// https://git-scm.com/docs/git-init#Documentation/git-init.txt---object-formatltformatgt).
+  ///
+  /// Abbreviated ids are not accepted: pub always writes the full id reported
+  /// by git, and an abbreviation does not pin a commit unambiguously.
+  static final _commitId = RegExp(r'^([0-9a-fA-F]{40}|[0-9a-fA-F]{64})$');
+
+  /// Validates that [ref] can safely be passed to git as a revision.
+  ///
+  /// Returns [ref] unchanged, or `null` if [ref] is `null`.
+  ///
+  /// This is deliberately not a full check of git's revision syntax (users may
+  /// legitimately use expressions like `HEAD~1`, see
+  /// https://git-scm.com/docs/gitrevisions). It only rejects values that are
+  /// never valid and that git would otherwise interpret as something other
+  /// than a revision:
+  /// - the empty string,
+  /// - a leading `-`, which git would parse as a command line option,
+  /// - whitespace and control characters, see [_refForbiddenCharacters].
+  ///
+  /// Throws a [FormatException] if [ref] is rejected.
+  static String? _validatedRef(String? ref) {
+    if (ref == null) return null;
+    if (ref.isEmpty) {
+      throw const FormatException(
+        "The 'ref' field of the description must not be empty.",
+      );
+    }
+    if (ref.startsWith('-')) {
+      throw FormatException(
+        '"$ref" is not a valid Git ref, it must not start with "-".',
+      );
+    }
+    if (_refForbiddenCharacters.hasMatch(ref)) {
+      throw FormatException(
+        '"$ref" is not a valid Git ref, it must not contain whitespace or '
+        'control characters.',
+      );
+    }
+    return ref;
+  }
+
+  /// Validates that [resolvedRef] (from a lockfile) is a full hexadecimal
+  /// commit id, as written by `git rev-list` (see [_commitId]).
+  ///
+  /// Throws a [FormatException] otherwise.
+  static String _validatedResolvedRef(String resolvedRef) {
+    if (!_commitId.hasMatch(resolvedRef)) {
+      throw FormatException(
+        "The 'resolved-ref' field of the description must be a full "
+        'hexadecimal commit id (40 or 64 digits), was "$resolvedRef".',
+      );
+    }
+    return resolvedRef;
+  }
+
   /// Throws a [FormatException] if [url] isn't a valid Git URL.
   static _ValidatedUrl _validatedUrl(String url, String? containingDir) {
+    if (url.startsWith('-')) {
+      throw FormatException('"$url" is not a valid Git URL.');
+    }
     var relative = false;
-    // If the URL contains an @, it's probably an SSH hostname, which we don't
-    // know how to validate.
-    if (!url.contains('@')) {
+    // An SCP-style SSH URL (e.g. git@github.com:org/repo.git) has '@' before
+    // the first ':', which Dart's URI parser cannot parse.
+    final atIndex = url.indexOf('@');
+    final colonIndex = url.indexOf(':');
+    final isScpUrl =
+        atIndex != -1 && (colonIndex == -1 || atIndex < colonIndex);
+    if (!isScpUrl) {
       // Otherwise, we use Dart's URL parser to validate the URL.
       final parsed = Uri.parse(url);
+      if (parsed.hasScheme && parsed.scheme == 'ext') {
+        throw FormatException('"$url" is not a valid Git URL.');
+      }
       if (!parsed.hasAbsolutePath) {
         // Relative paths coming from pubspecs that are not on the local file
         // system aren't allowed. This can happen if a hosted or git dependency
@@ -358,31 +433,19 @@ class GitSource extends CachedSource {
     return await cache.gitCache.pool.withResource(() async {
       await _ensureRepoCache(description, cache);
       final path = _repoCachePath(description, cache);
-      final result = <PackageId>[];
       if (description.tagPattern case final String tagPattern) {
         final versions = await _listTaggedVersions(path, tagPattern);
-        for (final version in versions) {
-          result.add(
+        return [
+          for (final version in versions)
             PackageId(
               ref.name,
               version.version,
               ResolvedGitDescription(description, version.commitId),
             ),
-          );
-        }
-        return result;
+        ];
       } else {
         final revision = await _firstRevision(path, description.ref);
-
-        final Pubspec pubspec;
-        pubspec = await _describeUncached(ref, revision, cache);
-        result.add(
-          PackageId(
-            ref.name,
-            pubspec.version,
-            ResolvedGitDescription(description, revision),
-          ),
-        );
+        final pubspec = await _describeUncached(ref, revision, cache);
         return [
           PackageId(
             ref.name,
@@ -469,7 +532,7 @@ class GitSource extends CachedSource {
       if (!git.isInstalled) {
         fail(
           'Cannot get ${id.name} from Git (${description.url}).\n'
-          'Please ensure Git is correctly installed.',
+          '${git.missingGitMessage}',
         );
       }
 
@@ -496,6 +559,16 @@ class GitSource extends CachedSource {
               description.url,
             ], workingDir: revisionCachePath);
             await _checkOut(revisionCachePath, resolvedRef);
+            try {
+              _validateSymlinks(
+                revisionCachePath,
+                packageName: id.name,
+                url: description.url,
+              );
+            } catch (_) {
+              tryDeleteEntry(revisionCachePath);
+              rethrow;
+            }
             _writePackageList(revisionCachePath, [path]);
             didUpdate = true;
           } else {
@@ -604,10 +677,15 @@ class GitSource extends CachedSource {
         // Discard all changes to tracked files.
         await git.run(['reset', '--hard', 'HEAD'], workingDir: package.dir);
 
+        final repoRoot = git.repoRoot(package.dir);
+        if (repoRoot != null) {
+          _validateSymlinks(repoRoot, packageName: package.name, url: repoRoot);
+        }
+
         result.add(
           RepairResult(package.name, package.version, this, success: true),
         );
-      } on git.GitException catch (error, stackTrace) {
+      } catch (error, stackTrace) {
         log.error(
           'Failed to reset ${log.bold(package.name)} '
           '${package.version}. Error:\n$error',
@@ -629,27 +707,40 @@ class GitSource extends CachedSource {
 
   /// Ensures that the canonical clone of the repository referred to by
   /// [description] contains the given Git [revision].
+  ///
+  /// Throws a [PackageNotFoundException] if [revision] doesn't exist in the
+  /// repository even after updating the cache.
+  ///
+  /// Returns `true` if it had to update anything.
   Future<bool> _ensureRevision(
     GitDescription description,
     String revision,
     SystemCache cache,
   ) async {
     final path = _repoCachePath(description, cache);
-    if (cache.gitCache.updatedRepos.contains(path)) return false;
+    if (cache.gitCache.updatedRepos.contains(path)) {
+      await _firstRevision(path, revision);
+      return false;
+    }
 
     await _deleteGitRepoIfInvalid(path);
 
-    if (!entryExists(path)) await _createRepoCache(description, cache);
+    if (!entryExists(path)) {
+      await _createRepoCache(description, cache);
+      await _firstRevision(path, revision);
+      return true;
+    }
 
     // Try to list the revision. If it doesn't exist, git will fail and we'll
     // know we have to update the repository.
     try {
-      await _firstRevision(path, revision);
+      await _revParse(path, revision);
+      return false;
     } on git.GitException catch (_) {
       await _updateRepoCache(description, cache);
+      await _firstRevision(path, revision);
       return true;
     }
-    return false;
   }
 
   /// Ensures that the canonical clone of the repository referred to by
@@ -808,7 +899,7 @@ class GitSource extends CachedSource {
         version = Version.parse(match[1]!);
       } on FormatException catch (e) {
         throw StateError(
-          'Matched part ${Version.parse(match[1]!)} did not match version $e.',
+          'Matched part "${match[1]}" did not match version: $e.',
         );
       }
       result.add((version: version, commitId: parts[1]));
@@ -818,26 +909,29 @@ class GitSource extends CachedSource {
 
   /// Runs "git rev-list" on [reference] in [path] and returns the first result.
   ///
+  /// Throws a [git.GitException] if [reference] cannot be resolved.
+  /// This assumes that the canonical clone already exists.
+  Future<String> _revParse(String path, String reference) async {
+    final args = [_gitDirArg(path), 'rev-list', '--max-count=1', reference];
+    final output = (await git.run(args, workingDir: path)).trim();
+    if (output.isEmpty) {
+      throw git.GitException(args, 'Empty output from git rev-list', '', 1);
+    }
+    return output;
+  }
+
+  /// Resolves [reference] to a commit hash in [path], throwing a
+  /// [PackageNotFoundException] if it cannot be found.
+  ///
   /// This assumes that the canonical clone already exists.
   Future<String> _firstRevision(String path, String reference) async {
-    final String output;
     try {
-      output =
-          (await git.run([
-            _gitDirArg(path),
-            'rev-list',
-            '--max-count=1',
-            reference,
-          ], workingDir: path)).trim();
+      return await _revParse(path, reference);
     } on git.GitException catch (e) {
       throw PackageNotFoundException(
         "Could not find git ref '$reference' (${e.stderr})",
       );
     }
-    if (output.isEmpty) {
-      throw PackageNotFoundException("Could not find git ref '$reference'.");
-    }
-    return output;
   }
 
   /// Clones the repo at the URI [from] to the path [to] on the local
@@ -854,6 +948,7 @@ class GitSource extends CachedSource {
     final args = [
       'clone',
       if (mirror) '--mirror' else '--no-checkout',
+      '--',
       from,
       to,
     ];
@@ -890,6 +985,101 @@ class GitSource extends CachedSource {
     return git
         .run(['checkout', ref], workingDir: repoPath)
         .then((result) => null);
+  }
+
+  /// Validates that no symbolic link in [repoRoot] points outside of
+  /// [repoRoot], including any intermediate symlinks, chained links, or
+  /// directory symlinks.
+  ///
+  /// For every symbolic link found in [repoRoot]:
+  /// - Absolute links (starting with `/`, `\`, or Windows drive letters) are
+  ///   rejected.
+  /// - Relative links are resolved segment-by-segment. If a path segment
+  ///   encounters an intermediate directory symlink, that link is recursively
+  ///   dereferenced and resolved to ensure no combination of symlinks and `..`
+  ///   traversals can escape [repoRoot].
+  /// - Cycles in symlink chains are detected and rejected.
+  /// - If any link or chain resolves to a location outside [repoRoot], a
+  ///   [PackageNotFoundException] is thrown.
+  ///
+  /// Note: Git repositories do not support hardlinks in tree objects or working
+  /// tree checkouts (Git tree entries are limited to regular files, executable
+  /// files, symlinks, and submodules), so only symbolic links need to be
+  /// validated here.
+  void _validateSymlinks(
+    String repoRoot, {
+    required String packageName,
+    required String url,
+  }) {
+    if (!dirExists(repoRoot)) return;
+
+    final normalizedRepoRoot = p.normalize(p.absolute(repoRoot));
+
+    String resolveLinkTarget(String linkPath, {required Set<String> visited}) {
+      final canonicalLinkPath = p.normalize(p.absolute(linkPath));
+      if (!visited.add(canonicalLinkPath)) {
+        final relLinkPath = p.relative(linkPath, from: normalizedRepoRoot);
+        throw PackageNotFoundException(
+          'Package "$packageName" from "${GitDescription.prettyUri(url)}" '
+          'contains a circular symbolic link at "$relLinkPath".',
+        );
+      }
+
+      final target = readLink(linkPath);
+      if (p.isAbsolute(target) ||
+          target.startsWith('/') ||
+          target.startsWith(r'\') ||
+          RegExp(r'^[a-zA-Z]:').hasMatch(target)) {
+        final relLinkPath = p.relative(linkPath, from: normalizedRepoRoot);
+        throw PackageNotFoundException(
+          'Package "$packageName" from "${GitDescription.prettyUri(url)}" '
+          'contains a symbolic link "$relLinkPath" targeting "$target" '
+          'which points outside the repository.',
+        );
+      }
+
+      final segments = target.split(RegExp(r'[/\\]'));
+      var current = p.normalize(p.absolute(p.dirname(linkPath)));
+
+      for (final segment in segments) {
+        if (segment == '' || segment == '.') {
+          continue;
+        } else if (segment == '..') {
+          current = p.dirname(current);
+          if (!p.isWithin(normalizedRepoRoot, current) &&
+              !p.equals(normalizedRepoRoot, current)) {
+            final relLinkPath = p.relative(linkPath, from: normalizedRepoRoot);
+            throw PackageNotFoundException(
+              'Package "$packageName" from "${GitDescription.prettyUri(url)}" '
+              'contains a symbolic link "$relLinkPath" targeting "$target" '
+              'which points outside the repository.',
+            );
+          }
+        } else {
+          final next = p.normalize(p.join(current, segment));
+          if (linkExists(next)) {
+            current = resolveLinkTarget(next, visited: Set.of(visited));
+          } else {
+            current = next;
+          }
+          if (!p.isWithin(normalizedRepoRoot, current) &&
+              !p.equals(normalizedRepoRoot, current)) {
+            final relLinkPath = p.relative(linkPath, from: normalizedRepoRoot);
+            throw PackageNotFoundException(
+              'Package "$packageName" from "${GitDescription.prettyUri(url)}" '
+              'contains a symbolic link "$relLinkPath" targeting "$target" '
+              'which points outside the repository.',
+            );
+          }
+        }
+      }
+
+      return current;
+    }
+
+    for (final linkPath in listSymlinks(repoRoot)) {
+      resolveLinkTarget(linkPath, visited: {});
+    }
   }
 
   String _revisionCachePath(PackageId id, SystemCache cache) => p.join(
@@ -1041,7 +1231,7 @@ class GitDescription extends Description {
     return GitDescription.raw(
       url: validatedUrl.url,
       relative: validatedUrl.wasRelative,
-      ref: ref,
+      ref: GitSource._validatedRef(ref),
       path: path,
       tagPattern: tagPattern,
     );
@@ -1206,8 +1396,8 @@ void validateTagPattern(String tagPattern) {
 /// [tagPatternVersionMarker].
 RegExp compileTagPattern(String tagPattern) {
   final parts = tagPattern.split(tagPatternVersionMarker);
-  final before = parts[0];
-  final after = parts[1];
+  final before = RegExp.escape(parts[0]);
+  final after = RegExp.escape(parts[1]);
 
   return RegExp(
     r'^'

@@ -236,4 +236,23 @@ Got dependencies!
     /// unlock.
     await pubGet();
   });
+
+  test(
+    'Warns about discontinued dependencies with replacement sanitized',
+    () async {
+      final server = await servePackages();
+      server
+        ..serve('foo', '1.2.3')
+        ..discontinue('foo', replacementText: 'bar\x1b]52;c;evil\x07baz');
+      await d.appDir(dependencies: {'foo': '1.2.3'}).create();
+      await pubGet(
+        output: '''
+Resolving dependencies...
+Downloading packages...
++ foo 1.2.3 (discontinued replaced by bar ]52;c;evil baz)
+Changed 1 dependency!
+1 package is discontinued.''',
+      );
+    },
+  );
 }

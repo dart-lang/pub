@@ -6,7 +6,10 @@
 library;
 
 import 'package:pub/src/package_name.dart';
+import 'package:pub/src/solver/incompatibility.dart';
+import 'package:pub/src/solver/incompatibility_cause.dart';
 import 'package:pub/src/solver/reformat_ranges.dart';
+import 'package:pub/src/solver/term.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
@@ -48,6 +51,24 @@ void main() {
         ),
       ),
       equals(null),
+    );
+  });
+
+  test('reformatRanges reformats each range of a VersionUnion', () {
+    final ref = PackageRef('foo', HostedDescription('foo', 'https://pub.dev'));
+    // The complement of a single version, as produced for a forbidden version.
+    final union = VersionConstraint.any.difference(Version.parse('2.0.0'));
+    expect(union.toString(), '<2.0.0-∞ or >2.0.0');
+
+    final reformatted = reformatRanges(
+      {},
+      Incompatibility([
+        Term(ref.withConstraint(union), true),
+      ], PackageVersionForbiddenCause()),
+    );
+    expect(
+      reformatted.terms.single.package.constraint.toString(),
+      '<2.0.0 or >2.0.0',
     );
   });
 }

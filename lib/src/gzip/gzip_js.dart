@@ -12,6 +12,8 @@ import 'package:web/web.dart' as web;
 /// Web implementation of gzipDecoder using the browser's `DecompressionStream`.
 Converter<List<int>, List<int>> get gzipDecoder => const BrowserGZipDecoder();
 
+const bool _isDart2Wasm = bool.fromEnvironment('dart.tool.dart2wasm');
+
 /// A [Converter] that decompresses gzip-compressed data using the browser's
 /// `DecompressionStream` API.
 class BrowserGZipDecoder extends Converter<List<int>, List<int>> {
@@ -59,8 +61,11 @@ class BrowserGZipDecoder extends Converter<List<int>, List<int>> {
         while (true) {
           final result = await reader.read().toDart;
           if (result.done) break;
-          final value = result.value as JSUint8Array;
-          controller.add(value.toDart);
+          final value = (result.value as JSUint8Array).toDart;
+          // On dart2wasm, `JSUint8Array.toDart` returns a JS-backed
+          // `JSUint8ArrayImpl` where every element read crosses FFI. Copy it
+          // into a WasmGC `Uint8List` once before `package:tar` processes it.
+          controller.add(_isDart2Wasm ? Uint8List.fromList(value) : value);
         }
       } catch (e, st) {
         if (_isHarmlessPaddingError(e)) {

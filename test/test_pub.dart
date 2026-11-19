@@ -14,7 +14,6 @@ import 'dart:core';
 import 'dart:io' hide BytesBuilder;
 import 'dart:isolate';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:async/async.dart';
 import 'package:pub/src/entrypoint.dart';
@@ -996,8 +995,8 @@ PackageServer? _globalServer;
 
 /// Creates an HTTP server that replicates the structure of pub.dev and makes it
 /// the current [globalServer].
-Future<PackageServer> servePackages() async {
-  final server = await startPackageServer();
+Future<PackageServer> servePackages({bool serveEtags = false}) async {
+  final server = await startPackageServer(serveEtags: serveEtags);
   _globalServer = server;
 
   addTearDown(() {
@@ -1006,8 +1005,9 @@ Future<PackageServer> servePackages() async {
   return server;
 }
 
-Future<PackageServer> startPackageServer() async {
+Future<PackageServer> startPackageServer({bool serveEtags = false}) async {
   final server = await PackageServer.start();
+  server.serveEtags = serveEtags;
 
   addTearDown(() async {
     await server.close();
@@ -1015,32 +1015,40 @@ Future<PackageServer> startPackageServer() async {
   return server;
 }
 
-/// Create temporary folder 'bin/' containing a 'git' script in [d.sandbox]
-/// By adding the bin/ folder to the search `$PATH` we can prevent `pub` from
-/// detecting the installed 'git' binary and we can test that it prints
-/// a useful error message.
-Future<void> setUpFakeGitScript({
-  required String bash,
-  required String batch,
-}) async {
-  await d.dir('bin', [
-    if (!Platform.isWindows) d.file('git', bash),
-    if (Platform.isWindows) d.file('git.bat', batch),
-  ]).create();
-  if (!Platform.isWindows) {
-    // Make the script executable.
-    await runProcess('chmod', ['+x', p.join(d.sandbox, 'bin', 'git')]);
-  }
+/// Creates a folder `bin/` in [d.sandbox] containing a fake `git` script with
+/// the contents [bash].
+///
+/// Together with [extendedPathEnv] this shadows the installed `git`, so tests
+/// can check how pub behaves with a broken or old git.
+///
+/// This has no effect on Windows: pub resolves `git` to a `git.exe` via
+/// `CreateProcess`, which cannot be shadowed by a script. Use [extendedPathEnv]
+/// alone to test the behavior when git is missing there.
+Future<void> setUpFakeGitScript({required String bash}) async {
+  if (Platform.isWindows) return;
+  await d.dir('bin', [d.file('git', bash)]).create();
+  // Make the script executable.
+  await runProcess('chmod', ['+x', p.join(d.sandbox, 'bin', 'git')]);
 }
 
 /// Returns an environment where PATH is extended with `$sandbox/bin`.
+///
+/// On Windows, directories containing a `git.exe` are also removed from PATH,
+/// so pub cannot find git (see [setUpFakeGitScript]).
 Map<String, String> extendedPathEnv() {
   final separator = Platform.isWindows ? ';' : ':';
   final binFolder = p.join(d.sandbox, 'bin');
+  var path = Platform.environment['PATH'] ?? '';
+  if (Platform.isWindows) {
+    path = path
+        .split(separator)
+        .where((dir) => dir.isNotEmpty && !fileExists(p.join(dir, 'git.exe')))
+        .join(separator);
+  }
 
   return {
     // Override 'PATH' to ensure that we can't detect a working "git" binary
-    'PATH': '$binFolder$separator${Platform.environment['PATH']}',
+    'PATH': '$binFolder$separator$path',
   };
 }
 
@@ -1089,27 +1097,10 @@ Stream<List<int>> tarFromDescriptors(Iterable<d.Descriptor> contents) {
   for (final e in contents) {
     addDescriptor(e, '');
   }
-  return _replaceOs(
-    Stream.fromIterable(entries)
-        .transform(tarWriterWith(format: OutputFormat.gnuLongName))
-        .transform(gzip.encoder),
-  );
-}
-
-/// Replaces the entry at index 9 in [stream] with a 0. This replaces the os
-/// entry of a gzip stream, giving us the same stream and this stable testing
-/// on all platforms.
-///
-/// See https://www.rfc-editor.org/rfc/rfc1952 section 2.3 for information
-/// about the OS header.
-Stream<List<int>> _replaceOs(Stream<List<int>> stream) async* {
-  final bytesBuilder = BytesBuilder();
-  await for (final t in stream) {
-    bytesBuilder.add(t);
-  }
-  final result = bytesBuilder.toBytes();
-  result[9] = 0;
-  yield result;
+  return Stream.fromIterable(entries)
+      .transform(tarWriterWith(format: OutputFormat.gnuLongName))
+      .transform(gzip.encoder)
+      .transform(normalizeGzipHeader());
 }
 
 /// Utility for indexing json data structures.

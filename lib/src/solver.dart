@@ -15,6 +15,7 @@ import 'solver/version_solver.dart';
 import 'system_cache.dart';
 
 export 'solver/failure.dart';
+export 'solver/report.dart' show SolveReportMode;
 export 'solver/result.dart';
 export 'solver/type.dart';
 

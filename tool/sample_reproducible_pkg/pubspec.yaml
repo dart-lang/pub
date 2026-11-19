@@ -1,0 +1,6 @@
+name: sample_reproducible_pkg
+version: 1.0.0
+description: A sample package for verifying reproducible archives.
+repository: https://github.com/dart-lang/pub
+environment:
+  sdk: ^3.0.0

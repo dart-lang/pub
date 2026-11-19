@@ -86,7 +86,7 @@ class DowngradeCommand extends PubCommand {
           SolveType.get,
           unlock: argResults.rest,
           dryRun: _dryRun,
-          summaryOnly: true,
+          reportMode: SolveReportMode.summaryOnly,
         );
       }
     }

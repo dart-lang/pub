@@ -5,7 +5,6 @@
 import 'dart:io';
 
 import 'package:glob/glob.dart';
-import 'package:glob/list_local_fs.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'exceptions.dart';
@@ -181,16 +180,25 @@ class Package {
         pubspec.workspace.expand((workspacePath) {
           final packages = <Package>[];
           var globHint = '';
-          if (pubspec.languageVersion.supportsWorkspaceGlobs) {
+          if (pubspec.languageVersion.supportsWorkspaceGlobs &&
+              _hasGlobWildcards(workspacePath)) {
             final Glob glob;
             try {
               glob = Glob(workspacePath);
             } on FormatException catch (e) {
               fail('Failed to parse glob `$workspacePath`. $e');
             }
-            for (final globResult in glob.listSync(root: dir)) {
+            final globRoot = p.absolute(dir);
+            final globResults = glob.listFileSystemSync(
+              currentFileSystem,
+              root: globRoot,
+              followLinks: false,
+            );
+            for (final globResult in globResults) {
+              if (globResult is! Directory) continue;
               final pubspecPath = p.join(globResult.path, 'pubspec.yaml');
               if (!fileExists(pubspecPath)) continue;
+              if (_isBehindSymlink(globResult.path, root: globRoot)) continue;
               packages.add(
                 Package.load(
                   globResult.path,
@@ -200,9 +208,14 @@ class Package {
               );
             }
           } else {
-            final pubspecPath = p.join(dir, workspacePath, 'pubspec.yaml');
+            final pubspecPath = p.join(
+              dir,
+              _useBackSlashesOnWindows(workspacePath),
+              'pubspec.yaml',
+            );
             if (!fileExists(pubspecPath)) {
-              if (_looksLikeGlob(workspacePath)) {
+              if (!pubspec.languageVersion.supportsWorkspaceGlobs &&
+                  _hasGlobWildcards(workspacePath)) {
                 globHint = '''
 \n\nGlob syntax is only supported from language version ${LanguageVersion.firstVersionWithWorkspaceGlobs}.
 Consider changing the language version of ${p.join(dir, 'pubspec.yaml')} to ${LanguageVersion.firstVersionWithWorkspaceGlobs}.
@@ -580,7 +593,33 @@ See https://dart.dev/go/workspaces-stray-files for details.
   }
 }
 
-bool _looksLikeGlob(String s) => Glob.quote(s) != s;
+/// Returns whether [s] contains any glob wildcard syntax characters.
+///
+/// We intentionally do not account for backslash-escaped wildcards (like `\*`).
+/// Paths without any of these characters are guaranteed to be plain relative
+/// paths that can be checked directly on the filesystem without unescaping or
+/// glob parsing. Paths containing these characters (even if escaped) are
+/// delegated to `package:glob` to handle unescaping properly and to avoid
+/// conflicting with Windows `\` path separators.
+bool _hasGlobWildcards(String s) =>
+    s.contains('*') || s.contains('?') || s.contains('[') || s.contains('{');
+
+/// Returns whether [path] is a symlink, or is reached through one, below
+/// [root].
+///
+/// `package:glob` lists literal path segments directly instead of inspecting
+/// them, so `followLinks: false` doesn't stop it from traversing a symlink in a
+/// glob such as `linked/*`, except on Windows where its globs are case
+/// insensitive and every segment is listed.
+bool _isBehindSymlink(String path, {required String root}) {
+  var current = root;
+  for (final segment in p.split(p.relative(path, from: root))) {
+    current = p.join(current, segment);
+    if (linkExists(current)) return true;
+  }
+  return false;
+}
+
 String _useBackSlashesOnWindows(String path) {
   if (platform.isWindows) {
     return p.joinAll(p.split(path));

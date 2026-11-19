@@ -372,7 +372,8 @@ extension Throwing on http.BaseResponse {
   void throwIfNotOk() {
     if (statusCode >= 200 && statusCode <= 299) {
       return;
-    } else if (_redirectStatusCodes.contains(statusCode)) {
+    } else if (statusCode == HttpStatus.notModified ||
+        _redirectStatusCodes.contains(statusCode)) {
       return;
     } else if (statusCode == HttpStatus.notAcceptable &&
         request?.headers['Accept'] == pubApiHeaders['Accept']) {

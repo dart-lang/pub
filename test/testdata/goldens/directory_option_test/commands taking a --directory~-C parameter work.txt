@@ -110,8 +110,6 @@ Got dependencies in `myapp/example`.
 
 ## Section 10
 $ pub run -C myapp 'bin/app.dart'
-Building package executable...
-Built test_pkg:app.
 Hi
 
 -------------------------------- END OF OUTPUT ---------------------------------

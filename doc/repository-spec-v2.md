@@ -305,14 +305,17 @@ changed.
     ...,
     "<field-N>": "<value-N>",
   },
+  "attestationUrl": "<attestation-upload-url>", // optional
 }
 ```
 
 To publish a package an HTTP `GET` request for
 `<hosted-url>/api/packages/versions/new` is made. This request returns an
-`<multipart-upload-url>` and a dictionary of fields. To upload the package
-archive a multi-part `POST` request is made to `<multipart-upload-url>` with
-fields and the field `file` containing the gzipped tar archive.
+`<multipart-upload-url>`, a dictionary of fields, and optionally an
+`<attestation-upload-url>`, see
+[Publishing with an Attestation](#publishing-with-an-attestation). To upload the
+package archive a multi-part `POST` request is made to `<multipart-upload-url>`
+with fields and the field `file` containing the gzipped tar archive:
 
 ```http
 POST <path(multipart-upload-url)> HTTP/1.1
@@ -343,24 +346,88 @@ Content-Transfer-Encoding: binary
 Content-Type: application/octet-stream
 Content-Disposition: form-data; name="file"; filename="package.tar.gz"
 
-<gzipped archieve>
+<gzipped archive>
+--<boundary>--
 ```
 
-The above `POST` request to `<multipart-upload-url>` should respond as follows:
+The above `POST` request to `<multipart-upload-url>` may respond as follows:
 
 ```http
 HTTP/1.1 204 No Content
 Location: <finalize-upload-url>
 ```
 
+or with an HTTP `303 See Other` redirect to `<finalize-upload-url>`.
+
+### Publishing with an Attestation
+
+A package may be published together with an attestation, such as a
+[Sigstore](https://www.sigstore.dev/) bundle attesting to the provenance of the
+package archive.
+
+A package repository that supports publishing with attestations must return an
+`<attestation-upload-url>` in the `attestationUrl` property of the response from
+`<hosted-url>/api/packages/versions/new`. A repository that does not support
+publishing with attestations must omit the property. A client that has an
+attestation to publish, but did not get an `attestationUrl`, shall abort the
+publication with an informative error message, without uploading the package
+archive.
+
+The client shall upload the attestation with an HTTP `POST` request to
+`<attestation-upload-url>`, before uploading the package archive to
+`<multipart-upload-url>`:
+
+```http
+POST <path(attestation-upload-url)> HTTP/1.1
+Host: <host(attestation-upload-url)>
+Content-Type: application/json
+Content-Length: <length>
+
+<attestation JSON bundle>
+```
+
+As with `archive_url` the client will only attach an `Authorization` if the
+`<hosted-url>` is a prefix of `<attestation-upload-url>`. The
+`<attestation-upload-url>` may be temporary and is allowed to include
+query-string parameters.
+
+If the server accepts the attestation for this upload it should respond:
+
+```http
+HTTP/1.1 200 Ok
+```
+
+If the server does not accept the attestation it should respond with an error
+object, as described below, and the client will abort the publication. The
+server is not able to fully validate the attestation at this point, as the
+package archive it refers to has not been uploaded yet; the attestation is
+validated against the archive when the upload is finalized.
+
+### Finalizing the Upload
+
 The client shall then issue a `GET` request to `<finalize-upload-url>`. As with
 `archive_url` the client will only attach an `Authorization` if the
-`<hosted-url>` is a prefix of `<finalize-upload-url>`. If the server wants to
-accept the uploaded package the server should respond:
+`<hosted-url>` is a prefix of `<finalize-upload-url>`.
+
+The server is allowed to inspect the uploaded archive, together with the
+attestation uploaded to `<attestation-upload-url>`, if any. If an attestation
+was uploaded, the server must verify it before accepting the publication, and
+must reject the publication if:
+ * the JSON bundle is malformed or cannot be parsed as a Sigstore bundle,
+ * the cryptographic signature cannot be verified against the trusted root, or
+ * the artifact digest recorded in the attestation does not match the SHA-256
+   hash of the uploaded package archive.
+
+The server may also reject the publication based on the contents of the
+attestation, for example if the provenance information (such as the source
+repository) does not match the `repository` field in `pubspec.yaml`.
+
+If the server wants to accept the uploaded package the server should respond:
 
 ```http
 HTTP/1.1 200 Ok
 Content-Type: application/vnd.pub.v2+json
+
 {
   "success": {
     "message": "<message>",
@@ -368,12 +435,12 @@ Content-Type: application/vnd.pub.v2+json
 }
 ```
 
-The server is allowed to consider the publishing incomplete until the `GET`
-request for `<finalize-upload-url>` has been issued. Once this request has
-succeeded the package is considered successfully published. If the server has
-caches that need to expire before newly published packages become available,
-or it has other out-of-band approvals that need to be given it's reasonable to
-inform the user about this in the `<message>`.
+The server is allowed to consider the publishing incomplete until the request
+for `<finalize-upload-url>` has been issued. Once this request has succeeded
+the package is considered successfully published. If the server has caches that
+need to expire before newly published packages become available, or it has
+other out-of-band approvals that need to be given it's reasonable to inform the
+user about this in the `<message>`.
 
 If the server does not want to accept the uploaded package, it can respond:
 ```http
@@ -388,7 +455,8 @@ Content-Type: application/vnd.pub.v2+json
 ```
 
 This can be used to forbid git dependencies in published packages, limit the
-archive size, or enforce any other repository-specific constraints.
+archive size, reject invalid attestations, or enforce any other
+repository-specific constraints.
 
 This upload flow allows for archives to be uploaded directly to a signed POST
 URL for [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/HTTPPOSTExamples.html),

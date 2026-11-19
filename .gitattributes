@@ -1,0 +1,2 @@
+# Ensure reproducible test fixtures have exact LF line endings across all operating systems.
+tool/sample_reproducible_pkg/** text eol=lf

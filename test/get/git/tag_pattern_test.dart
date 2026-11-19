@@ -9,6 +9,7 @@ import 'dart:io';
 
 import 'package:pub/src/exit_codes.dart';
 import 'package:pub/src/path.dart';
+import 'package:pub/src/source/git.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
@@ -494,5 +495,82 @@ void main() {
         });
       },
     );
+
+    test(
+      '(${tagType.name}) tag_pattern matches special regex characters verbatim',
+      () async {
+        ensureGit();
+        await d.git('foo.git', [
+          d.libPubspec('foo', '1.0.0', sdk: '^3.9.0'),
+        ]).create();
+        await d.git('foo.git', []).tag('fooxbar-1.0.0', tagType: tagType);
+        await d.git('foo.git', [
+          d.libPubspec('foo', '2.0.0', sdk: '^3.9.0'),
+        ]).commit();
+        await d.git('foo.git', []).tag('foo.bar-2.0.0', tagType: tagType);
+
+        await d
+            .appDir(
+              dependencies: {
+                'foo': {
+                  'git': {
+                    'url': p.join(d.sandbox, 'foo.git'),
+                    'tag_pattern': 'foo.bar-{{version}}',
+                  },
+                  'version': '^2.0.0',
+                },
+              },
+              pubspec: {
+                'environment': {'sdk': '^3.9.0'},
+              },
+            )
+            .create();
+
+        await pubGet(
+          output: contains('+ foo 2.0.0'),
+          environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+        );
+      },
+    );
+
+    test('(${tagType.name}) tag_pattern with parentheses does not '
+        'break capture groups', () async {
+      ensureGit();
+      await d.git('foo.git', [
+        d.libPubspec('foo', '1.0.0', sdk: '^3.9.0'),
+      ]).create();
+      await d.git('foo.git', []).tag('(v)-1.0.0', tagType: tagType);
+
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {
+                'git': {
+                  'url': p.join(d.sandbox, 'foo.git'),
+                  'tag_pattern': '(v)-{{version}}',
+                },
+                'version': '^1.0.0',
+              },
+            },
+            pubspec: {
+              'environment': {'sdk': '^3.9.0'},
+            },
+          )
+          .create();
+
+      await pubGet(
+        output: contains('+ foo 1.0.0'),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+      );
+    });
   }
+
+  test('compileTagPattern escapes regex special characters', () {
+    final regExp = compileTagPattern(r'[foo]+(bar)*.{{version}}^$');
+    expect(regExp.hasMatch(r'[foo]+(bar)*.1.2.3^$'), isTrue);
+    expect(regExp.hasMatch('f1.2.3'), isFalse);
+    final match = regExp.firstMatch(r'[foo]+(bar)*.1.2.3^$');
+    expect(match, isNotNull);
+    expect(match![1], '1.2.3');
+  });
 }

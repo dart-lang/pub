@@ -10,7 +10,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'command_runner.dart';
@@ -94,10 +93,7 @@ Future<String> run(
   Encoding stderrEncoding = systemEncoding,
 }) async {
   if (!isInstalled) {
-    fail(
-      'Cannot find a Git executable.\n'
-      'Please ensure Git is correctly installed.',
-    );
+    fail(missingGitMessage);
   }
 
   log.muteProgress();
@@ -128,10 +124,7 @@ String runSync(
   Encoding stderrEncoding = systemEncoding,
 }) {
   if (!isInstalled) {
-    fail(
-      'Cannot find a Git executable.\n'
-      'Please ensure Git is correctly installed.',
-    );
+    fail(missingGitMessage);
   }
 
   final result = runProcessSync(
@@ -157,10 +150,7 @@ Uint8List runSyncBytes(
   Encoding stderrEncoding = systemEncoding,
 }) {
   if (!isInstalled) {
-    fail(
-      'Cannot find a Git executable.\n'
-      'Please ensure Git is correctly installed.',
-    );
+    fail(missingGitMessage);
   }
 
   final result = runProcessSyncBytes(
@@ -179,7 +169,45 @@ Uint8List runSyncBytes(
 
 /// The name of the git command-line app, or `null` if Git could not be found on
 /// the user's PATH.
-final String? command = ['git', 'git.cmd'].firstWhereOrNull(_tryGitCommand);
+///
+/// Only `git` is considered, which on Windows resolves to `git.exe`. Batch
+/// files such as `git.cmd` or `git.bat` are deliberately not probed: Windows
+/// runs them through `cmd.exe`, which interprets metacharacters in arguments
+/// (like `&` in a git ref or url) as command separators. Git for Windows has
+/// shipped a native `git.exe` since version 2.0.
+final String? command = _tryGitCommand('git') ? 'git' : null;
+
+/// The error message to use when [isInstalled] is `false`.
+///
+/// On Windows, points out a `git.bat` or `git.cmd` on `PATH` that pub
+/// deliberately does not run (see [command]), so users with such a wrapper
+/// understand why git is reported missing.
+String get missingGitMessage {
+  const message =
+      'Cannot find a Git executable.\n'
+      'Please ensure Git is correctly installed.';
+  final batchFile = platform.isWindows ? _gitBatchFileOnPath() : null;
+  if (batchFile == null) return message;
+  return '$message\n\n'
+      'Found "$batchFile", but only a `git.exe` can be used: Windows runs '
+      'batch files through cmd.exe, which does not pass arguments on safely.\n'
+      'Make sure the directory containing `git.exe` is on PATH, and use git '
+      'configuration or `GIT_*` environment variables instead of a wrapper '
+      'script.';
+}
+
+/// Returns the first `git.bat` or `git.cmd` found in a `PATH` directory, or
+/// `null` if there is none.
+String? _gitBatchFileOnPath() {
+  for (final dir in (platform.environment['PATH'] ?? '').split(';')) {
+    if (dir.isEmpty) continue;
+    for (final name in const ['git.bat', 'git.cmd']) {
+      final candidate = p.join(dir, name);
+      if (fileExists(candidate)) return candidate;
+    }
+  }
+  return null;
+}
 
 /// Returns the root of the git repo [dir] belongs to. Returns `null` if not
 /// in a git repo or git is not installed.

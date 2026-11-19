@@ -11,7 +11,7 @@ Describe anything relevant to the issue you are seeing. Consider including:
 - Dart/Flutter version (run `dart --version` or `flutter --version`):
 - OS kind and version (e.g. "Windows 10, version 1809" or "macOS 12.4"):
 - In case of network issues
-  * consider running https://github.com/dart-lang/pub-dev/blob/master/app/bin/tools/check_domain_access.dart
+  * consider running https://github.com/dart-lang/pub-dev/blob/main/app/bin/tools/check_domain_access.dart
   and adding the output.
 - Are you using the Chinese community mirror or a corporate firewall?
 

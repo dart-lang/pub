@@ -530,4 +530,39 @@ Future<void> main() async {
     // the advisory warning, making zero network requests.
     await pubGet(output: contains('affected by advisory'));
   });
+
+  test('sanitizes escape sequences in displayUrl and id', () async {
+    final server = await servePackages();
+    server
+      ..serve('foo', '1.0.0')
+      ..serve('bar', '1.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {'foo': '^1.0.0', 'bar': '^1.0.0'},
+      }),
+    ]).create();
+
+    server.addAdvisory(
+      advisoryId: 'ID-1\x1b]52;c;evil\x07',
+      displayUrl: 'https://example.com/advisory/\x1b]52;c;evil\x07',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
+      ],
+    );
+    server.addAdvisory(
+      advisoryId: 'ID-2\x1b]52;c;evil\x07',
+      affectedPackages: [
+        AffectedPackage(name: 'bar', versions: ['1.0.0']),
+      ],
+    );
+
+    await pubGet(
+      output: allOf(
+        contains('https://example.com/advisory/ ]52;c;evil '),
+        contains('ID-2 ]52;c;evil '),
+      ),
+    );
+  });
 }

@@ -5,8 +5,6 @@
 import 'entrypoint.dart';
 import 'package.dart';
 import 'solver.dart';
-import 'source/cached.dart';
-import 'source/sdk.dart';
 
 /// A holistic view of the entire transitive dependency graph for an entrypoint.
 class PackageGraph {
@@ -71,30 +69,5 @@ class PackageGraph {
       }
     }
     return result;
-  }
-
-  bool _isPackageFromImmutableSource(String package) {
-    final id = entrypoint.lockFile.packages[package];
-    if (id == null) {
-      return false; // This is a root package.
-    }
-    return id.source is CachedSource || id.source is SdkSource;
-  }
-
-  /// Returns whether [package] is mutable.
-  ///
-  /// A package is considered to be mutable if it or any of its dependencies
-  /// don't come from a cached source, since the user can change its contents
-  /// without modifying the pub cache. Information generated from mutable
-  /// packages is generally not safe to cache, since it may change frequently.
-  bool isPackageMutable(String package) {
-    if (!_isPackageFromImmutableSource(package)) return true;
-
-    return transitiveDependencies(
-      package,
-      // If package is a root package it is not immutable itself, and we don't
-      // need to consider its dev_dependencies.
-      followDevDependenciesFromPackage: false,
-    ).any((dep) => !_isPackageFromImmutableSource(dep.name));
   }
 }

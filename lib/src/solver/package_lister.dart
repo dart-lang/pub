@@ -231,9 +231,21 @@ class PackageLister {
       }
     }
 
-    if (_cachedVersions == null &&
-        _locked != null &&
-        id.version == _locked.version) {
+    // Avoid fetching the version listing just to describe the locked version:
+    // emit incompatibilities for exactly this version. Once the listing has
+    // been fetched, the solver asks again (see
+    // [VersionSolver._choosePackageVersion]) and the incompatibilities are
+    // generalized across neighboring versions below.
+    //
+    // The narrow incompatibilities are also all we can emit if the listing has
+    // been fetched but does not contain the locked version (for example,
+    // because it was removed from the server but is still in the system cache).
+    // Either way, they are emitted only once.
+    final cachedVersions = _cachedVersions;
+    if (_locked != null &&
+        id.version == _locked.version &&
+        (cachedVersions == null ||
+            !cachedVersions.any((version) => version.version == id.version))) {
       if (_listedLockedVersion) return const [];
 
       final depender = id.toRange();

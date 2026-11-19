@@ -38,10 +38,10 @@ class OutdatedCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-outdated';
 
-  /// Avoid showing spinning progress messages when not in a terminal, and
-  /// when we are outputting machine-readable json.
+  /// Avoid showing spinning progress messages when not in an ANSI-capable
+  /// terminal, and when we are outputting machine-readable json.
   bool get _shouldShowSpinner =>
-      terminalOutputForStdout && !argResults.flag('json');
+      terminalOutputForStdout && canUseAnsiCodes && !argResults.flag('json');
 
   @override
   bool get takesArguments => false;
@@ -158,23 +158,28 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     late bool hasUpgradableResolution;
     late bool hasResolvableResolution;
 
-    await log.spinner('Resolving', () async {
-      final upgradablePackagesResult = await _tryResolve(
-        upgradableWorkspace,
-        cache,
-        lockFile: entrypoint.lockFile,
-      );
-      hasUpgradableResolution = upgradablePackagesResult != null;
-      upgradablePackages = upgradablePackagesResult ?? [];
+    await log.progress(
+      'Resolving',
+      () async {
+        final upgradablePackagesResult = await _tryResolve(
+          upgradableWorkspace,
+          cache,
+          lockFile: entrypoint.lockFile,
+        );
+        hasUpgradableResolution = upgradablePackagesResult != null;
+        upgradablePackages = upgradablePackagesResult ?? [];
 
-      final resolvablePackagesResult = await _tryResolve(
-        resolvableWorkspace,
-        cache,
-        lockFile: entrypoint.lockFile,
-      );
-      hasResolvableResolution = resolvablePackagesResult != null;
-      resolvablePackages = resolvablePackagesResult ?? [];
-    }, condition: _shouldShowSpinner);
+        final resolvablePackagesResult = await _tryResolve(
+          resolvableWorkspace,
+          cache,
+          lockFile: entrypoint.lockFile,
+        );
+        hasResolvableResolution = resolvablePackagesResult != null;
+        resolvablePackages = resolvablePackagesResult ?? [];
+      },
+      condition: _shouldShowSpinner,
+      transient: true,
+    );
 
     // This list will be empty if there is no lock file.
     final currentPackages = entrypoint.lockFile.packages.values;

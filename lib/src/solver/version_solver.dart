@@ -37,7 +37,7 @@ import 'type.dart';
 /// The version solver that finds a set of package versions that satisfy the
 /// root package's dependencies.
 ///
-/// See https://github.com/dart-lang/pub/tree/master/doc/solver.md for details
+/// See https://github.com/dart-lang/pub/tree/main/doc/solver.md for details
 /// on how this solver works.
 class VersionSolver {
   /// All known incompatibilities, indexed by package name.
@@ -110,9 +110,27 @@ class VersionSolver {
   /// Prime the solver with [constraints].
   void addConstraints(Iterable<ConstraintAndCause> constraints) {
     for (final constraint in constraints) {
+      // An additional constraint restricts which versions of a package may be
+      // selected if the package is part of the solution, without requiring the
+      // package itself to be selected.
+      //
+      // In PubGrub, a 1-term negative incompatibility `{not foo ^2.0.0}` means
+      // `foo ^2.0.0` is unconditionally required in the solution (like
+      // `{not root}`), causing unit propagation to derive a positive assignment
+      // `foo ^2.0.0` and forcing `foo` to be selected even if no package
+      // depends on it after backtracking.
+      //
+      // Instead, we emit a 1-term positive incompatibility for the forbidden
+      // complement (`{foo <2.0.0-0 or >=3.0.0}`), so unit propagation derives a
+      // negative assignment that only constrains `foo` if another package
+      // depends on it.
+      final forbidden = VersionConstraint.any.difference(
+        constraint.range.constraint,
+      );
+      if (forbidden.isEmpty) continue;
       _addIncompatibility(
         Incompatibility([
-          Term(constraint.range, false),
+          Term(constraint.range.toRef().withConstraint(forbidden), true),
         ], PackageVersionForbiddenCause(reason: constraint.cause)),
       );
     }
@@ -150,7 +168,7 @@ class VersionSolver {
   /// Performs [unit propagation][] on incompatibilities transitively related to
   /// [package] to derive new assignments for [_solution].
   ///
-  /// [unit propagation]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#unit-propagation
+  /// [unit propagation]: https://github.com/dart-lang/pub/tree/main/doc/solver.md#unit-propagation
   void _propagate(String package) {
     final changed = {package};
 
@@ -188,7 +206,7 @@ class VersionSolver {
   /// If [incompatibility] is [almost satisfied][] by [_solution], adds the
   /// negation of the unsatisfied term to [_solution].
   ///
-  /// [almost satisfied]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#incompatibility
+  /// [almost satisfied]: https://github.com/dart-lang/pub/tree/main/doc/solver.md#incompatibility
   ///
   /// If [incompatibility] is satisfied by [_solution], returns `#conflict`. If
   /// [incompatibility] is almost satisfied by [_solution], returns the
@@ -244,7 +262,7 @@ class VersionSolver {
   /// incompatibility will allow [_propagate] to deduce new assignments.
   ///
   /// [conflict resolution]:
-  /// https://github.com/dart-lang/pub/tree/master/doc/solver.md#conflict-resolution
+  /// https://github.com/dart-lang/pub/tree/main/doc/solver.md#conflict-resolution
   ///
   /// Adds the new incompatibility to [_incompatibilities] and returns it.
   Incompatibility _resolveConflict(Incompatibility incompatibility) {
@@ -349,7 +367,7 @@ class VersionSolver {
       // the incompatibility as well, See [the algorithm documentation][] for
       // details.
       //
-      // [the algorithm documentation]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#conflict-resolution
+      // [the algorithm documentation]: https://github.com/dart-lang/pub/tree/main/doc/solver.md#conflict-resolution
       if (difference != null) newTerms.add(difference.inverse);
 
       incompatibility = Incompatibility(
@@ -414,30 +432,57 @@ class VersionSolver {
     }
 
     if (version == null) {
-      // If the constraint excludes only a single version, it must have come
-      // from the inverse of a lockfile's dependency. In that case, we request
-      // any version instead so that the lister gives us more general
-      // incompatibilities. This makes error reporting much nicer.
+      // If there are no versions that satisfy [package.constraint], add an
+      // incompatibility that indicates that.
+      _addIncompatibility(
+        Incompatibility([
+          Term(package, true),
+        ], NoVersionsIncompatibilityCause()),
+      );
+
+      // If the constraint excludes only a single version, it may have come
+      // from the inverse of a lockfile's dependency. In that case, we also
+      // request any version so that the lister gives us more general
+      // incompatibilities (which [_propagate] will check first). This makes
+      // error reporting much nicer.
+      //
+      // For example, if `myapp` depends on `foo any` and `bar <2.0.0`, and the
+      // locked version `foo 1.0.0` is the only version of `foo` and depends on
+      // `bar >=2.0.0`, without generalizing `foo 1.0.0`'s dependency we would
+      // report:
+      //
+      //     Because foo 1.0.0 depends on bar >=2.0.0 and no versions of foo
+      //       match <1.0.0 or >1.0.0, every version of foo requires
+      //       bar >=2.0.0.
+      //     So, because myapp depends on both foo any and bar <2.0.0, version
+      //       solving failed.
+      //
+      // With the generalized incompatibility (`every version of foo depends on
+      // bar >=2.0.0`), we instead report:
+      //
+      //     Because myapp depends on foo any which depends on bar >=2.0.0,
+      //       bar >=2.0.0 is required.
+      //     So, because myapp depends on bar <2.0.0, version solving failed.
       if (_excludesSingleVersion(package.constraint)) {
         version = await _packageLister(
           package,
         ).bestVersion(VersionConstraint.any);
-      } else {
-        // If there are no versions that satisfy [package.constraint], add an
-        // incompatibility that indicates that.
-        _addIncompatibility(
-          Incompatibility([
-            Term(package, true),
-          ], NoVersionsIncompatibilityCause()),
-        );
-        return package.name;
+        if (version != null) {
+          for (var incompatibility in await _packageLister(
+            package,
+          ).incompatibilitiesFor(version)) {
+            _addIncompatibility(incompatibility);
+          }
+        }
       }
+
+      return package.name;
     }
 
     var conflict = false;
     for (var incompatibility in await _packageLister(
       package,
-    ).incompatibilitiesFor(version!)) {
+    ).incompatibilitiesFor(version)) {
       _addIncompatibility(incompatibility);
 
       // If an incompatibility is already satisfied, then selecting [version]

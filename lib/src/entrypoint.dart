@@ -312,13 +312,11 @@ See $workspacesDocUrl for more information.''',
   String get lockFilePath =>
       p.normalize(p.join(workspaceRoot.dir, 'pubspec.lock'));
 
-  /// The path to the directory containing dependency executable snapshots.
-  String get _snapshotPath => p.join(
-    isCachedGlobal
-        ? workspaceRoot.dir
-        : p.join(workspaceRoot.dir, '.dart_tool/pub'),
-    'bin',
-  );
+  /// The path to the directory containing global executable snapshots.
+  String get _snapshotPath {
+    assert(isCachedGlobal);
+    return p.join(workspaceRoot.dir, 'bin');
+  }
 
   Entrypoint._(
     this.workingDir,
@@ -574,11 +572,7 @@ See $workspacesDocUrl for more information.''',
   /// the report. Otherwise, only dependencies that were changed are shown. If
   /// [dryRun] is `true`, no physical changes are made.
   ///
-  /// If [precompile] is `true` (the default), this snapshots dependencies'
-  /// executables.
-  ///
-  /// if [summaryOnly] is `true` only success or failure will be
-  /// shown --- in case of failure, a reproduction command is shown.
+  /// [reportMode] specifies the level of reporting output on success.
   ///
   /// Updates [lockFile] and [packageGraph] accordingly.
   ///
@@ -590,12 +584,13 @@ See $workspacesDocUrl for more information.''',
     Iterable<String> unlock = const [],
     Iterable<ConstraintAndCause>? additionalConstraints,
     bool dryRun = false,
-    bool precompile = false,
-    bool summaryOnly = false,
+    SolveReportMode reportMode = SolveReportMode.full,
     bool enforceLockfile = false,
   }) async {
     workspaceRoot; // This will throw early if pubspec.yaml could not be found.
-    summaryOnly = summaryOnly || _summaryOnlyEnvironment;
+    if (_summaryOnlyEnvironment && reportMode == SolveReportMode.full) {
+      reportMode = SolveReportMode.summaryOnly;
+    }
     final suffix =
         workspaceRoot.dir == '.'
             ? ''
@@ -624,7 +619,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
           unlock: unlock,
           additionalConstraints: additionalConstraints,
         );
-      });
+      }, transient: reportMode != SolveReportMode.full);
     } on SolveFailure catch (e) {
       throw SolveFailure(
         e.incompatibility,
@@ -640,7 +635,10 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
 
     // We have to download files also with --dry-run to ensure we know the
     // archive hashes for downloaded files.
-    final newLockFile = await result.downloadCachedPackages(cache);
+    final newLockFile = await result.downloadCachedPackages(
+      cache,
+      transient: reportMode != SolveReportMode.full,
+    );
     final report = SolveReport(
       type,
       workspaceRoot.presentationDir,
@@ -652,7 +650,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       cache,
       dryRun: dryRun,
       enforceLockfile: enforceLockfile,
-      quiet: summaryOnly,
+      reportMode: reportMode,
     );
 
     await report.show(summary: true);
@@ -683,29 +681,14 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       _packageGraph = Future.value(packageGraph);
 
       await writePackageConfigFiles();
-
-      try {
-        if (precompile) {
-          await precompileExecutables();
-        } else {
-          await _deleteExecutableSnapshots();
-        }
-      } catch (error, stackTrace) {
-        // Just log exceptions here. Since the method is just about acquiring
-        // dependencies, it shouldn't fail unless that fails.
-        log.exception(error, stackTrace);
-      }
     }
   }
 
   /// All executables that should be snapshotted from this entrypoint.
   ///
-  /// This is all executables in direct dependencies.
-  /// that don't transitively depend on `this` or on a mutable dependency.
-  ///
-  /// Except globally activated packages they should precompile executables from
-  /// the package itself if they are immutable.
+  /// Only globally activated cached packages precompile executables.
   Future<List<Executable>> get _builtExecutables async {
+    assert(isCachedGlobal);
     final graph = await packageGraph;
     final r =
         workspaceRoot.immediateDependencies.keys.expand((packageName) {
@@ -719,18 +702,16 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
   /// Precompiles all [_builtExecutables].
   Future<void> precompileExecutables() async {
+    assert(isCachedGlobal);
     final executables = await _builtExecutables;
 
     if (executables.isEmpty) return;
 
     await log.progress('Building package executables', () async {
-      if (isCachedGlobal) {
-        /// Global snapshots might linger in the cache if we don't remove old
-        /// snapshots when it is re-activated.
-        cleanDir(_snapshotPath);
-      } else {
-        ensureDir(_snapshotPath);
-      }
+      /// Global snapshots might linger in the cache if we don't remove old
+      /// snapshots when it is re-activated.
+      cleanDir(_snapshotPath);
+
       // Don't do more than `platform.numberOfProcessors - 1` compilations
       // concurrently. Though at least one.
       final pool = Pool(max(platform.numberOfProcessors - 1, 1));
@@ -745,42 +726,23 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   }
 
   /// Precompiles [executable] to a snapshot.
-  ///
-  /// The [additionalSources], if provided, instruct the compiler to include
-  /// additional source files into compilation even if they are not referenced
-  /// from the main library.
-  ///
-  /// The [nativeAssets], if provided, instruct the compiler include a native
-  /// assets map.
-  Future<void> precompileExecutable(
-    Executable executable, {
-    List<String> additionalSources = const [],
-    String? nativeAssets,
-  }) async {
+  Future<void> precompileExecutable(Executable executable) async {
+    assert(isCachedGlobal);
     await log.progress('Building package executable', () async {
-      ensureDir(p.dirname(pathOfSnapshot(executable)));
-      return await _precompileExecutable(
-        executable,
-        additionalSources: additionalSources,
-        nativeAssets: nativeAssets,
-      );
-    });
+      ensureDir(p.dirname(pathOfGlobalSnapshot(executable)));
+      return await _precompileExecutable(executable);
+    }, transient: true);
   }
 
-  Future<void> _precompileExecutable(
-    Executable executable, {
-    List<String> additionalSources = const [],
-    String? nativeAssets,
-  }) async {
+  Future<void> _precompileExecutable(Executable executable) async {
+    assert(isCachedGlobal);
     final package = executable.package;
 
     await dart.precompile(
       executablePath: executable.resolve(packageConfig, packageConfigPath),
-      outputPath: pathOfSnapshot(executable),
+      outputPath: pathOfGlobalSnapshot(executable),
       packageConfigPath: packageConfigPath,
       name: '$package:${p.basenameWithoutExtension(executable.relativePath)}',
-      additionalSources: additionalSources,
-      nativeAssets: nativeAssets,
     );
     cache.maintainCache();
   }
@@ -790,27 +752,18 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   ///
   /// We use the sdk version to make sure we don't run snapshots from a
   /// different sdk.
-  String pathOfSnapshot(Executable executable) {
-    return isCachedGlobal
-        ? executable.pathOfGlobalSnapshot(workspaceRoot.dir)
-        : executable.pathOfSnapshot(workspaceRoot.dir);
+  String pathOfGlobalSnapshot(Executable executable) {
+    assert(isCachedGlobal);
+    return executable.pathOfGlobalSnapshot(workspaceRoot.dir);
   }
 
-  /// Deletes cached snapshots that are from a different sdk.
-  Future<void> _deleteExecutableSnapshots() async {
-    if (!dirExists(_snapshotPath)) return;
-    // Clean out any outdated snapshots.
-    for (var entry in listDir(_snapshotPath)) {
-      if (!fileExists(entry)) {
-        // Not a file
-        continue;
-      }
-
-      if (!entry.endsWith('${sdk.version}.snapshot')) {
-        // Made with a different sdk version. Clean it up.
-        deleteEntry(entry);
-      }
-    }
+  /// Returns the nearest enclosing directory of [dir] that contains a
+  /// `pubspec.yaml`, or [dir] if none is found.
+  static String _rootPackageDir(String dir) {
+    return parentDirs(dir).firstWhereOrNull(
+          (parent) => tryStatFile(p.join(parent, 'pubspec.yaml')) != null,
+        ) ??
+        dir;
   }
 
   /// The [PackageConfig] object representing `.dart_tool/package_config.json`
@@ -859,11 +812,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     String relativeIfNeeded(String path) =>
         wasRelative ? p.relative(path) : path;
 
-    late final rootPackageDir =
-        parentDirs(dir).firstWhereOrNull(
-          (parent) => tryStatFile(p.join(parent, 'pubspec.yaml')) != null,
-        ) ??
-        dir;
+    late final rootPackageDir = _rootPackageDir(dir);
     late final root = Package.load(
       rootPackageDir,
       loadPubspec: Pubspec.loadRootWithSources(cache.sources),
@@ -917,14 +866,20 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         }
       }
 
-      if (!root.immediateDependencies.values.every(isDependencyUpToDate)) {
-        final pubspecPath = p.normalize(p.join(dir, 'pubspec.yaml'));
+      for (final workspacePackage in workspaceRoot.transitiveWorkspace) {
+        if (!workspacePackage.immediateDependencies.values.every(
+          isDependencyUpToDate,
+        )) {
+          final pubspecPath = p.normalize(
+            p.join(workspacePackage.dir, 'pubspec.yaml'),
+          );
 
-        log.fine(
-          'The $pubspecPath file has changed since the $lockFilePath file '
-          'was generated.',
-        );
-        return false;
+          log.fine(
+            'The $pubspecPath file has changed since the $lockFilePath file '
+            'was generated.',
+          );
+          return false;
+        }
       }
 
       // Check that uncached dependencies' pubspecs are also still satisfied,
@@ -940,7 +895,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
               .values
               .every(
                 (dep) =>
-                    root.allOverridesInWorkspace.containsKey(dep.name) ||
+                    workspaceRoot.allOverridesInWorkspace.containsKey(
+                      dep.name,
+                    ) ||
                     isDependencyUpToDate(dep),
               )) {
             continue;
@@ -993,6 +950,14 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
             });
         if (hasExtraMappings) {
           return false;
+        }
+
+        // Check that all packages in the workspace are reflected in the
+        // [packagePathsMapping].
+        for (final workspacePackage in workspaceRoot.transitiveWorkspace) {
+          if (!packagePathsMapping.containsKey(workspacePackage.name)) {
+            return false;
+          }
         }
 
         // Check that all packages in the [lockFile] are reflected in the
@@ -1065,7 +1030,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       // Check if language version specified in the `package_config.json` is
       // correct. This is important for path dependencies as these can mutate.
       for (final pkg in packageConfig.packages) {
-        if (pkg.name == root.name) continue;
         final workspacePkg = workspaceRoot.transitiveWorkspace.firstWhereOrNull(
           (p) => p.name == pkg.name,
         );
@@ -1387,8 +1351,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// Does a fast-pass check to see if the resolution is up-to-date. If not, run
   /// a resolution with `pub get` semantics.
   ///
-  /// If [summaryOnly] is `true` (the default) only a short summary is shown of
-  /// the solve.
+  /// [reportMode] specifies the level of reporting output on success. Defaults
+  /// to [SolveReportMode.none] (no output).
   ///
   /// If [onlyOutputWhenTerminal] is `true` (the default) there will be no
   /// output if no terminal is attached.
@@ -1398,7 +1362,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   static Future<({PackageConfig packageConfig, String rootDir})> ensureUpToDate(
     String dir, {
     required SystemCache cache,
-    bool summaryOnly = true,
+    SolveReportMode reportMode = SolveReportMode.none,
     bool onlyOutputWhenTerminal = true,
   }) async {
     late final wasRelative = p.isRelative(dir);
@@ -1412,8 +1376,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       log.fine('Package Config up to date.');
       return (packageConfig: packageConfig, rootDir: rootDir);
     }
+    final rootPackageDir = _rootPackageDir(dir);
     final entrypoint = Entrypoint(
-      dir,
+      rootPackageDir,
       cache,
       // [ensureUpToDate] is also used for entries in 'global_packages/'
       checkInCache: false,
@@ -1422,13 +1387,13 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       await log.errorsOnlyUnlessTerminal(() async {
         await entrypoint.acquireDependencies(
           SolveType.get,
-          summaryOnly: summaryOnly,
+          reportMode: reportMode,
         );
       });
     } else {
       await entrypoint.acquireDependencies(
         SolveType.get,
-        summaryOnly: summaryOnly,
+        reportMode: reportMode,
       );
     }
     return (

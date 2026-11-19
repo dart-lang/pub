@@ -27,7 +27,7 @@ void main() {
       d.appPubspec(dependencies: {'foo': null}),
     ]).create();
 
-    await pubGet(args: ['--precompile']);
+    await pubGet();
 
     var pub = await pubRun(args: ['foo:bar']);
     expect(pub.stdout, emitsThrough('foobar'));

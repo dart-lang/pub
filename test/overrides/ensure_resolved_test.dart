@@ -15,7 +15,7 @@ import 'package:test/test.dart';
 import 'bytesink.dart';
 
 void main() {
-  test('ensurePubspecResolved in memory', () async {
+  test('ensurePubspecResolved in memory with SolveReportMode.full', () async {
     final fs = MemoryFileSystem();
 
     fs.directory('/workspace').createSync();
@@ -36,7 +36,7 @@ dependencies:
 
     await ensurePubspecResolved(
       '/workspace',
-      summaryOnly: false,
+      reportMode: SolveReportMode.full,
       onlyOutputWhenTerminal: false,
 
       fileSystem: fs,
@@ -54,4 +54,91 @@ dependencies:
 
     expect(utf8.decode(bs.bytes), contains('Changed 1 dependency'));
   });
+
+  test(
+    'ensurePubspecResolved in memory with default reportMode (none)',
+    () async {
+      final fs = MemoryFileSystem();
+
+      fs.directory('/workspace').createSync();
+      fs.currentDirectory = '/workspace';
+      fs.directory('/sdk/bin').createSync(recursive: true);
+
+      final bs = ByteSink();
+
+      final pubspec = fs.file('/workspace/pubspec.yaml');
+      await pubspec.writeAsString('''
+name: my_app
+version: 1.0.0
+environment:
+  sdk: ^3.0.0
+dependencies:
+  retry:
+''');
+
+      await ensurePubspecResolved(
+        '/workspace',
+        onlyOutputWhenTerminal: false,
+
+        fileSystem: fs,
+        stdout: bs,
+        stderr: bs,
+        stdin: const Stream.empty(),
+        platformVersion: '3.11.0',
+        environment: {'PUB_CACHE': '/tmp/pub_cache', 'DART_ROOT': '/sdk'},
+      );
+
+      expect(
+        fs.file('/workspace/.dart_tool/package_config.json').existsSync(),
+        isTrue,
+      );
+
+      expect(utf8.decode(bs.bytes), isEmpty);
+    },
+  );
+
+  test(
+    'ensurePubspecResolved in memory with SolveReportMode.summaryOnly',
+    () async {
+      final fs = MemoryFileSystem();
+
+      fs.directory('/workspace').createSync();
+      fs.currentDirectory = '/workspace';
+      fs.directory('/sdk/bin').createSync(recursive: true);
+
+      final bs = ByteSink();
+
+      final pubspec = fs.file('/workspace/pubspec.yaml');
+      await pubspec.writeAsString('''
+name: my_app
+version: 1.0.0
+environment:
+  sdk: ^3.0.0
+dependencies:
+  retry:
+''');
+
+      await ensurePubspecResolved(
+        '/workspace',
+        reportMode: SolveReportMode.summaryOnly,
+        onlyOutputWhenTerminal: false,
+
+        fileSystem: fs,
+        stdout: bs,
+        stderr: bs,
+        stdin: const Stream.empty(),
+        platformVersion: '3.11.0',
+        environment: {'PUB_CACHE': '/tmp/pub_cache', 'DART_ROOT': '/sdk'},
+      );
+
+      expect(
+        fs.file('/workspace/.dart_tool/package_config.json').existsSync(),
+        isTrue,
+      );
+
+      final output = utf8.decode(bs.bytes);
+      expect(output, contains('Got dependencies'));
+      expect(output, isNot(contains('+ retry')));
+    },
+  );
 }

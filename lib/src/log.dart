@@ -61,6 +61,12 @@ final _bold = getAnsi('\u001b[1m');
 final _link = getAnsi('\u001b]8;;');
 final _esc = getAnsi('\u001b\\');
 
+/// An ANSI escape code to erase the entire current line.
+final eraseLine = getAnsi('\u001b[2K');
+
+/// An ANSI escape code to erase from the cursor to the end of the line.
+final eraseToLineEnd = getAnsi('\u001b[0K');
+
 /// An enum type for defining the different logging levels a given message can
 /// be associated with.
 ///
@@ -443,32 +449,51 @@ Future<T> errorsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
 /// Prints [message] then displays an updated elapsed time until the future
 /// returned by [callback] completes.
 ///
+/// If [transient] is true, the progress message is erased from the terminal
+/// once [callback] completes, and by default it is only shown after the shared
+/// grace period (e.g. 500ms).
+///
+/// If [transient] is false (the default), the progress message remains in
+/// the terminal output when [callback] completes.
+///
 /// If anything else is logged during this (including another call to
 /// [progress]) that cancels the progress animation, although the total time
 /// will still be printed once it finishes. If [fine] is passed, the progress
 /// information will only be visible at [Level.fine].
-Future<T> progress<T>(String message, Future<T> Function() callback) {
-  _stopProgress();
-
-  final progress = Progress(message);
-  _animatedProgress = progress;
-  return callback().whenComplete(progress.stop);
-}
-
-/// Like [progress] but erases the message once done.
-Future<T> spinner<T>(
+Future<T> progress<T>(
   String message,
-  Future<T> Function() callback, {
+  FutureOr<T> Function() callback, {
+  bool transient = false,
+  Duration? delay,
   bool condition = true,
+  bool fine = false,
 }) {
   if (condition) {
     _stopProgress();
 
-    final progress = Progress(message);
+    final effectiveDelay =
+        delay ??
+        (transient ? currentProgressGracePeriod.remainingDelay : Duration.zero);
+
+    final progress = Progress(
+      message,
+      fine: fine,
+      delay: effectiveDelay,
+      transient: transient,
+    );
     _animatedProgress = progress;
-    return callback().whenComplete(progress.stopAndClear);
+    return Future.sync(callback).whenComplete(() {
+      if (identical(_animatedProgress, progress)) {
+        _animatedProgress = null;
+      }
+      if (transient) {
+        progress.stopAndClear();
+      } else {
+        progress.stop();
+      }
+    });
   }
-  return callback();
+  return Future.sync(callback);
 }
 
 /// Stops animating the running progress indicator, if currently running.
@@ -592,6 +617,7 @@ void _logToStream(IOSink sink, _Entry entry, {required bool showLabel}) {
 
 void _printToStream(StringSink sink, _Entry entry, {required bool showLabel}) {
   _stopProgress();
+  resetGracePeriod();
 
   var firstLine = true;
   for (var line in entry.lines) {
