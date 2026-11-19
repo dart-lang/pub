@@ -34,6 +34,7 @@ class TokenStore {
     if (path == null || !fileExists(path)) {
       return result;
     }
+    protectExistingFile(path);
 
     try {
       dynamic json;
@@ -106,8 +107,7 @@ class TokenStore {
     if (tokensFile == null) {
       throw AssertionError('Bad state');
     }
-    ensureDir(p.dirname(tokensFile));
-    writeTextFile(
+    writeProtectedTextFile(
       tokensFile,
       jsonEncode(<String, dynamic>{
         'version': 1,

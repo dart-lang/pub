@@ -102,10 +102,6 @@ class RunCommand extends PubCommand {
       args,
       enableAsserts:
           argResults.flag('enable-asserts') || argResults.flag('checked'),
-      recompile:
-          (executable) => log.errorsOnlyUnlessTerminal(
-            () => entrypoint.precompileExecutable(executable),
-          ),
       vmArgs: vmArgs,
       alwaysUseSubprocess: alwaysUseSubprocess,
     );

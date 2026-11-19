@@ -11,7 +11,6 @@ Usage: pub get
     --enforce-lockfile    Enforce pubspec.lock. Fail `pub get` if the current `pubspec.lock` does not exactly specify a valid resolution of `pubspec.yaml` or if any content hash of a hosted package
                           has changed.
                           Useful for CI or deploying to production.
-    --[no-]precompile     Build executables in immediate dependencies.
     --[no-]example        Also run in `example/` (if it exists).
                           (defaults to on)
 -C, --directory=<dir>     Run this in the directory <dir>.

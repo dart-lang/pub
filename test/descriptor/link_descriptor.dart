@@ -41,8 +41,8 @@ class LinkDescriptor extends d.Descriptor {
     try {
       final actualTarget = link.targetSync();
       expect(
-        actualTarget,
-        target,
+        p.normalize(actualTarget),
+        p.normalize(target),
         reason: 'Link doesn\'t point where expected.',
       );
     } on FileSystemException catch (e) {

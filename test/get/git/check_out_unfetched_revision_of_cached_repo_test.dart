@@ -18,12 +18,15 @@ void main() {
       'repository', () async {
     ensureGit();
 
+    final server = await servePackages();
+    server.serve('bar', '1.0.0');
+
     // In order to get a lockfile that refers to a newer revision than is in the
     // cache, we'll switch between two caches. First we ensure that the repo is
     // in the first cache.
     await d.git('foo.git', [
       d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0'),
+      d.libPubspec('foo', '1.0.0', deps: {'bar': '1.0.0'}),
     ]).create();
 
     await d
@@ -44,7 +47,7 @@ void main() {
     // Make the lockfile point to a new revision of the git repository.
     await d.git('foo.git', [
       d.libDir('foo', 'foo 2'),
-      d.libPubspec('foo', '1.0.0'),
+      d.libPubspec('foo', '1.0.0', deps: {'bar': '1.0.0'}),
     ]).commit();
 
     await pubUpgrade(output: contains('Changed 1 dependency!'));
@@ -55,7 +58,7 @@ void main() {
     renameInSandbox('$cachePath.old', cacheDir);
 
     // Get the updated version of the git dependency based on the lockfile.
-    await pubGet();
+    await pubGet(output: contains('Got dependencies!'));
 
     await d.dir(cachePath, [
       d.dir('git', [
@@ -66,5 +69,44 @@ void main() {
     ]).validate();
 
     expect(packageSpec('foo'), isNot(originalFooSpec));
+    expect(packageSpec('bar'), isNotNull);
+  });
+
+  test('unlocks a locked git revision that no longer exists in the remote '
+      'repository', () async {
+    ensureGit();
+
+    final server = await servePackages();
+    server.serve('bar', '1.0.0');
+
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0', deps: {'bar': '1.0.0'}),
+    ]).create();
+
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
+
+    await pubGet();
+    final originalFooSpec = packageSpec('foo');
+
+    // Recreate foo.git with a different commit history and clear the cache so
+    // the locked commit in pubspec.lock no longer exists anywhere.
+    deleteEntry(p.join(d.sandbox, 'foo.git'));
+    deleteEntry(p.join(d.sandbox, cachePath));
+
+    await d.git('foo.git', [
+      d.libDir('foo', 'foo 2'),
+      d.libPubspec('foo', '2.0.0', deps: {'bar': '1.0.0'}),
+    ]).create();
+
+    await pubGet(output: contains('Changed 1 dependency!'));
+    expect(packageSpec('foo'), isNot(originalFooSpec));
+    expect(packageSpec('bar'), isNotNull);
   });
 }

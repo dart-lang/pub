@@ -15,7 +15,6 @@ import 'exit_codes.dart' as exit_codes;
 import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
-import 'log.dart';
 import 'package_config.dart';
 import 'path.dart';
 import 'platform_info.dart';
@@ -40,8 +39,9 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
 ///
 /// If [enableAsserts] is true, the program is run with assertions enabled.
 ///
-/// If the executable is in an immutable package and we pass no [vmArgs], it
-/// runs from snapshot (and built if the snapshot doesn't already exist).
+/// If [recompile] is provided, the executable is in a cached global package,
+/// and we pass no [vmArgs], it runs from snapshot (and built if the snapshot
+/// doesn't already exist).
 ///
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(
@@ -49,7 +49,7 @@ Future<int> runExecutable(
   Executable executable,
   List<String> args, {
   bool enableAsserts = false,
-  required Future<void> Function(Executable) recompile,
+  Future<void> Function(Executable)? recompile,
   List<String> vmArgs = const [],
   required bool alwaysUseSubprocess,
 }) async {
@@ -72,15 +72,11 @@ Future<int> runExecutable(
     }
   }
 
-  final snapshotPath = entrypoint.pathOfSnapshot(executable);
-
-  // Don't compile snapshots for mutable packages, since their code may
-  // change later on.
-  //
-  // Also we don't snapshot if we have non-default arguments to the VM, as
-  // these would be inconsistent if another set of settings are given in a
-  // later invocation.
-  final useSnapshot = vmArgs.isEmpty;
+  // Only snapshot cached global packages, and don't snapshot if we have
+  // non-default arguments to the VM, as these would be inconsistent if another
+  // set of settings are given in a later invocation.
+  final useSnapshot =
+      recompile != null && entrypoint.isCachedGlobal && vmArgs.isEmpty;
 
   var executablePath = executable.resolve(
     entrypoint.packageConfig,
@@ -97,8 +93,8 @@ Future<int> runExecutable(
   }
 
   if (useSnapshot) {
-    if (!fileExists(snapshotPath) ||
-        (await entrypoint.packageGraph).isPackageMutable(package)) {
+    final snapshotPath = entrypoint.pathOfGlobalSnapshot(executable);
+    if (!fileExists(snapshotPath)) {
       await recompile(executable);
     }
     executablePath = snapshotPath;
@@ -259,31 +255,15 @@ final class DartExecutableWithPackageConfig {
 ///
 /// If that doesn't resolve as an existing file, throw an exception.
 ///
-/// ## Snapshotting
-///
-/// The returned executable will be a snapshot if [allowSnapshot] is true and
-/// the package is an immutable (non-path) dependency of [root].
-///
-/// If returning the path to a snapshot that doesn't already exist, the script
-/// Will be built. And a message will be printed only if a terminal is attached
-/// to stdout.
-///
 /// Throws an [CommandResolutionFailedException] if the command is not found or
-/// if the entrypoint is not up to date (requires `pub get`) and a `pub get`.
-///
-/// The [additionalSources], if provided, instructs the compiler to include
-/// additional source files into compilation even if they are not referenced
-/// from the main library that [descriptor] resolves to.
-///
-/// The [nativeAssets], if provided, instructs the compiler to include the
-/// native-assets mapping for @Native external functions.
+/// if the entrypoint is not up to date (requires `pub get`) and a `pub get`
+/// fails.
 Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   String descriptor, {
-  bool allowSnapshot = true,
+  @Deprecated('Snapshotting is now handled by dartdev.')
+  bool allowSnapshot = false,
   String? root,
   String? pubCacheDir,
-  List<String> additionalSources = const [],
-  String? nativeAssets,
 }) async {
   final rootOrCurrent = root ?? p.current;
   var asPath = descriptor;
@@ -397,47 +377,10 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
       CommandResolutionIssue.noBinaryFound,
     );
   }
-  if (!allowSnapshot) {
-    return DartExecutableWithPackageConfig(
-      executable: p.normalize(path),
-      packageConfig: p.relative(packageConfigPath, from: rootOrCurrent),
-    );
-  } else {
-    // TODO(sigurdm): attempt to decide on package mutability without looking at
-    // PackageGraph, as it requires loading and reading all the pubspec.yaml
-    // files.
-    final entrypoint = Entrypoint(
-      workspaceRootDir,
-      SystemCache(rootDir: pubCacheDir),
-    );
-
-    final snapshotPath = entrypoint.pathOfSnapshot(executable);
-    final snapshotStat = tryStatFile(snapshotPath);
-    final packageConfigStat = tryStatFile(packageConfigPath);
-    if (snapshotStat == null ||
-        packageConfigStat == null ||
-        packageConfigStat.modified.isAfter(snapshotStat.modified) ||
-        (await entrypoint.packageGraph).isPackageMutable(package)) {
-      try {
-        await errorsOnlyUnlessTerminal(
-          () => entrypoint.precompileExecutable(
-            executable,
-            additionalSources: additionalSources,
-            nativeAssets: nativeAssets,
-          ),
-        );
-      } on ApplicationException catch (e) {
-        throw CommandResolutionFailedException._(
-          e.toString(),
-          CommandResolutionIssue.compilationFailed,
-        );
-      }
-    }
-    return DartExecutableWithPackageConfig(
-      executable: p.normalize(p.relative(snapshotPath, from: rootOrCurrent)),
-      packageConfig: p.relative(packageConfigPath, from: rootOrCurrent),
-    );
-  }
+  return DartExecutableWithPackageConfig(
+    executable: p.normalize(path),
+    packageConfig: p.relative(packageConfigPath, from: rootOrCurrent),
+  );
 }
 
 bool _looksLikeFile(String candidate) {
@@ -463,9 +406,6 @@ enum CommandResolutionIssue {
 
   /// Failed retrieving dependencies (pub get).
   pubGetFailed,
-
-  /// Pre-compilation of the binary failed.
-  compilationFailed,
 
   /// The command string did not have a valid form (eg. more than one ':').
   parseError,
@@ -527,24 +467,6 @@ class Executable {
     final versionSuffix = sdk.version;
     return p.join(
       p.join(rootDir, 'bin'),
-      '${p.basename(relativePath)}-$versionSuffix.snapshot',
-    );
-  }
-
-  /// The location of the snapshot of the dart program at [relativePath] in
-  /// [package] will be stored here.
-  ///
-  /// We use the sdk version to make sure we don't run snapshots from a
-  /// different sdk.
-  String pathOfSnapshot(String rootDir) {
-    assert(p.isRelative(relativePath));
-    final versionSuffix = sdk.version;
-
-    return p.join(
-      rootDir,
-      '.dart_tool/pub',
-      'bin',
-      package,
       '${p.basename(relativePath)}-$versionSuffix.snapshot',
     );
   }

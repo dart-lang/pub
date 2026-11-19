@@ -26,6 +26,7 @@ import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:tar/tar.dart';
 
+import 'chmod_stub.dart' if (dart.library.ffi) 'chmod_ffi.dart' as ffi_chmod;
 import 'error_group.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
@@ -34,6 +35,7 @@ import 'http.dart';
 import 'log.dart' as log;
 import 'path.dart';
 import 'platform_info.dart';
+import 'progress.dart';
 import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;
@@ -73,6 +75,15 @@ final _descriptorPool = Pool(32);
 /// The assumed default file mode on Linux and macOS
 const _defaultMode = 420; // 644₈
 
+/// Permission mode for owner-only files (read & write).
+const _ownerOnlyFileMode = 384; // 600₈
+
+/// Permission mode for owner-only directories (read, write & search).
+const _ownerOnlyDirMode = 448; // 700₈
+
+/// Mask for group and other permission bits.
+const _groupAndOtherMask = 63; // 077₈
+
 /// Mask for executable bits in file modes.
 const _executableMask = 0x49; // 001 001 001
 
@@ -85,6 +96,19 @@ bool entryExists(String path) =>
 /// This returns `true` for any symlink, regardless of what it points at or
 /// whether it's broken.
 bool linkExists(String link) => Link(link).existsSync();
+
+/// Returns the target of the symlink at [link].
+String readLink(String link) => Link(link).targetSync();
+
+/// Returns all symlink paths in [dir] recursively.
+List<String> listSymlinks(String dir) {
+  if (!dirExists(dir)) return const [];
+  return Directory(dir)
+      .listSync(recursive: true, followLinks: false)
+      .whereType<Link>()
+      .map((link) => link.path)
+      .toList();
+}
 
 /// Returns whether [file] exists on the file system.
 ///
@@ -264,6 +288,46 @@ void writeTextFile(
   File(file).writeAsStringSync(contents, encoding: encoding);
 }
 
+/// Creates [file] and writes [contents] to it, ensuring that on POSIX systems
+/// the containing directory has owner-only permissions (`0700`) and the file
+/// has owner-only read/write permissions (`0600`).
+///
+/// The file contents will not be logged.
+void writeProtectedTextFile(
+  String file,
+  String contents, {
+  Encoding encoding = utf8,
+}) {
+  final dir = p.dirname(file);
+  ensureDir(dir);
+  chmod(_ownerOnlyDirMode, dir);
+  writeTextFile(file, contents, dontLogContents: true, encoding: encoding);
+  chmod(_ownerOnlyFileMode, file);
+}
+
+/// Checks if [path] (or its parent directory) is accessible by group or others
+/// on POSIX systems, and tightens the permissions to `0600` for the file and
+/// `0700` for the directory if needed.
+void protectExistingFile(String path) {
+  if (platform.isLinux || platform.isMacOS) {
+    try {
+      final stat = tryStatFile(path);
+      if (stat != null && (stat.mode & _groupAndOtherMask) != 0) {
+        chmod(_ownerOnlyFileMode, path);
+      }
+      final dir = p.dirname(path);
+      if (dirExists(dir)) {
+        final dirStat = Directory(dir).statSync();
+        if ((dirStat.mode & _groupAndOtherMask) != 0) {
+          chmod(_ownerOnlyDirMode, dir);
+        }
+      }
+    } on Exception catch (e) {
+      log.fine('Failed to protect existing file "$path": $e');
+    }
+  }
+}
+
 /// Reads the file at [path] and writes [newContent] to it, if it is different
 /// from the existing content.
 ///
@@ -340,8 +404,21 @@ Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
   });
 }
 
-void _chmod(int mode, String file) {
-  runProcessSync('chmod', [mode.toRadixString(8), file]);
+/// Changes the permissions of [path] to [mode] using `chmod`.
+///
+/// On Windows, or when using a non-local [f.FileSystem] override, this is a
+/// no-op. Any failure is logged at fine level.
+void chmod(int mode, String path) {
+  if ((platform.isLinux || platform.isMacOS) &&
+      currentFileSystem is f.LocalFileSystem) {
+    final result = ffi_chmod.chmod(mode, path);
+    if (result != 0) {
+      log.fine(
+        'chmod ${mode.toRadixString(8)} "$path" failed with '
+        'return code $result.',
+      );
+    }
+  }
 }
 
 /// Deletes [file] if it's a symlink.
@@ -831,6 +908,12 @@ Future flushThenExit(int status) {
 /// The spawned process will inherit its parent's environment variables. If
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
+///
+/// If [executable] is a bare name, it is resolved against `PATH` by the
+/// operating system (on Windows only `.exe` files are considered). The
+/// executable is never started through a shell unless [runInShell] is `true`.
+/// Never combine [runInShell] with untrusted [args]: `cmd.exe` interprets
+/// metacharacters such as `&` in arguments as command separators.
 Future<StringProcessResult> runProcess(
   String executable,
   List<String> args, {
@@ -845,11 +928,7 @@ Future<StringProcessResult> runProcess(
   return _descriptorPool.withResource(() async {
     ProcessResult result;
     try {
-      (executable, args) = _sanitizeExecutablePath(
-        executable,
-        args,
-        workingDir: workingDir,
-      );
+      log.process(executable, args, workingDir ?? '.');
       result = await Process.run(
         executable,
         args,
@@ -893,11 +972,7 @@ Future<PubProcess> startProcess(
   return _descriptorPool.request().then((resource) async {
     Process ioProcess;
     try {
-      (executable, args) = _sanitizeExecutablePath(
-        executable,
-        args,
-        workingDir: workingDir,
-      );
+      log.process(executable, args, workingDir ?? '.');
       ioProcess = await Process.start(
         executable,
         args,
@@ -930,11 +1005,7 @@ StringProcessResult runProcessSync(
   ArgumentError.checkNotNull(executable, 'executable');
   ProcessResult result;
   try {
-    (executable, args) = _sanitizeExecutablePath(
-      executable,
-      args,
-      workingDir: workingDir,
-    );
+    log.process(executable, args, workingDir ?? '.');
     result = Process.runSync(
       executable,
       args,
@@ -967,11 +1038,7 @@ BytesProcessResult runProcessSyncBytes(
 }) {
   ProcessResult result;
   try {
-    (executable, args) = _sanitizeExecutablePath(
-      executable,
-      args,
-      workingDir: workingDir,
-    );
+    log.process(executable, args, workingDir ?? '.');
     result = Process.runSync(
       executable,
       args,
@@ -1095,26 +1162,6 @@ class PubProcess {
       _process.kill(signal);
 }
 
-/// Sanitizes the executable path on windows for [Process.start], [Process.run]
-/// and [Process.runSync].
-(String, List<String>) _sanitizeExecutablePath(
-  String executable,
-  List<String> args, {
-  String? workingDir,
-}) {
-  // TODO(rnystrom): Should dart:io just handle this?
-  // Spawning a process on Windows will not look for the executable in the
-  // system path. So, if executable looks like it needs that (i.e. it doesn't
-  // have any path separators in it), then spawn it through a shell.
-  if (platform.isWindows && !executable.contains('\\')) {
-    args = ['/c', executable, ...args];
-    executable = 'cmd';
-  }
-
-  log.process(executable, args, workingDir ?? '.');
-  return (executable, args);
-}
-
 /// Updates [path]'s modification time.
 void touch(String path) {
   log.fine('Touching `$path`');
@@ -1236,7 +1283,7 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
           final mode = _defaultMode | (entry.header.mode & _executableMask);
 
           if (mode != _defaultMode) {
-            _chmod(mode, filePath);
+            chmod(mode, filePath);
           }
         }
         break;
@@ -1279,10 +1326,12 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracted .tar.gz to $destination.');
 }
 
-/// Create a .tar.gz archive from a list of entries.
+/// Creates a .tar.gz archive of [contents] relative to [baseDir].
 ///
-/// Each entry is the path to a directory or file. The root of the archive is
-/// considered to be [baseDir], which defaults to the current working directory.
+/// Archives are bit-for-bit deterministic and reproducible: timestamps are
+/// normalized to Unix epoch 0 (1970-01-01 00:00:00 UTC), entries are sorted
+/// lexicographically by normalized POSIX path, and file permissions and GZIP
+/// headers are normalized.
 ///
 /// Returns a [ByteStream] that emits the contents of the archive.
 ByteStream createTarGz(List<String> contents, {required String baseDir}) {
@@ -1291,30 +1340,37 @@ ByteStream createTarGz(List<String> contents, {required String baseDir}) {
   contents.forEach(buffer.writeln);
   log.fine(buffer.toString());
 
-  ArgumentError.checkNotNull(baseDir, 'baseDir');
   baseDir = p.normalize(p.absolute(baseDir));
 
+  final epoch = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+
+  final normalizedEntries = <(String fullPath, String archivePath)>[];
+  for (final entry in contents) {
+    final normalized = p.normalize(p.absolute(entry));
+    if (p.equals(baseDir, normalized)) {
+      continue;
+    }
+    if (!p.isWithin(baseDir, normalized)) {
+      throw ArgumentError('Entry $entry is not inside $baseDir.');
+    }
+    final relative = p.relative(normalized, from: baseDir);
+    final archivePath = p.url.joinAll(p.split(relative));
+    normalizedEntries.add((normalized, archivePath));
+  }
+
+  // Sort entries deterministically by normalized POSIX path in the archive.
+  normalizedEntries.sort((a, b) => a.$2.compareTo(b.$2));
+
   final tarContents = Stream.fromIterable(
-    contents.map((entry) {
-      entry = p.normalize(p.absolute(entry));
-      if (p.equals(baseDir, entry)) {
-        return null;
-      }
-      if (!p.isWithin(baseDir, entry)) {
-        throw ArgumentError('Entry $entry is not inside $baseDir.');
-      }
-
-      final relative = p.relative(entry, from: baseDir);
+    normalizedEntries.map((entry) {
+      final (fullPath, name) = entry;
       // On Windows, we can't open some files without normalizing them
-      final file = File(p.normalize(entry));
+      final file = File(fullPath);
       final stat = file.statSync();
-
-      // Ensure paths in tar files use forward slashes
-      final name = p.url.joinAll(p.split(relative));
 
       if (stat.type == FileSystemEntityType.link) {
         log.message(
-          '$entry is a link locally, but will be uploaded as a '
+          '$fullPath is a link locally, but will be uploaded as a '
           'duplicate file.',
         );
       }
@@ -1324,6 +1380,7 @@ ByteStream createTarGz(List<String> contents, {required String baseDir}) {
             name: name,
             mode: _defaultMode | _executableMask,
             typeFlag: TypeFlag.dir,
+            modified: epoch,
             userName: 'pub',
             groupName: 'pub',
           ),
@@ -1337,20 +1394,57 @@ ByteStream createTarGz(List<String> contents, {required String baseDir}) {
             // file mode
             mode: _defaultMode | (stat.mode & _executableMask),
             size: stat.size,
-            modified: stat.changed,
+            modified: epoch,
             userName: 'pub',
             groupName: 'pub',
           ),
           file.openRead(),
         );
       }
-    }).nonNulls,
+    }),
   );
 
-  return ByteStream(
-    tarContents
-        .transform(tarWriterWith(format: OutputFormat.gnuLongName))
-        .transform(gzip.encoder),
+  final stream = tarContents
+      .transform(tarWriterWith(format: OutputFormat.gnuLongName))
+      .transform(gzip.encoder)
+      .transform(normalizeGzipHeader());
+
+  return ByteStream(stream);
+}
+
+/// Normalizes the GZIP header (RFC 1952) so that `.tar.gz` archives are
+/// bit-for-bit identical across operating systems (normalizing MTIME to 0 and
+/// OS byte to 255).
+StreamTransformer<List<int>, List<int>> normalizeGzipHeader() {
+  var isHeaderHandled = false;
+  final headerBuffer = <int>[];
+  return StreamTransformer.fromHandlers(
+    handleData: (data, sink) {
+      if (isHeaderHandled) {
+        sink.add(data);
+        return;
+      }
+      headerBuffer.addAll(data);
+      if (headerBuffer.length >= 10) {
+        isHeaderHandled = true;
+        if (headerBuffer[0] == 0x1f && headerBuffer[1] == 0x8b) {
+          // RFC 1952: byte 4..7 is MTIME, byte 8 is XFL, byte 9 is OS
+          headerBuffer[4] = 0;
+          headerBuffer[5] = 0;
+          headerBuffer[6] = 0;
+          headerBuffer[7] = 0;
+          headerBuffer[8] = 0;
+          headerBuffer[9] = 255; // 255 = unknown OS (gzip -n)
+        }
+        sink.add(headerBuffer);
+      }
+    },
+    handleDone: (sink) {
+      if (!isHeaderHandled && headerBuffer.isNotEmpty) {
+        sink.add(headerBuffer);
+      }
+      sink.close();
+    },
   );
 }
 
@@ -1423,12 +1517,38 @@ R withOverrides<R>(
   f.FileSystem? fileSystem,
   Map<String, String>? environment,
   String? platformVersion,
+  ProgressGracePeriod? progressGracePeriod,
   Stream<List<int>>? stdin,
   StreamSink<List<int>>? stdout,
   StreamSink<List<int>>? stderr,
   http.Client? httpClient,
 }) {
-  // If there are no overrides we're done
+  // If there are no overrides at all we're done.
+  //
+  // This deliberately calls [fn] directly rather than falling through to the
+  // check below. Going via [runWithProgressGracePeriod] would add a frame to
+  // every stack trace produced under `pub`, which shows up in crash logs.
+  if (fileSystem == null &&
+      environment == null &&
+      platformVersion == null &&
+      progressGracePeriod == null &&
+      stdin == null &&
+      stdout == null &&
+      stderr == null &&
+      httpClient == null) {
+    return fn();
+  }
+
+  R runWithProgressGracePeriod() {
+    if (progressGracePeriod != null) {
+      return withProgressGracePeriod(
+        fn,
+        progressGracePeriod: progressGracePeriod,
+      );
+    }
+    return fn();
+  }
+
   if (fileSystem == null &&
       environment == null &&
       platformVersion == null &&
@@ -1436,7 +1556,7 @@ R withOverrides<R>(
       stdout == null &&
       stderr == null &&
       httpClient == null) {
-    return fn();
+    return runWithProgressGracePeriod();
   }
 
   fileSystem ??= const f.LocalFileSystem();
@@ -1454,7 +1574,10 @@ R withOverrides<R>(
       return withPlatform(
         () {
           return withHttpClient(() {
-            return withPathContext(fn, pathContext: pathContext);
+            return withPathContext(
+              runWithProgressGracePeriod,
+              pathContext: pathContext,
+            );
           }, client: client);
         },
         platform: PlatformInfo.override(

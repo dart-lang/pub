@@ -6,7 +6,7 @@ import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../lock_file.dart';
-import '../log.dart';
+import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
@@ -60,17 +60,22 @@ class SolveResult {
   /// If there is a mismatch between the previous content-hash from pubspec.lock
   /// and the new one a warning will be printed but the new one will be
   /// returned.
-  Future<LockFile> downloadCachedPackages(SystemCache cache) async {
-    final resolvedPackageIds = await progress('Downloading packages', () async {
-      return await Future.wait(
+  Future<LockFile> downloadCachedPackages(
+    SystemCache cache, {
+    bool transient = false,
+  }) async {
+    final resolvedPackageIds = await log.progress<List<PackageId>>(
+      'Downloading packages',
+      () => Future.wait(
         packages.map((id) async {
           if (id.source is CachedSource) {
             return (await cache.downloadPackage(id)).packageId;
           }
           return id;
         }),
-      );
-    });
+      ),
+      transient: transient,
+    );
     // Invariant: the content-hashes in PUB_CACHE matches those provided by the
     // server.
 

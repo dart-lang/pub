@@ -33,6 +33,19 @@ void main() {
       await expectValidationDeprecated(compiledDartdoc);
     });
 
+    test('has most but not all files from compiling modern dartdoc', () async {
+      await d.dir(appPath, [
+        d.dir('doc', [
+          d.dir('api', [
+            d.file('index.html', ''),
+            d.file('index.json', ''),
+            d.file('search.html', ''),
+          ]),
+        ]),
+      ]).create();
+      await expectValidationDeprecated(compiledDartdoc);
+    });
+
     test('contains compiled dartdoc in a hidden directory', () async {
       ensureGit();
 
@@ -63,6 +76,26 @@ void main() {
       ]).create();
       await expectValidationDeprecated(compiledDartdoc);
     });
+
+    test(
+      'contains modern compiled dartdoc in a gitignored directory',
+      () async {
+        ensureGit();
+
+        await d.git(appPath, [
+          d.dir('doc', [
+            d.dir('api', [
+              d.file('index.html', ''),
+              d.file('index.json', ''),
+              d.file('search.html', ''),
+              d.file('__404error.html', ''),
+            ]),
+          ]),
+          d.file('.gitignore', '/doc/api'),
+        ]).create();
+        await expectValidationDeprecated(compiledDartdoc);
+      },
+    );
   });
 
   group('should consider a package invalid if it', () {
@@ -74,6 +107,21 @@ void main() {
           d.file('styles.css', ''),
           d.file('dart-logo-small.png', ''),
           d.file('client-live-nav.js', ''),
+        ]),
+      ]).create();
+
+      await expectValidationDeprecated(compiledDartdoc, warnings: isNotEmpty);
+    });
+
+    test('contains modern compiled dartdoc', () async {
+      await d.dir(appPath, [
+        d.dir('doc', [
+          d.dir('api', [
+            d.file('index.html', ''),
+            d.file('index.json', ''),
+            d.file('search.html', ''),
+            d.file('__404error.html', ''),
+          ]),
         ]),
       ]).create();
 

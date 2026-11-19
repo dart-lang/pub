@@ -14,19 +14,26 @@ class CompiledDartdocValidator extends Validator {
   Future validate() {
     return Future.sync(() {
       for (var entry in files) {
-        if (p.basename(entry) != 'nav.json') continue;
+        if (p.basename(entry) != 'index.html') continue;
         final dir = p.dirname(entry);
 
         // Look for tell-tale Dartdoc output files all in the same directory.
-        final files = [
+        final modernDartdocFiles = [
           entry,
-          p.join(dir, 'index.html'),
+          p.join(dir, 'index.json'),
+          p.join(dir, 'search.html'),
+          p.join(dir, '__404error.html'),
+        ];
+        final legacyDartdocFiles = [
+          entry,
+          p.join(dir, 'nav.json'),
           p.join(dir, 'styles.css'),
           p.join(dir, 'dart-logo-small.png'),
           p.join(dir, 'client-live-nav.js'),
         ];
 
-        if (files.every(fileExists)) {
+        if (modernDartdocFiles.every(fileExists) ||
+            legacyDartdocFiles.every(fileExists)) {
           warnings.add(
             'Avoid putting generated documentation in '
             '${p.relative(dir)}.\n'

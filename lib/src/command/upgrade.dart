@@ -25,21 +25,29 @@ class UpgradeCommand extends PubCommand {
   @override
   String get name => 'upgrade';
   @override
-  String get description =>
-      "Upgrade the current package's dependencies to latest versions.\n"
-      '\n'
-      'Append `@<constraint>` to a dependency to require a version '
-      'constraint.\n'
-      '\n'
-      'Append `@latest` to a dependency to require the latest available '
-      'version.\n'
-      '\n'
-      'Append `@resolvable` to require the newest version resolvable with the '
-      'rest of\n'
-      'the dependencies.';
+  String get description => '''
+Upgrade the current package's dependencies to latest versions.
+
+To upgrade specific packages, pass one or more of them as arguments. You can
+optionally specify a target version or constraint after `@`:
+  * Upgrade to the latest compatible version:
+    `$topLevelProgram pub upgrade foo`
+  * Upgrade multiple packages:
+    `$topLevelProgram pub upgrade foo bar`
+    `$topLevelProgram pub upgrade foo 'bar@^2.0.0'`
+  * Upgrade within a version constraint (same syntax as pubspec.yaml):
+    `$topLevelProgram pub upgrade foo@^1.2.3`
+  * Upgrade to a specific version:
+    `$topLevelProgram pub upgrade foo@1.2.3`
+  * Upgrade within a version range (enclose in quotes if using `<`, `>`, or spaces):
+    `$topLevelProgram pub upgrade 'foo@>=1.2.0 <2.0.0'`
+  * Upgrade to the latest available version (even if breaking):
+    `$topLevelProgram pub upgrade foo@latest`
+  * Upgrade to the newest version resolvable with other dependencies:
+    `$topLevelProgram pub upgrade foo@resolvable`''';
   @override
   String get argumentsDescription =>
-      '[dependencies[@<constraint>|@latest|@resolvable]...]';
+      '[<package>[@<constraint>|@latest|@resolvable] ...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-upgrade';
 
@@ -62,6 +70,7 @@ class UpgradeCommand extends PubCommand {
     argParser.addFlag(
       'precompile',
       help: 'Precompile executables in immediate dependencies.',
+      hide: true,
     );
 
     argParser.addFlag(
@@ -111,14 +120,13 @@ class UpgradeCommand extends PubCommand {
     );
   }
 
-  /// Avoid showing spinning progress messages when not in a terminal.
-  bool get _shouldShowSpinner => terminalOutputForStdout;
+  /// Avoid showing spinning progress messages when not in an ANSI-capable
+  /// terminal.
+  bool get _shouldShowSpinner => terminalOutputForStdout && canUseAnsiCodes;
 
   bool get _dryRun => argResults.flag('dry-run');
 
   bool get _tighten => argResults.flag('tighten');
-
-  bool get _precompile => argResults.flag('precompile');
 
   late final Future<List<String>> _rootPackagesToUpgrade =
       _computePackagesToUpgrade(entrypoint);
@@ -180,6 +188,11 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         ),
       );
     }
+    if (argResults.wasParsed('precompile')) {
+      log.warning(
+        log.yellow('The --precompile flag is no longer used and does nothing.'),
+      );
+    }
     final hasUpgradeTargetConstraints = _upgradeTargets.any(
       (target) => target.kind != null,
     );
@@ -237,8 +250,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       unlock: await _packagesToUpgrade(e),
       additionalConstraints: await _upgradeTargetConstraints(e),
       dryRun: _dryRun,
-      precompile: _precompile,
-      summaryOnly: onlySummary,
+      reportMode:
+          onlySummary ? SolveReportMode.summaryOnly : SolveReportMode.full,
     );
 
     _showOfflineWarning();
@@ -422,16 +435,19 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     Entrypoint e, {
     Iterable<ConstraintAndCause>? additionalConstraints,
   }) async {
-    final solveResult = await log.spinner('Resolving dependencies', () async {
-      return await resolveVersions(
+    final solveResult = await log.progress(
+      'Resolving dependencies',
+      () => resolveVersions(
         SolveType.upgrade,
         cache,
         e.workspaceRoot.transformWorkspace(
           (package) => stripVersionBounds(package.pubspec),
         ),
         additionalConstraints: additionalConstraints,
-      );
-    }, condition: _shouldShowSpinner);
+      ),
+      condition: _shouldShowSpinner,
+      transient: true,
+    );
     return {for (final package in solveResult.packages) package.name: package};
   }
 
@@ -510,11 +526,11 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
           _UpgradeTargetKind.constraint,
           VersionConstraint.parse(suffix),
         );
-      } on FormatException catch (_) {
+      } on FormatException catch (e) {
         usageException(
-          'Unknown upgrade target `$argument`. Use `<package>`, '
-          '`<package>@<constraint>`, `<package>@latest`, or '
-          '`<package>@resolvable`.',
+          'Invalid version constraint "$suffix" for "$package": ${e.message}\n'
+          'Use standard pubspec.yaml constraint syntax (such as `^1.2.3`, '
+          '`1.2.3`, or `\'>=1.2.0 <2.0.0\'`).',
         );
       }
     }
@@ -643,7 +659,6 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         .acquireDependencies(
           solveType,
           dryRun: _dryRun,
-          precompile: !_dryRun && _precompile,
           unlock: await _rootPackagesToUpgrade,
           additionalConstraints: upgradeTargetConstraints,
         );

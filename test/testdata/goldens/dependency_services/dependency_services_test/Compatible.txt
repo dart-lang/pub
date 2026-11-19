@@ -48,7 +48,7 @@ $ echo '' | dependency_services list
         "description": {
           "name": "bar",
           "url": "http://localhost:$PORT",
-          "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
+          "sha256": "3e22c837d3ae531d16c43ca6cb91c8204b399fdc9e7f8a2769762468eb0502a7"
         }
       }
     },
@@ -62,7 +62,7 @@ $ echo '' | dependency_services list
         "description": {
           "name": "boo",
           "url": "http://localhost:$PORT",
-          "sha256": "84c17af86124252176a4dae6f94ebcaf6d6f406cb8dc180b664cf0c4811ce50b"
+          "sha256": "cd115184bc00550394d6fd1b22a53005765a6d8914f45cff9ddaf14124021841"
         }
       }
     },
@@ -76,7 +76,7 @@ $ echo '' | dependency_services list
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "b2b7fc405959806aa1f31ac7e68752534f66f66a11a280d9878ecb6cd835f01c"
+          "sha256": "b4927a70a1066fbe47e083072402948973bf75caf3fa415266a66e6872f6950a"
         }
       }
     }
@@ -98,7 +98,7 @@ $ echo '' | dependency_services report
         "description": {
           "name": "bar",
           "url": "http://localhost:$PORT",
-          "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
+          "sha256": "3e22c837d3ae531d16c43ca6cb91c8204b399fdc9e7f8a2769762468eb0502a7"
         }
       },
       "latest": "2.2.3",
@@ -114,7 +114,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "18169c0899ff5f0551a80839dc1618e597a6ee4508a5065f9318dd2a2fda6455"
+              "sha256": "19514b843ef8dbe6cb7488517b9f22bfab19b123a11182cf9540ae64f2160a2d"
             }
           },
           "constraintBumped": "^2.2.3",
@@ -127,7 +127,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
+              "sha256": "3e22c837d3ae531d16c43ca6cb91c8204b399fdc9e7f8a2769762468eb0502a7"
             }
           }
         }
@@ -142,7 +142,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "18169c0899ff5f0551a80839dc1618e597a6ee4508a5065f9318dd2a2fda6455"
+              "sha256": "19514b843ef8dbe6cb7488517b9f22bfab19b123a11182cf9540ae64f2160a2d"
             }
           },
           "constraintBumped": "^2.2.3",
@@ -155,7 +155,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
+              "sha256": "3e22c837d3ae531d16c43ca6cb91c8204b399fdc9e7f8a2769762468eb0502a7"
             }
           }
         }
@@ -170,7 +170,7 @@ $ echo '' | dependency_services report
         "description": {
           "name": "boo",
           "url": "http://localhost:$PORT",
-          "sha256": "84c17af86124252176a4dae6f94ebcaf6d6f406cb8dc180b664cf0c4811ce50b"
+          "sha256": "cd115184bc00550394d6fd1b22a53005765a6d8914f45cff9ddaf14124021841"
         }
       },
       "latest": "1.2.4",
@@ -185,7 +185,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "boo",
               "url": "http://localhost:$PORT",
-              "sha256": "ef7c87de426b725ed9eae829ce700a2335def6c0154fff04236f8bb5490e1422"
+              "sha256": "de10b0b09ab9fa4e68c685b67bf356cdfb289a60b8daf04640a29d0f4a46f1eb"
             }
           },
           "constraintBumped": "^1.0.0",
@@ -198,7 +198,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "boo",
               "url": "http://localhost:$PORT",
-              "sha256": "84c17af86124252176a4dae6f94ebcaf6d6f406cb8dc180b664cf0c4811ce50b"
+              "sha256": "cd115184bc00550394d6fd1b22a53005765a6d8914f45cff9ddaf14124021841"
             }
           }
         }
@@ -213,7 +213,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "boo",
               "url": "http://localhost:$PORT",
-              "sha256": "ef7c87de426b725ed9eae829ce700a2335def6c0154fff04236f8bb5490e1422"
+              "sha256": "de10b0b09ab9fa4e68c685b67bf356cdfb289a60b8daf04640a29d0f4a46f1eb"
             }
           },
           "constraintBumped": "^1.2.4",
@@ -226,7 +226,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "boo",
               "url": "http://localhost:$PORT",
-              "sha256": "84c17af86124252176a4dae6f94ebcaf6d6f406cb8dc180b664cf0c4811ce50b"
+              "sha256": "cd115184bc00550394d6fd1b22a53005765a6d8914f45cff9ddaf14124021841"
             }
           }
         }
@@ -241,7 +241,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "boo",
               "url": "http://localhost:$PORT",
-              "sha256": "ef7c87de426b725ed9eae829ce700a2335def6c0154fff04236f8bb5490e1422"
+              "sha256": "de10b0b09ab9fa4e68c685b67bf356cdfb289a60b8daf04640a29d0f4a46f1eb"
             }
           },
           "constraintBumped": "^1.2.4",
@@ -254,7 +254,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "boo",
               "url": "http://localhost:$PORT",
-              "sha256": "84c17af86124252176a4dae6f94ebcaf6d6f406cb8dc180b664cf0c4811ce50b"
+              "sha256": "cd115184bc00550394d6fd1b22a53005765a6d8914f45cff9ddaf14124021841"
             }
           }
         }
@@ -269,7 +269,7 @@ $ echo '' | dependency_services report
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "b2b7fc405959806aa1f31ac7e68752534f66f66a11a280d9878ecb6cd835f01c"
+          "sha256": "b4927a70a1066fbe47e083072402948973bf75caf3fa415266a66e6872f6950a"
         }
       },
       "latest": "2.2.3",
@@ -284,7 +284,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "0362935f659b1fd166b6036575bffd6e735cd9953eb60324192d1fdd4929b4c1"
+              "sha256": "4f0ce32d0c103cf68bd0d1443892c4f5f83a33aee5209b25de0b349b8f3c789f"
             }
           },
           "constraintBumped": "^1.0.0",
@@ -297,7 +297,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "b2b7fc405959806aa1f31ac7e68752534f66f66a11a280d9878ecb6cd835f01c"
+              "sha256": "b4927a70a1066fbe47e083072402948973bf75caf3fa415266a66e6872f6950a"
             }
           }
         }
@@ -312,7 +312,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "893214328b7741cecc09046d6309aa894b4645099dd05d7f8e1a1dfa2799a6df"
+              "sha256": "cfc0a1c0ed8a5b935d98679cd6ca99f33f7f38c004cadae0b17a663e4dc8f690"
             }
           },
           "constraintBumped": "^2.2.3",
@@ -325,7 +325,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "b2b7fc405959806aa1f31ac7e68752534f66f66a11a280d9878ecb6cd835f01c"
+              "sha256": "b4927a70a1066fbe47e083072402948973bf75caf3fa415266a66e6872f6950a"
             }
           }
         }
@@ -340,7 +340,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "893214328b7741cecc09046d6309aa894b4645099dd05d7f8e1a1dfa2799a6df"
+              "sha256": "cfc0a1c0ed8a5b935d98679cd6ca99f33f7f38c004cadae0b17a663e4dc8f690"
             }
           },
           "constraintBumped": "^2.2.3",
@@ -353,7 +353,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "b2b7fc405959806aa1f31ac7e68752534f66f66a11a280d9878ecb6cd835f01c"
+              "sha256": "b4927a70a1066fbe47e083072402948973bf75caf3fa415266a66e6872f6950a"
             }
           }
         }

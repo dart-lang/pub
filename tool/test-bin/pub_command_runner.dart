@@ -41,17 +41,10 @@ class GetExecutableForCommandCommand extends PubCommand {
   @override
   bool get hidden => true;
 
-  GetExecutableForCommandCommand() {
-    argParser.addFlag('allow-snapshot');
-  }
-
   @override
   Future<void> runProtected() async {
     try {
-      final result = await getExecutableForCommand(
-        argResults.rest[0],
-        allowSnapshot: argResults.flag('allow-snapshot'),
-      );
+      final result = await getExecutableForCommand(argResults.rest[0]);
       log.message('Executable: ${result.executable}');
       log.message(
         'Package config: ${result.packageConfig ?? 'No package config'}',

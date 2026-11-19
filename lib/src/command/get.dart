@@ -48,6 +48,7 @@ class GetCommand extends PubCommand {
     argParser.addFlag(
       'precompile',
       help: 'Build executables in immediate dependencies.',
+      hide: true,
     );
 
     argParser.addFlag('packages-dir', hide: true);
@@ -75,11 +76,15 @@ class GetCommand extends PubCommand {
         ),
       );
     }
+    if (argResults.wasParsed('precompile')) {
+      log.warning(
+        log.yellow('The --precompile flag is no longer used and does nothing.'),
+      );
+    }
 
     await entrypoint.acquireDependencies(
       SolveType.get,
       dryRun: argResults.flag('dry-run'),
-      precompile: argResults.flag('precompile'),
       enforceLockfile: argResults.flag('enforce-lockfile'),
     );
 
@@ -88,8 +93,7 @@ class GetCommand extends PubCommand {
         await example.acquireDependencies(
           SolveType.get,
           dryRun: argResults.flag('dry-run'),
-          precompile: argResults.flag('precompile'),
-          summaryOnly: true,
+          reportMode: SolveReportMode.summaryOnly,
           enforceLockfile: argResults.flag('enforce-lockfile'),
         );
       }

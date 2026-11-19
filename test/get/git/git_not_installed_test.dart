@@ -20,9 +20,6 @@ void main() {
 echo "not git"
 exit 1
 ''',
-      batch: '''
-echo "not git"
-''',
     );
     await d
         .appDir(
@@ -50,14 +47,6 @@ then
 else
   PATH=${Platform.environment['PATH']} git \$*
 fi
-''',
-      batch: '''
-if "%1"=="--version" (
-  echo "git version 2.13.1.616"
-) else (
-  set path="${Platform.environment['PATH']}"
-  git %*
-)
 ''',
     );
 

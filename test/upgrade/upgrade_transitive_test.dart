@@ -789,15 +789,20 @@ void main() {
     await servePackages();
     await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
 
-    for (final target in ['foo@', 'foo@Latest', 'foo@not-a-version']) {
+    for (final (target, suffix) in [
+      ('foo@', ''),
+      ('foo@Latest', 'Latest'),
+      ('foo@not-a-version', 'not-a-version'),
+    ]) {
       await pubUpgrade(
         args: [target],
         error: allOf(
-          contains('Unknown upgrade target `$target`.'),
-          contains('Use `<package>`'),
-          contains('`<package>@<constraint>`'),
-          contains('`<package>@latest`'),
-          contains('`<package>@resolvable`.'),
+          contains('Invalid version constraint "$suffix" for "foo":'),
+          contains('Use standard pubspec.yaml constraint syntax'),
+          contains(
+            'Usage: pub upgrade '
+            '[<package>[@<constraint>|@latest|@resolvable] ...]',
+          ),
         ),
         exitCode: exit_codes.USAGE,
       );
@@ -1055,6 +1060,56 @@ void main() {
         isNot(contains('--major-versions')),
       ),
       exitCode: exit_codes.DATA,
+    );
+  });
+
+  test('`dependency@constraint` does not retain a transitive dependency that '
+      'is no longer depended on after backtracking', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
+    server.serve('bar', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+    await pubGet(
+      output: allOf(contains('+ foo 1.0.0'), contains('+ bar 1.0.0')),
+    );
+
+    // foo 1.1.0 drops the dependency on bar; foo 1.2.0 still requires
+    // bar ^1.0.0.
+    server.serve('foo', '1.1.0');
+    server.serve('foo', '1.2.0', deps: {'bar': '^1.0.0'});
+    server.serve('bar', '2.0.0');
+
+    await pubUpgrade(
+      args: ['foo', 'bar@^2.0.0'],
+      output: allOf(
+        contains('> foo 1.1.0'),
+        contains('- bar 1.0.0'),
+        isNot(contains('bar 2.0.0')),
+      ),
+    );
+  });
+
+  test('`dependency@constraint` fails with a solver error when the requested '
+      'version does not exist', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    await d.appDir(dependencies: {'foo': 'any'}).create();
+    await pubGet(output: contains('+ foo 1.0.0'));
+
+    // This used to crash the solver's error reporting with
+    // `Bad state: No element` instead of explaining the conflict.
+    await pubUpgrade(
+      args: ['foo@2.0.0'],
+      error: allOf(
+        contains(
+          'Because no versions of foo match 2.0.0 and foo <2.0.0 or >2.0.0 is '
+          'forbidden, foo is forbidden.',
+        ),
+        contains('version solving failed'),
+        contains('foo 2.0.0 was requested by `dart pub upgrade foo@2.0.0`'),
+      ),
     );
   });
 }

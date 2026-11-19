@@ -11,6 +11,12 @@
 /// After creating the snapshot this script will forward arguments to
 /// `pub run test`, and ensure that the snapshot is deleted after tests have
 /// been run.
+///
+/// Invoke this script with `dart run tool/test.dart` (or `./tool/test.dart`),
+/// not `dart tool/test.dart`. `dart run` executes the build hooks of
+/// dependencies with native assets and writes the resulting mapping to
+/// `.dart_tool/native_assets.yaml`. That mapping is embedded in the snapshot,
+/// so the `pub` invocations made by the tests can load the native assets.
 library;
 
 import 'dart:io';
@@ -33,6 +39,11 @@ Future<void> main(List<String> args) async {
   final pubSnapshotFilename = p.absolute(
     p.join('.dart_tool', '_pub', 'pub.dart.snapshot.dart2'),
   );
+  // Written by `dart run` after executing the build hooks of dependencies with
+  // native assets. Absent if no dependency has native assets.
+  final nativeAssetsYaml = p.absolute(
+    p.join('.dart_tool', 'native_assets.yaml'),
+  );
   try {
     final stopwatch = Stopwatch()..start();
     stderr.write('Building snapshot...');
@@ -41,6 +52,8 @@ Future<void> main(List<String> args) async {
       outputPath: pubSnapshotFilename,
       name: 'bin/pub.dart',
       packageConfigPath: p.join('.dart_tool', 'package_config.json'),
+      nativeAssets:
+          File(nativeAssetsYaml).existsSync() ? nativeAssetsYaml : null,
     );
     stderr.writeln(' (${stopwatch.elapsed.inMilliseconds}ms)');
     testProcess = await Process.start(
