@@ -287,6 +287,179 @@ changed.
 
 ## Publishing Packages
 
+**POST** `<hosted-url>/api/upload-package`
+
+**Headers:**
+* `Accept: application/vnd.pub.v2+json`
+* `Authorization: Bearer <token>` (required)
+* `Content-Type: application/vnd.pub.v2+json`
+
+```js
+{
+  "package": "<package>",
+  "version": "<version>",
+  "archive_length": <byte-count>,
+  "archive_sha256": "<hex(sha256(gzipped tar archive))>",
+  "attestations_length": <byte-count>, /* optional */
+  "attestations_sha256": "<hex(sha256(attestations.json))>", /* optional */
+}
+```
+
+**Response:**
+* `Content-Type: application/vnd.pub.v2+json`
+
+```js
+{
+  "archive_upload": {
+    "url": "https://...",
+    "method": "PUT",
+    "headers": {
+      "<key-1>": "<value-1>",
+      ...
+    }
+  },
+  "attestations_upload": {
+    "url": "https://...",
+    "method": "PUT",
+    "headers": {
+      "<key-1>": "<value-1>",
+      ...
+    }
+  },
+  "finalize_url": "https://...",
+}
+```
+
+To publish a package a client must:
+
+ 1. Issue a `POST` request to `<hosted-url>/api/upload-package`, this request
+    must carry:
+    * Package name and version to be published,
+    * Length and sha256 of the gzipped archive to be published.
+    * Length and sha256 of the attestations to be uploaded, if any.
+    
+    The request returns:
+    * `archive_upload` with `url`, `method` and `headers` for uploading the
+      gzipped archive.
+    * `attestations_upload` with `url`, `method` and `headers` for uploading
+      attestations, if any.
+
+ 2. Upload gzipped tar archive and attestations (if any) using the `url`,
+    `method` and `headers` given, (avoid adding other headers).
+
+ 3. Issue a `POST` request to `finalize_url`.
+
+If the server wants to accept the uploaded package the server shall respond:
+
+```http
+HTTP/1.1 200 Ok
+Content-Type: application/vnd.pub.v2+json
+{
+  "success": {
+    "message": "<message>",
+  },
+}
+```
+
+The server may use the `<message>` to communicate:
+ * Cache expiration expectations, if newly published packages are not
+   immediately available.
+ * Out-of-band approval requirements, if package is not immediately published
+   by step 3.
+ * Similar, out-of-band information to set expectations and guide users.
+
+If the server does not want to accept the uploaded package, it can respond:
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/vnd.pub.v2+json
+{
+  "error": {
+    "code": "<code>",
+    "message": "<message>",
+  },
+}
+```
+
+The server may reject uploaded packages to enforce attestation requirements,
+forbid git-dependencies, limit package size and other similar
+repository-specific constraints.
+
+## Package Attestation Collection
+Package repositories may optionally accept and serve cryptographic attestations
+for a package version using a _package attestation collection_ JSON object:
+
+```js
+{
+  "attestations": [
+    {
+      "type": "<type>",
+      "bundle": { /* type specific bundle */ },
+    },
+    ...
+  ],
+}
+```
+
+The `attestations` property is a list of attestation objects for a
+_package archive_ (`package.tar.gz`) associated with a specific
+_package version_. Each object in the `attestations` list is discriminated by
+its `type` property. Clients **must ignore** attestation types they do not
+understand. Servers **may reject** attestation types they do not understand.
+This ensures that we can introduce new attestation types in the future.
+
+### Supported Attestation Types
+Currently no attestation types are defined in this specification.
+
+> [!NOTE]
+> Which signing identities, OIDC issuers, transparency logs, timestamp
+> authorities, builder workflows, etc. a repository or client trusts is governed
+> by repository- and client-specific policy.
+
+
+## List security advisories for a package
+
+**GET** `<hosted-url>/api/packages/<package>/advisories`
+
+**Headers:**
+* `Accept: application/vnd.pub.v2+json`
+
+**Response**
+* `Content-Type: application/vnd.pub.v2+json`
+
+```js
+{
+  "advisories" : [
+    {
+      /* Security advisory in OSV format, see https://ossf.github.io/osv-schema/ */
+    },
+    /* additional security advisories */
+  ],
+  "advisoriesUpdated" : "<date-time>"
+}
+```
+
+The  `advisories` property is a list of security advisories in [OSV
+format](https://ossf.github.io/osv-schema/). The list is empty, if
+no security advisory affects this package.
+
+The `affected[].versions` field within a security advisory must be present and
+fully populated by a hosted pub-server that provides advisories. Hence, the
+`dart pub` client will exclusively rely on `affected[].versions`, and disregard
+`affected[].ranges`.
+
+In the `database_specific` field of a security advisory the `dart pub` client
+will lookup the property called `pub_display_url`. This property is optional. It
+is intended to be used by the client to display a reference url when reporting
+security advisories.
+
+The `advisoriesUpdated` property is the most recent timestamp of when the result
+from this end-point for this package changed. This can be used for caching
+purposes.
+
+------------
+
+## (Deprecated) Publishing Packages from Dart < 3.15
+
 **GET** `<hosted-url>/api/packages/versions/new`
 
 **Headers:**
@@ -305,13 +478,6 @@ changed.
     ...,
     "<field-N>": "<value-N>",
   },
-  "attestationUrl": "<attestation-upload-url>", /* optional */
-  "attestationFields": { /* optional */
-    "<field-1>": "<value-1>",
-    "<field-2>": "<value-2>",
-    ...,
-    "<field-N>": "<value-N>",
-  },
 }
 ```
 
@@ -319,24 +485,10 @@ To publish a package a client must do the following steps in order given:
 
  1. Issue a `GET` request to `<hosted-url>/api/packages/versions/new`, this
     returns:
-    * `url` and `fields` for uploading the gzipped tar archive.
-    * `attestationUrl` and `attestationFields` for uploading attestation
-        (optional, present if attestation is supported by the server).
+    * `url`, and,
+    * `fields` for uploading the gzipped tar archive.
 
- 2. If `attestationUrl` is present and the client has an attestation to upload
-    (see _"Package Attestation Collection"_ section), it must follow the
-    _"Multi-part File Upload Procedure"_, using:
-    * `attestationUrl` as _upload-url_,
-    * `attestationFields` as _dictionary of fields_,
-    * `"attestations.json"` as _filename_, and,
-    * _package attestation collection_ as _file contents_.
-    
-    If the upload is successful and server responds with a non-empty
-    `<message>`, client shall display this message.
-    If attestion is uploaded, this must be done before the gzipped tar archive
-    is uploaded.
-
- 3. Follow the _"Multi-part File Upload Procedure"_, using:
+ 2. Follow the _"Multi-part File Upload Procedure"_, using:
     * `url` as _upload-url_,
     * `fields` as _dictionary of fields_,
     * `"package.tar.gz"` as _filename_, and,
@@ -353,11 +505,11 @@ The server may use the `<message>` in step 3 to communicate:
  * Similar, out-of-band information to set expectations and guide users.
 
 The server may reject uploaded files in step 2 or 3, aborting the publishing
-procedure. This can be used to enforce attestation requirements, forbid
-git-dependencies, limit package size and other similar repository-specific
-constraints.
+procedure. This can be used to forbid git-dependencies, limit package size and
+other similar repository-specific constraints.
 
-## Multi-part File Upload Procedure
+
+## (Deprecated) Multi-part File Upload Procedure
 Procedure for uploading a file to a _hosted pub package repository_. This
 procedure is referenced throughout this specification, and assumes you have:
  * An _upload-url_ (`"<upload-url>"`),
@@ -453,80 +605,6 @@ Content-Type: application/vnd.pub.v2+json
 > similar blob storage service. Both the
 > `<upload-url>` and `<finalize-upload-url>` are allowed to contain
 > query-string parameters, and both of these URLs need only be temporary.
-
-## Package Attestation Collection
-Package repositories may optionally accept and serve cryptographic attestations
-for a package version using a _package attestation collection_ JSON object:
-
-```js
-{
-  "attestations": [
-    {
-      "type": "<type>",
-      "bundle": { /* type specific bundle */ },
-    },
-    ...
-  ],
-}
-```
-
-The `attestations` property is a list of attestation objects for a
-_package archive_ (`package.tar.gz`) associated with a specific
-_package version_. Each object in the `attestations` list is discriminated by
-its `type` property. Clients **must ignore** attestation types they do not
-understand. Servers **may reject** attestation types they do not understand.
-This ensures that we can introduce new attestation types in the future.
-
-### Supported Attestation Types
-Currently no attestation types are defined in this specification.
-
-> [!NOTE]
-> Which signing identities, OIDC issuers, transparency logs, timestamp
-> authorities, builder workflows, etc. a repository or client trusts is governed
-> by repository- and client-specific policy.
-
-
-## List security advisories for a package
-
-**GET** `<hosted-url>/api/packages/<package>/advisories`
-
-**Headers:**
-* `Accept: application/vnd.pub.v2+json`
-
-**Response**
-* `Content-Type: application/vnd.pub.v2+json`
-
-```js
-{
-  "advisories" : [
-    {
-      /* Security advisory in OSV format, see https://ossf.github.io/osv-schema/ */
-    },
-    /* additional security advisories */
-  ],
-  "advisoriesUpdated" : "<date-time>"
-}
-```
-
-The  `advisories` property is a list of security advisories in [OSV
-format](https://ossf.github.io/osv-schema/). The list is empty, if
-no security advisory affects this package.
-
-The `affected[].versions` field within a security advisory must be present and
-fully populated by a hosted pub-server that provides advisories. Hence, the
-`dart pub` client will exclusively rely on `affected[].versions`, and disregard
-`affected[].ranges`.
-
-In the `database_specific` field of a security advisory the `dart pub` client
-will lookup the property called `pub_display_url`. This property is optional. It
-is intended to be used by the client to display a reference url when reporting
-security advisories.
-
-The `advisoriesUpdated` property is the most recent timestamp of when the result
-from this end-point for this package changed. This can be used for caching
-purposes.
-
-------------
 
 ## (Deprecated) Inspect a specific version of a package
 
