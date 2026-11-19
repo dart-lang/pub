@@ -134,8 +134,8 @@ authentication can only be used when `<hosted-url>` uses HTTPS. For further
 details on token management see: `dart pub token --help`.
 
 The tokens are inserted verbatim in the header, therefore they have to adhere to
- https://www.rfc-editor.org/rfc/rfc6750#section-2.1. This means they must match
- the regex: `^[a-zA-Z0-9._~+/=-]+$`.
+[RFC 6750 section-2.1](https://www.rfc-editor.org/rfc/rfc6750#section-2.1).
+This means they must match the regex: `^[a-zA-Z0-9._~+/=-]+$`.
 
 
 ### Missing Authentication or Invalid Token
@@ -287,147 +287,73 @@ changed.
 
 ## Publishing Packages
 
-**GET** `<hosted-url>/api/packages/versions/new`
+**POST** `<hosted-url>/api/upload-package`
 
 **Headers:**
 * `Accept: application/vnd.pub.v2+json`
 * `Authorization: Bearer <token>` (required)
-
-**Response**
 * `Content-Type: application/vnd.pub.v2+json`
 
 ```js
 {
-  "url": "<multipart-upload-url>",
-  "fields": {
-    "<field-1>": "<value-1>",
-    "<field-2>": "<value-2>",
-    ...,
-    "<field-N>": "<value-N>",
-  },
-  "attestationUrl": "<attestation-upload-url>", // optional
+  "package": "<package>",
+  "version": "<version>",
+  "archive_length": <byte-count>,
+  "archive_sha256": "<hex(sha256(gzipped tar archive))>",
+  "attestations_length": <byte-count>, /* optional */
+  "attestations_sha256": "<hex(sha256(attestations.json))>", /* optional */
 }
 ```
 
-To publish a package an HTTP `GET` request for
-`<hosted-url>/api/packages/versions/new` is made. This request returns an
-`<multipart-upload-url>`, a dictionary of fields, and optionally an
-`<attestation-upload-url>`, see
-[Publishing with an Attestation](#publishing-with-an-attestation). To upload the
-package archive a multi-part `POST` request is made to `<multipart-upload-url>`
-with fields and the field `file` containing the gzipped tar archive:
+**Response:**
+* `Content-Type: application/vnd.pub.v2+json`
 
-```http
-POST <path(multipart-upload-url)> HTTP/1.1
-Host: <host(multipart-upload-url)>
-Content-Length: <length>
-Content-Type: multipart/form-data; boundary=<boundary>
-
---<boundary>
-Content-Disposition: form-data; name="<urlencode(field-1)>"
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: binary
-
-<value-1>
---<boundary>
-Content-Disposition: form-data; name="<urlencode(field-2)>"
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: binary
-
-<value-2>
-...
---<boundary>
-Content-Disposition: form-data; name="<urlencode(field-N)>"
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: binary
-
-<value-N>
---<boundary>
-Content-Type: application/octet-stream
-Content-Disposition: form-data; name="file"; filename="package.tar.gz"
-
-<gzipped archive>
---<boundary>--
+```js
+{
+  "archive_upload": {
+    "url": "https://...",
+    "method": "PUT",
+    "headers": {
+      "<key-1>": "<value-1>",
+      ...
+    }
+  },
+  "attestations_upload": {
+    "url": "https://...",
+    "method": "PUT",
+    "headers": {
+      "<key-1>": "<value-1>",
+      ...
+    }
+  },
+  "finalize_url": "https://...",
+}
 ```
 
-The above `POST` request to `<multipart-upload-url>` may respond as follows:
+To publish a package a client must:
 
-```http
-HTTP/1.1 204 No Content
-Location: <finalize-upload-url>
-```
+ 1. Issue a `POST` request to `<hosted-url>/api/upload-package`, this request
+    must carry:
+    * Package name and version to be published,
+    * Length and sha256 of the gzipped archive to be published.
+    * Length and sha256 of the attestations to be uploaded, if any.
+    
+    The request returns:
+    * `archive_upload` with `url`, `method` and `headers` for uploading the
+      gzipped archive.
+    * `attestations_upload` with `url`, `method` and `headers` for uploading
+      attestations, if any.
 
-or with an HTTP `303 See Other` redirect to `<finalize-upload-url>`.
+ 2. Upload gzipped tar archive and attestations (if any) using the `url`,
+    `method` and `headers` given, (avoid adding other headers).
 
-### Publishing with an Attestation
+ 3. Issue a `POST` request to `finalize_url`.
 
-A package may be published together with an attestation, such as a
-[Sigstore](https://www.sigstore.dev/) bundle attesting to the provenance of the
-package archive.
-
-A package repository that supports publishing with attestations must return an
-`<attestation-upload-url>` in the `attestationUrl` property of the response from
-`<hosted-url>/api/packages/versions/new`. A repository that does not support
-publishing with attestations must omit the property. A client that has an
-attestation to publish, but did not get an `attestationUrl`, shall abort the
-publication with an informative error message, without uploading the package
-archive.
-
-The client shall upload the attestation with an HTTP `POST` request to
-`<attestation-upload-url>`, before uploading the package archive to
-`<multipart-upload-url>`:
-
-```http
-POST <path(attestation-upload-url)> HTTP/1.1
-Host: <host(attestation-upload-url)>
-Content-Type: application/json
-Content-Length: <length>
-
-<attestation JSON bundle>
-```
-
-As with `archive_url` the client will only attach an `Authorization` if the
-`<hosted-url>` is a prefix of `<attestation-upload-url>`. The
-`<attestation-upload-url>` may be temporary and is allowed to include
-query-string parameters.
-
-If the server accepts the attestation for this upload it should respond:
-
-```http
-HTTP/1.1 200 Ok
-```
-
-If the server does not accept the attestation it should respond with an error
-object, as described below, and the client will abort the publication. The
-server is not able to fully validate the attestation at this point, as the
-package archive it refers to has not been uploaded yet; the attestation is
-validated against the archive when the upload is finalized.
-
-### Finalizing the Upload
-
-The client shall then issue a `GET` request to `<finalize-upload-url>`. As with
-`archive_url` the client will only attach an `Authorization` if the
-`<hosted-url>` is a prefix of `<finalize-upload-url>`.
-
-The server is allowed to inspect the uploaded archive, together with the
-attestation uploaded to `<attestation-upload-url>`, if any. If an attestation
-was uploaded, the server must verify it before accepting the publication, and
-must reject the publication if:
- * the JSON bundle is malformed or cannot be parsed as a Sigstore bundle,
- * the cryptographic signature cannot be verified against the trusted root, or
- * the artifact digest recorded in the attestation does not match the SHA-256
-   hash of the uploaded package archive.
-
-The server may also reject the publication based on the contents of the
-attestation, for example if the provenance information (such as the source
-repository) does not match the `repository` field in `pubspec.yaml`.
-
-If the server wants to accept the uploaded package the server should respond:
+If the server wants to accept the uploaded package the server shall respond:
 
 ```http
 HTTP/1.1 200 Ok
 Content-Type: application/vnd.pub.v2+json
-
 {
   "success": {
     "message": "<message>",
@@ -435,12 +361,12 @@ Content-Type: application/vnd.pub.v2+json
 }
 ```
 
-The server is allowed to consider the publishing incomplete until the request
-for `<finalize-upload-url>` has been issued. Once this request has succeeded
-the package is considered successfully published. If the server has caches that
-need to expire before newly published packages become available, or it has
-other out-of-band approvals that need to be given it's reasonable to inform the
-user about this in the `<message>`.
+The server may use the `<message>` to communicate:
+ * Cache expiration expectations, if newly published packages are not
+   immediately available.
+ * Out-of-band approval requirements, if package is not immediately published
+   by step 3.
+ * Similar, out-of-band information to set expectations and guide users.
 
 If the server does not want to accept the uploaded package, it can respond:
 ```http
@@ -454,16 +380,40 @@ Content-Type: application/vnd.pub.v2+json
 }
 ```
 
-This can be used to forbid git dependencies in published packages, limit the
-archive size, reject invalid attestations, or enforce any other
+The server may reject uploaded packages to enforce attestation requirements,
+forbid git-dependencies, limit package size and other similar
 repository-specific constraints.
 
-This upload flow allows for archives to be uploaded directly to a signed POST
-URL for [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/HTTPPOSTExamples.html),
-[GCS](https://cloud.google.com/storage/docs/xml-api/post-object-forms) or
-similar blob storage service. Both the
-`<multipart-upload-url>` and `<finalize-upload-url>` are allowed to contain
-query-string parameters, and both of these URLs need only be temporary.
+## Package Attestation Collection
+Package repositories may optionally accept and serve cryptographic attestations
+for a package version using a _package attestation collection_ JSON object:
+
+```js
+{
+  "attestations": [
+    {
+      "type": "<type>",
+      "bundle": { /* type specific bundle */ },
+    },
+    ...
+  ],
+}
+```
+
+The `attestations` property is a list of attestation objects for a
+_package archive_ (`package.tar.gz`) associated with a specific
+_package version_. Each object in the `attestations` list is discriminated by
+its `type` property. Clients **must ignore** attestation types they do not
+understand. Servers **may reject** attestation types they do not understand.
+This ensures that we can introduce new attestation types in the future.
+
+### Supported Attestation Types
+Currently no attestation types are defined in this specification.
+
+> [!NOTE]
+> Which signing identities, OIDC issuers, transparency logs, timestamp
+> authorities, builder workflows, etc. a repository or client trusts is governed
+> by repository- and client-specific policy.
 
 
 ## List security advisories for a package
@@ -507,6 +457,154 @@ from this end-point for this package changed. This can be used for caching
 purposes.
 
 ------------
+
+## (Deprecated) Publishing Packages from Dart < 3.15
+
+**GET** `<hosted-url>/api/packages/versions/new`
+
+**Headers:**
+* `Accept: application/vnd.pub.v2+json`
+* `Authorization: Bearer <token>` (required)
+
+**Response**
+* `Content-Type: application/vnd.pub.v2+json`
+
+```js
+{
+  "url": "<archive-upload-url>",
+  "fields": {
+    "<field-1>": "<value-1>",
+    "<field-2>": "<value-2>",
+    ...,
+    "<field-N>": "<value-N>",
+  },
+}
+```
+
+To publish a package a client must do the following steps in order given:
+
+ 1. Issue a `GET` request to `<hosted-url>/api/packages/versions/new`, this
+    returns:
+    * `url`, and,
+    * `fields` for uploading the gzipped tar archive.
+
+ 2. Follow the _"Multi-part File Upload Procedure"_, using:
+    * `url` as _upload-url_,
+    * `fields` as _dictionary of fields_,
+    * `"package.tar.gz"` as _filename_, and,
+    * gzipped tar archive as _file contents_.
+    
+    If the upload is successful and server responds with a non-empty
+    `<message>`, client shall display this message.
+
+The server may use the `<message>` in step 3 to communicate:
+ * Cache expiration expectations, if newly published packages are not
+   immediately available.
+ * Out-of-band approval requirements, if package is not immediately published
+   by step 3.
+ * Similar, out-of-band information to set expectations and guide users.
+
+The server may reject uploaded files in step 2 or 3, aborting the publishing
+procedure. This can be used to forbid git-dependencies, limit package size and
+other similar repository-specific constraints.
+
+
+## (Deprecated) Multi-part File Upload Procedure
+Procedure for uploading a file to a _hosted pub package repository_. This
+procedure is referenced throughout this specification, and assumes you have:
+ * An _upload-url_ (`"<upload-url>"`),
+ * A _dictionary of fields_ (`"<field-1>": "<value-1>"`, ...),
+ * A _filename_ (`<filename>`), and,
+ * _file contents_ as bytes (`<file-contents>`). 
+
+To upload issue a multi-part `POST` request to the _upload-url_ with the
+_fields_ and a special field `file` containing the _file contents_ to be
+uploaded, as illustrated below:
+
+```http
+POST <path(<upload-url>)> HTTP/1.1
+Host: <host(<upload-url>)>
+Content-Length: <length>
+Content-Type: multipart/form-data; boundary=<boundary>
+
+--<boundary>
+Content-Disposition: form-data; name="<urlencode(<field-1>)>"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: binary
+
+<value-1>
+--<boundary>
+Content-Disposition: form-data; name="<urlencode(<field-2>)>"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: binary
+
+<value-2>
+...
+--<boundary>
+Content-Disposition: form-data; name="<urlencode(<field-N>)>"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: binary
+
+<value-N>
+--<boundary>
+Content-Type: application/octet-stream
+Content-Disposition: form-data; name="file"; filename="<filename>"
+
+<file-contents>
+--<boundary>--
+```
+
+The above `POST` request to `<upload-url>` shall return:
+
+```http
+HTTP/1.1 303 See Other
+Location: <finalize-upload-url>
+```
+
+> [!NOTE]
+> For compatibility with older iterations of this specification, clients should
+> also follow `Location` header on a `204` response. However, server shall
+> return a `303` redirect with `Location` header.
+
+The client shall then issue a `GET` request to `<finalize-upload-url>`.
+As with `archive_url` the client will only attach an `Authorization` header if
+the `<hosted-url>` is a prefix of `<finalize-upload-url>`.
+If the server wants to accept the uploaded file the server should respond:
+
+```http
+HTTP/1.1 200 Ok
+Content-Type: application/vnd.pub.v2+json
+{
+  "success": {
+    "message": "<message>",
+  },
+}
+```
+
+The server _may_ consider the upload incomplete until the `GET` request for
+`<finalize-upload-url>` has been issued. The `<message>` returned may be used
+by the server to communicate out-of-band information, and should be displayed
+by the client.
+
+If the server does not want to accept the uploaded file, it can respond:
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/vnd.pub.v2+json
+{
+  "error": {
+    "code": "<code>",
+    "message": "<message>",
+  },
+}
+```
+
+> [!NOTE]
+> This upload flow allows for files to be uploaded directly to a signed POST
+> URL for [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/HTTPPOSTExamples.html),
+> [GCS](https://cloud.google.com/storage/docs/xml-api/post-object-forms) or
+> similar blob storage service. Both the
+> `<upload-url>` and `<finalize-upload-url>` are allowed to contain
+> query-string parameters, and both of these URLs need only be temporary.
 
 ## (Deprecated) Inspect a specific version of a package
 
