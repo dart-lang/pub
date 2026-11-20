@@ -160,5 +160,43 @@ void main() {
         ]),
       );
     });
+
+    test('does not crash when dependency_overrides resolves to a version '
+        'outside constraint', () async {
+      final server = await servePackages();
+
+      server.serve('foo', '1.0.0');
+      server.serve('foo', '2.5.0');
+      server.serve('bar', '1.0.0');
+      server.serve('bar', '1.5.0');
+
+      await d
+          .appDir(
+            dependencies: {'foo': '^1.0.0', 'bar': '^1.0.0'},
+            pubspec: {
+              'dependency_overrides': {'foo': '2.5.0'},
+            },
+          )
+          .create();
+
+      await pubGet();
+
+      await pubUpgrade(
+        args: ['--tighten'],
+        output: allOf([
+          contains('Changed 1 constraint in pubspec.yaml:'),
+          contains('bar: ^1.0.0 -> ^1.5.0'),
+        ]),
+      );
+
+      await d
+          .appDir(
+            dependencies: {'foo': '^1.0.0', 'bar': '^1.5.0'},
+            pubspec: {
+              'dependency_overrides': {'foo': '2.5.0'},
+            },
+          )
+          .validate();
+    });
   });
 }
