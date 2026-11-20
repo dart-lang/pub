@@ -6,12 +6,17 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 
+import '../path.dart';
 import '../validator.dart';
 
-/// Validates that a package files all are unique even after case-normalization.
-class FileCaseValidator extends Validator {
+/// Validates that all files in a package are unique even after
+/// case-normalization, and that Dart files in `lib/` and `bin/` do not contain
+/// upper-case letters.
+final class FileCaseValidator extends Validator {
+  static final _upperCase = RegExp(r'[A-Z]');
+
   @override
-  Future validate() async {
+  Future<void> validate() async {
     final lowerCaseToFile = <String, String>{};
     for (final file in files.sorted()) {
       final lowerCase = file.toLowerCase();
@@ -27,6 +32,24 @@ Try renaming one of them.
         break;
       }
       lowerCaseToFile[lowerCase] = file;
+    }
+
+    final dartFiles =
+        [
+          ...filesBeneath('lib', recursive: true),
+          ...filesBeneath('bin', recursive: true),
+        ].where((file) => file.endsWith('.dart')).sorted();
+
+    for (final file in dartFiles) {
+      final relative = p.posix.joinAll(
+        p.split(p.relative(file, from: package.dir)),
+      );
+      if (_upperCase.hasMatch(relative)) {
+        warnings.add(
+          'The file $relative contains upper-case letters.\n'
+          'Try renaming it to use lower-case letters and underscores.',
+        );
+      }
     }
   }
 }
