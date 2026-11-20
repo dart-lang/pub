@@ -272,8 +272,9 @@ Map parseJsonResponse(http.Response response) {
 }
 
 /// Throws an error describing an invalid response from the server.
-Never invalidServerResponse(http.Response response) =>
-    fail(log.red('Invalid server response:\n${response.body}'));
+Never invalidServerResponse(http.Response response) => fail(
+  log.red('Invalid server response:\n${sanitizeForTerminal(response.body)}'),
+);
 
 /// Exception thrown when an HTTP operation fails.
 class PubHttpException implements Exception {
