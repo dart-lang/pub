@@ -210,6 +210,92 @@ void main() {
     });
   });
 
+  group('cannot reach outside repository', () {
+    test('parent directory traversal', () async {
+      await d
+          .appDir(
+            dependencies: {
+              'sub': {
+                'git': {'url': '../foo.git', 'path': '../outside'},
+              },
+            },
+          )
+          .create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: '
+          "The 'path' field of the description must not reach outside the "
+          'repository.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
+
+    test('percent-encoded parent directory traversal', () async {
+      await d
+          .appDir(
+            dependencies: {
+              'sub': {
+                'git': {'url': '../foo.git', 'path': '%2e%2e/%2e%2e/outside'},
+              },
+            },
+          )
+          .create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: '
+          "The 'path' field of the description must not reach outside the "
+          'repository.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
+
+    test('percent-encoded slash traversal', () async {
+      await d
+          .appDir(
+            dependencies: {
+              'sub': {
+                'git': {'url': '../foo.git', 'path': '..%2f..'},
+              },
+            },
+          )
+          .create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: '
+          "The 'path' field of the description must not reach outside the "
+          'repository.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
+
+    test('percent-encoded backslash traversal', () async {
+      await d
+          .appDir(
+            dependencies: {
+              'sub': {
+                'git': {'url': '../foo.git', 'path': '%5c..%5c..'},
+              },
+            },
+          )
+          .create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: '
+          "The 'path' field of the description must not reach outside the "
+          'repository.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
+  });
+
   test(
     'depends on a package in a deep subdirectory, non-relative uri',
     () async {
