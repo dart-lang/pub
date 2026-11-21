@@ -27,9 +27,10 @@ completes that step separately and reruns pub.
 
 ### Obtain a token
 
-For `action: acquire`, pub sends the package name and the operation.
-A `read` covers version listings, advisories and downloads. A `publish`
-also includes the version and a description of each file being uploaded:
+When pub asks the helper for a token to look up or download a package, it
+includes the package name. Pub sends `action: acquire` and `operation: read`
+for version listings, security advisories and downloads. For `operation: publish`,
+it also includes the version and a description of each file being uploaded:
 
     "archive": {"length": 18240, "sha256": "<digest of the .tar.gz file>"},
     "attestations": {"length": 412, "sha256": "<digest of the attestation file>"}
