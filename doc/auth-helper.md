@@ -7,8 +7,7 @@ A developer registers a local program for a repository:
 Pub saves the command in `pub-tokens.json`. Here it runs `/opt/bin/onepub`
 with the argument `_pub-auth`. Each `--auth-helper-arg` adds one argument.
 Use an absolute executable path (a native .exe on Windows) and keep secrets
-out of arguments. Only the user can register a helper. Installing a dependency
-cannot choose a program to run.
+out of arguments.
 
 Pub matches the full repository URL, including its case-sensitive path. It
 sends credentials only within that repository on the same origin. Keep
