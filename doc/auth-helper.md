@@ -46,7 +46,7 @@ The helper returns an access token, its UTC expiry and its type:
 
 Pub keeps the token in memory until expiry or rejection. Concurrent requests
 with the same repository and operation details share it. A change to either
-publish file requires a new acquisition. Only the registration is saved.
+publish file requires a new acquisition.
 
 ### Authenticate a request
 
