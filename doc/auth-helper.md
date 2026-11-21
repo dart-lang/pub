@@ -20,8 +20,9 @@ object on stdin and closes stdin. On success, the helper writes one UTF-8
 JSON object to stdout and exits with status zero. Each call has a 30-second
 timeout and a 64 KiB stdout limit. Pub discards stderr.
 
-Every request includes `protocolVersion: 1`, `repository`, `action`, and
-`interactive: false`. The helper must run without prompting.
+Every request includes `protocolVersion: 1`, `action`, and `interactive: false`.
+The `repository` field contains the full registered repository URL, including
+its path. The helper must run without prompting.
 
 ### Report an error
 
