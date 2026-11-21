@@ -136,7 +136,7 @@ class AuthHelper {
         utf8.encode(
           jsonEncode({
             'protocolVersion': 1,
-            'repository': repository.toString(),
+            'repository-url': repository.toString(),
             'interactive': false,
             ...input,
           }),

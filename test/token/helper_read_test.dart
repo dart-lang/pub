@@ -79,7 +79,7 @@ Future<void> main(List<String> args) async {
       );
       expect(acquisition, {
         'protocolVersion': 1,
-        'repository': repository.toString(),
+        'repository-url': repository.toString(),
         'interactive': false,
         'action': 'acquire',
         'operation': 'read',

@@ -254,7 +254,7 @@ Future<void> main(List<String> args) async {
         expect(jsonDecode(File(d.path('calls')).readAsStringSync()), {
           'protocolVersion': 1,
           'action': 'acquire',
-          'repository': repository,
+          'repository-url': repository,
           'interactive': false,
           'operation': 'publish',
           'package': 'test_pkg',
