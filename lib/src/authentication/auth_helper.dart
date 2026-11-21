@@ -12,9 +12,7 @@ import '../platform_info.dart';
 import 'credential.dart';
 
 typedef HelperContext =
-    ({String? package, String? version, String? archiveSha256});
-
-const readContext = (package: null, version: null, archiveSha256: null);
+    ({String package, String? version, String? archiveSha256});
 
 class _Grant {
   final String token;
@@ -29,6 +27,9 @@ class AuthHelper {
   final List<String> command;
   final _pending = <HelperContext, Future<_Grant>>{};
   final _grants = <HelperContext, _Grant>{};
+
+  // Each helper instance belongs to exactly one registered repository.
+  String? resourceNonce;
 
   AuthHelper(this.command);
 
@@ -53,6 +54,7 @@ class AuthHelper {
     if (!grant.requiresProof) return {'authorization': 'Bearer ${grant.token}'};
     final response = await _invoke(repository, {
       'action': 'prove',
+      if (resourceNonce != null) 'nonce': resourceNonce,
       'token': grant.token,
       'method': method,
       'uri': target.toString().split(RegExp('[?#]')).first,
@@ -72,7 +74,7 @@ class AuthHelper {
       final json = await _invoke(repository, {
         'action': 'acquire',
         'operation': context.archiveSha256 == null ? 'read' : 'publish',
-        if (context.package != null) 'package': context.package,
+        'package': context.package,
         if (context.version != null) 'version': context.version,
         if (context.archiveSha256 != null)
           'archiveSha256': context.archiveSha256,

@@ -16,7 +16,140 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
+Future<void> registerProofHelper(String repository) async {
+  await d.file('proof.dart', r"""
+import 'dart:convert';
+import 'dart:io';
+
+Future<void> main() async {
+  final input = jsonDecode(await utf8.decoder.bind(stdin).join());
+  stdout.write(jsonEncode(input['action'] == 'prove'
+      ? {'proof': 'header.' + (input['nonce'] ?? 'initial') + '.signature'}
+      : {'tokenType': 'DPoP', 'token': 'token',
+         'expiresAt': DateTime.now().toUtc().add(const Duration(hours: 1)).toIso8601String()}));
+}
+""").create();
+  await d.tokensFile({
+    'version': 1,
+    'hosted': [
+      {
+        'url': repository,
+        'authHelper': [Platform.resolvedExecutable, d.path('proof.dart')],
+      },
+    ],
+  }).create();
+}
+
+Response challenge(String nonce) => Response(
+  401,
+  headers: {
+    'www-authenticate': 'DPoP error="use_dpop_nonce"',
+    'dpop-nonce': nonce,
+  },
+);
+
 void main() {
+  test(
+    'read retries with a nonce and uses the next nonce for the download',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
+      final repository = '${server.url}/feed/';
+      await registerProofHelper(repository);
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'hosted': repository, 'version': '1.2.3'},
+            },
+          )
+          .create();
+      var attempts = 0;
+      server.handle('/feed/api/packages/foo', (request) {
+        if (++attempts == 1) {
+          expect(request.headers['dpop'], 'header.initial.signature');
+          return challenge('read1');
+        }
+        expect(request.headers['dpop'], 'header.read1.signature');
+        return Response.ok(
+          jsonEncode({
+            'name': 'foo',
+            'versions': [
+              {
+                'pubspec': {
+                  'name': 'foo',
+                  'version': '1.2.3',
+                  'environment': {'sdk': '^3.0.0'},
+                },
+                'version': '1.2.3',
+                'archive_url': '${repository}download',
+              },
+            ],
+          }),
+          headers: {'content-type': server.contentType, 'dpop-nonce': 'read2'},
+        );
+      });
+      server.expect('GET', '/feed/download', (request) {
+        expect(request.headers['dpop'], 'header.read2.signature');
+        return Response.found(
+          Uri.parse('${server.url}/packages/foo/versions/1.2.3.tar.gz'),
+        );
+      });
+      await pubGet();
+      expect(attempts, 2);
+    },
+  );
+
+  test(
+    'publish retries the challenged upload and bounds repeated challenges',
+    () async {
+      final server = await servePackages();
+      await registerProofHelper(server.url);
+      await d.validPackage().create();
+      final pub = await startPublish(
+        server,
+        overrideDefaultHostedServer: false,
+      );
+      await confirmPublish(pub);
+      server.expect('GET', '/api/packages/versions/new', (request) {
+        return Response.ok(
+          jsonEncode({
+            'url': '${server.url}/upload',
+            'fields': <String, String>{},
+          }),
+          headers: {
+            'content-type': 'application/json',
+            'dpop-nonce': 'upload1',
+          },
+        );
+      });
+      var uploads = 0;
+      server.handle('/upload', (request) async {
+        expect(request.method, 'POST');
+        expect(
+          await request.read().expand((bytes) => bytes).length,
+          greaterThan(0),
+        );
+        expect(request.headers['dpop'], 'header.upload${++uploads}.signature');
+        if (uploads == 1) return challenge('upload2');
+        return Response.found(Uri.parse('${server.url}/complete'));
+      });
+      var completions = 0;
+      server.handle('/complete', (request) {
+        expect(
+          request.headers['dpop'],
+          completions == 0
+              ? 'header.upload2.signature'
+              : 'header.complete.signature',
+        );
+        completions++;
+        return challenge('complete');
+      });
+      await pub.shouldExit(65);
+      expect(uploads, 2);
+      expect(completions, 2);
+    },
+  );
+
   test(
     'publish helper receives exact archive identity and stays in scope',
     () async {

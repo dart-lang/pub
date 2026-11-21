@@ -32,9 +32,10 @@ class _AuthenticatedClient extends http.BaseClient {
   ///
   /// [_credential] might be `null`. In that case `authorization` header will
   /// not be injected to requests.
-  _AuthenticatedClient(this._inner, this._credential, this._context);
+  _AuthenticatedClient(this._inner, this._credential, this._createContext);
 
-  final HelperContext _context;
+  final HelperContext Function() _createContext;
+  late final HelperContext _context = _createContext();
 
   final http.Client _inner;
 
@@ -69,6 +70,20 @@ class _AuthenticatedClient extends http.BaseClient {
           ),
         );
         final response = await _inner.send(request);
+        if (request.headers.containsKey('dpop')) {
+          final nonce = response.headers['dpop-nonce'];
+          if (nonce != null &&
+              RegExp(r'^[\x21\x23-\x5b\x5d-\x7e]+$').hasMatch(nonce)) {
+            if (response.statusCode == 401 && _requestsNonce(response)) {
+              helper.resourceNonce = nonce;
+              await response.stream.drain<void>();
+              throw const _NonceChallenge();
+            }
+            if (response.statusCode >= 200 && response.statusCode < 300) {
+              helper.resourceNonce = nonce;
+            }
+          }
+        }
         if (response.statusCode == 401) helper.invalidate(_context);
         if (response.statusCode == 401 || response.statusCode == 403) {
           _throwAuthException(response);
@@ -110,6 +125,20 @@ class _AuthenticatedClient extends http.BaseClient {
       _throwAuthException(response);
     }
     return response;
+  }
+
+  static bool _requestsNonce(http.BaseResponse response) {
+    final header = response.headers['www-authenticate'];
+    if (header == null) return false;
+    try {
+      return AuthenticationChallenge.parseHeader(header).any(
+        (challenge) =>
+            challenge.scheme == 'dpop' &&
+            challenge.parameters['error'] == 'use_dpop_nonce',
+      );
+    } on FormatException {
+      return false;
+    }
   }
 
   static bool _inScope(Uri base, Uri target) {
@@ -185,6 +214,12 @@ class AuthenticationException implements Exception {
   }
 }
 
+class _NonceChallenge extends AuthenticationException
+    implements DPoPNonceRequired {
+  const _NonceChallenge()
+    : super(401, 'Repository requires a fresh DPoP proof.');
+}
+
 /// Invoke [fn] with a [http.Client] capable of authenticating against
 /// [hostedUrl].
 ///
@@ -194,14 +229,10 @@ Future<T> withAuthenticatedClient<T>(
   SystemCache systemCache,
   Uri hostedUrl,
   Future<T> Function(http.Client) fn, {
-  HelperContext Function()? context,
+  required HelperContext Function() context,
 }) async {
   final credential = systemCache.tokenStore.findCredential(hostedUrl);
-  final client = _AuthenticatedClient(
-    globalHttpClient,
-    credential,
-    credential?.helper == null ? readContext : context?.call() ?? readContext,
-  );
+  final client = _AuthenticatedClient(globalHttpClient, credential, context);
 
   try {
     return await fn(client);
