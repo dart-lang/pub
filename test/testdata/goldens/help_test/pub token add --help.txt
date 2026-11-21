@@ -10,13 +10,15 @@ retrieving dependencies and for publishing.
 Tokens are stored in $SANDBOX/.config/dart/pub-tokens.json.
 
 This command will prompt for the secret token over stdin.
-(Unless `--env-var` is used).
+(Unless `--env-var` or `--auth-helper` is used).
 
 For interactive authorization against pub.dev, use `dart pub login`.
 
 Usage: pub token add [options] <hosted-url>
--h, --help                  Print this usage information.
-    --env-var=<VARIABLE>    Read the secret token from this environment variable when making requests.
+-h, --help                        Print this usage information.
+    --auth-helper=<EXECUTABLE>    Obtain tokens from this absolute executable path.
+    --auth-helper-arg             Fixed helper argument. May be repeated.
+    --env-var=<VARIABLE>          Read the secret token from this environment variable when making requests.
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-token for detailed documentation.

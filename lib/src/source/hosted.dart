@@ -504,6 +504,7 @@ class HostedSource extends CachedSource {
             },
           );
         },
+        context: () => readPackageContext(packageName),
       );
 
       if (is304) {
@@ -646,7 +647,7 @@ class HostedSource extends CachedSource {
               return response.body;
             },
           );
-        });
+        }, context: () => readPackageContext(packageName));
       });
       final decoded = jsonDecode(bodyText);
       if (decoded is! Map<String, dynamic>) {
@@ -1699,7 +1700,7 @@ See $contentHashesDocumentationUrl.
             // ways around this, and we might revisit this later.
             await createFileFromStream(stream, archivePath);
           });
-        });
+        }, context: () => readPackageContext(id.name));
       } on Exception catch (error, stackTrace) {
         _throwFriendlyError(error, stackTrace, id.name, description.url);
       }

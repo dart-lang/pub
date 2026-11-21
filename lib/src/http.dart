@@ -20,7 +20,7 @@ import 'sdk.dart';
 import 'utils.dart';
 
 /// Headers and field names that should be censored in the log output.
-const _censoredFields = ['refresh_token', 'authorization'];
+const _censoredFields = ['refresh_token', 'authorization', 'dpop'];
 
 /// Headers required for pub.dev API requests.
 ///

@@ -12,7 +12,15 @@ import '../http.dart';
 import '../log.dart' as log;
 import '../system_cache.dart';
 import '../utils.dart';
+import 'auth_helper.dart';
 import 'credential.dart';
+
+/// Information available to a credential helper during package resolution.
+HelperContext readPackageContext(String package) => (
+  package: package,
+  version: null,
+  archiveSha256: null,
+);
 
 /// This client authenticates requests by injecting `Authentication` header to
 /// requests.
@@ -24,7 +32,9 @@ class _AuthenticatedClient extends http.BaseClient {
   ///
   /// [_credential] might be `null`. In that case `authorization` header will
   /// not be injected to requests.
-  _AuthenticatedClient(this._inner, this._credential);
+  _AuthenticatedClient(this._inner, this._credential, this._context);
+
+  final HelperContext _context;
 
   final http.Client _inner;
 
@@ -43,6 +53,49 @@ class _AuthenticatedClient extends http.BaseClient {
     // to given serverBaseUrl. Otherwise credential leaks might occur when
     // archive_url hosted on 3rd party server that should not receive
     // credentials of the first party.
+    final credential = _credential;
+    final helper = credential?.helper;
+    if (credential != null && helper != null) {
+      var remaining = request.maxRedirects;
+      final follow = request.followRedirects;
+      while (_inScope(credential.url, request.url)) {
+        request.followRedirects = false;
+        request.headers.addAll(
+          await helper.headers(
+            credential.url,
+            _context,
+            request.method,
+            request.url,
+          ),
+        );
+        final response = await _inner.send(request);
+        if (response.statusCode == 401) helper.invalidate(_context);
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          _throwAuthException(response);
+        }
+        final location = response.headers['location'];
+        if (!follow ||
+            request.method != 'GET' ||
+            location == null ||
+            ![301, 302, 303, 307, 308].contains(response.statusCode)) {
+          return response;
+        }
+        await response.stream.drain<void>();
+        if (remaining-- == 0) throw const HttpException('Too many redirects');
+        final next = http.Request('GET', request.url.resolve(location));
+        if (_inScope(credential.url, next.url)) {
+          next.headers.addAll(request.headers);
+          next.headers.remove('authorization');
+          next.headers.remove('dpop');
+        }
+        request = next;
+      }
+      final response = await _inner.send(request);
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        _throwAuthException(response);
+      }
+      return response;
+    }
     if (_credential != null &&
         _credential.canAuthenticate(request.url.toString())) {
       request.headers[HttpHeaders.authorizationHeader] =
@@ -57,6 +110,27 @@ class _AuthenticatedClient extends http.BaseClient {
       _throwAuthException(response);
     }
     return response;
+  }
+
+  static bool _inScope(Uri base, Uri target) {
+    if (target.userInfo.isNotEmpty ||
+        base.scheme != target.scheme ||
+        base.host != target.host ||
+        base.port != target.port) {
+      return false;
+    }
+    final segments = target.normalizePath().pathSegments;
+    if (segments.any(
+      (s) => s == '.' || s == '..' || s.contains('/') || s.contains(r'\'),
+    )) {
+      return false;
+    }
+    final prefix = base.path;
+    final path = target.normalizePath().path;
+    return prefix.isEmpty ||
+        path == prefix ||
+        '$path/' == prefix ||
+        path.startsWith(prefix);
   }
 
   /// Throws [AuthenticationException] that includes response status code and
@@ -119,10 +193,15 @@ class AuthenticationException implements Exception {
 Future<T> withAuthenticatedClient<T>(
   SystemCache systemCache,
   Uri hostedUrl,
-  Future<T> Function(http.Client) fn,
-) async {
+  Future<T> Function(http.Client) fn, {
+  HelperContext Function()? context,
+}) async {
   final credential = systemCache.tokenStore.findCredential(hostedUrl);
-  final client = _AuthenticatedClient(globalHttpClient, credential);
+  final client = _AuthenticatedClient(
+    globalHttpClient,
+    credential,
+    credential?.helper == null ? readContext : context?.call() ?? readContext,
+  );
 
   try {
     return await fn(client);

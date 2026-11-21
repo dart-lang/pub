@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import '../authentication/auth_helper.dart';
 import '../authentication/credential.dart';
 import '../command.dart';
 import '../command_runner.dart';
@@ -28,7 +29,7 @@ retrieving dependencies and for publishing.
 Tokens are stored in ${tokenStore.tokensFile}.
 
 This command will prompt for the secret token over stdin.
-(Unless `--env-var` is used).
+(Unless `--env-var` or `--auth-helper` is used).
 
 For interactive authorization against pub.dev, use `$topLevelProgram pub login`.''';
   @override
@@ -40,6 +41,16 @@ For interactive authorization against pub.dev, use `$topLevelProgram pub login`.
   String? get envVar => argResults.option('env-var');
 
   TokenAddCommand() {
+    argParser.addOption(
+      'auth-helper',
+      valueHelp: 'EXECUTABLE',
+      help: 'Obtain tokens from this absolute executable path.',
+    );
+    argParser.addMultiOption(
+      'auth-helper-arg',
+      splitCommas: false,
+      help: 'Fixed helper argument. May be repeated.',
+    );
     argParser.addOption(
       'env-var',
       help:
@@ -74,7 +85,22 @@ For interactive authorization against pub.dev, use `$topLevelProgram pub login`.
         );
       }
 
-      if (envVar == null) {
+      final executable = argResults.option('auth-helper');
+      final arguments = argResults.multiOption('auth-helper-arg');
+      if (executable != null) {
+        if (envVar != null || !AuthHelper.validExecutable(executable)) {
+          usageException(
+            'Use --auth-helper with an absolute executable path '
+            '(a .exe on Windows) and without --env-var.',
+          );
+        }
+        tokenStore.addCredential(
+          Credential.helper(hostedUrl, AuthHelper([executable, ...arguments])),
+        );
+        log.message('Registered authentication helper for "$hostedUrl".');
+      } else if (arguments.isNotEmpty) {
+        usageException('--auth-helper-arg requires --auth-helper.');
+      } else if (envVar == null) {
         await _addTokenFromStdin(hostedUrl);
       } else {
         await _addEnvVarToken(hostedUrl, envVar!);

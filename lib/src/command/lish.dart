@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 
 import '../ascii_tree.dart' as tree;
@@ -280,10 +281,11 @@ class LishCommand extends PubCommand {
   }
 
   Future<void> _publish(
-    List<int> packageBytes,
+    _Publication publication,
     Uri host, {
     Uint8List? attestationBytes,
   }) async {
+    final packageBytes = publication.packageBytes;
     try {
       final officialPubServers = {
         'https://pub.dev',
@@ -320,14 +322,24 @@ class LishCommand extends PubCommand {
         });
       } else {
         // For third party servers using bearer authentication client
-        await withAuthenticatedClient(cache, host, (client) {
-          return _publishUsingClient(
-            packageBytes,
-            client,
-            host,
-            attestationBytes: attestationBytes,
-          );
-        });
+        await withAuthenticatedClient(
+          cache,
+          host,
+          (client) {
+            return _publishUsingClient(
+              packageBytes,
+              client,
+              host,
+              attestationBytes: attestationBytes,
+            );
+          },
+          context:
+              () => (
+                package: publication.pubspec.name,
+                version: publication.pubspec.version.toString(),
+                archiveSha256: sha256.convert(packageBytes).toString(),
+              ),
+        );
       }
     } on PubHttpResponseException catch (error) {
       final url = error.response.request!.url;
@@ -610,7 +622,7 @@ the \$PUB_HOSTED_URL environment variable.''');
       await _confirmUpload(publication, host);
 
       await _publish(
-        publication.packageBytes,
+        publication,
         host,
         attestationBytes: publication.attestationBytes,
       );
