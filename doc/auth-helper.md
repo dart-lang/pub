@@ -16,14 +16,30 @@ path on the same origin, including when following download redirects.
 ## Helper protocol, version 1
 
 The helper inherits pub's working directory. Pub sends one UTF-8 JSON
-object on stdin, closes stdin, and expects one JSON object on stdout and an
-exit status of zero. The helper must finish within 30 seconds and return at
-most 64 KiB. Pub discards stderr and excludes helper output from error messages.
+object on stdin and closes stdin. On success, the helper writes one UTF-8
+JSON object to stdout and exits with status zero. Each call has a 30-second
+timeout and a 64 KiB stdout limit. Pub discards stderr.
 
 Every request includes `protocolVersion: 1`, `repository`, `action`, and
-`interactive: false`. The helper must run without prompting. If sign-in, MFA
-or a key unlock requires a person, the helper exits unsuccessfully. The user
-completes that step separately and reruns pub.
+`interactive: false`. The helper must run without prompting.
+
+### Report an error
+
+If `acquire` or `prove` fails, the helper exits with a non-zero status.
+It can write one JSON object to stdout with an `error` identifier and a
+short, single-line `message` for the user. For example:
+
+    {"error":"sign_in_required","message":"Run `repo-helper login`, then retry."}
+
+Pub labels the message as coming from the helper, strips terminal control
+characters and displays it on one line. Suggested commands are plain text.
+The helper must keep credentials and debug output out of the message. Pub
+never prints raw stdout or stderr.
+
+If the helper exits unsuccessfully without a valid error response, pub reports
+its exit code. If it cannot start, times out, or exceeds the output limit,
+pub reports that cause. A zero exit status with an invalid token or proof
+response is a protocol error.
 
 ### Obtain a token
 
