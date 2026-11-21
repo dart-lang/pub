@@ -20,7 +20,12 @@ import 'sdk.dart';
 import 'utils.dart';
 
 /// Headers and field names that should be censored in the log output.
-const _censoredFields = ['refresh_token', 'authorization'];
+const _censoredFields = [
+  'refresh_token',
+  'authorization',
+  'dpop',
+  'dpop-nonce',
+];
 
 /// Headers required for pub.dev API requests.
 ///
@@ -321,6 +326,9 @@ bool isHttpIOException(Object e) {
       e is WebSocketException;
 }
 
+/// A resource server explicitly rejected this request before authorising it.
+abstract interface class DPoPNonceRequired implements Exception {}
+
 /// Program-wide limiter for concurrent network requests.
 final _httpPool = Pool(16);
 
@@ -333,8 +341,18 @@ final _httpPool = Pool(16);
 ///
 /// Each attempt is run within a [Pool] configured with 16 maximum resources.
 Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
+  var retriedNonce = false;
   return await retry(
-    () async => await _httpPool.withResource(() async => await fn()),
+    () async => await _httpPool.withResource(() async {
+      try {
+        return await fn();
+      } on DPoPNonceRequired {
+        if (retriedNonce) rethrow;
+        retriedNonce = true;
+        // Rebuild only the rejected request, including its upload body.
+        return await fn();
+      }
+    }),
     retryIf:
         (e) async =>
             (e is PubHttpException && e.isIntermittent) ||

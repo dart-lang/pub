@@ -6,13 +6,14 @@ import '../exceptions.dart';
 import '../platform_info.dart';
 import '../source/hosted.dart';
 import '../utils.dart';
+import 'auth_helper.dart';
 
 /// [Credential] is a structure for storing authentication credentials for
 /// third-party pub registries.
 ///
-/// A [Credential] holds a registry [url], and either the [token] itself or the
-/// name of an environment variable [env] for looking up the token when
-/// authenticating.
+/// A [Credential] holds a registry [url] and one source of credentials: a
+/// literal [token],
+/// an environment variable [env], or a registered [helper].
 ///
 /// For storing in the pub-tokens.json configuration, a [Credential] can be
 /// serialized into and from JSON format structured like this:
@@ -41,18 +42,28 @@ class Credential {
     required this.unknownFields,
     required this.token,
     required this.env,
+    required this.helper,
   });
 
   /// Create credential that stores clear text token.
   Credential.token(this.url, this.token)
-    : env = null,
+    : helper = null,
+      env = null,
       unknownFields = const <String, dynamic>{};
 
   /// Create credential that stores environment variable name that stores token
   /// value.
   Credential.env(this.url, this.env)
-    : token = null,
+    : helper = null,
+      token = null,
       unknownFields = const <String, dynamic>{};
+
+  Credential.helper(this.url, AuthHelper this.helper)
+    : token = null,
+      env = null,
+      unknownFields = const {};
+
+  final AuthHelper? helper;
 
   /// Deserialize [json] into [Credential] type.
   ///
@@ -64,7 +75,7 @@ class Credential {
 
     final hostedUrl = validateAndNormalizeHostedUrl(json['url'] as String);
 
-    const knownKeys = {'url', 'token', 'env'};
+    const knownKeys = {'url', 'token', 'env', 'authHelper'};
     final unknownFields = Map.fromEntries(
       json.entries.where((kv) => !knownKeys.contains(kv.key)),
     );
@@ -83,7 +94,16 @@ class Credential {
       return null;
     }
 
+    final command = json['authHelper'];
+    if (json.containsKey('authHelper') &&
+        (command is! List ||
+            command.isEmpty ||
+            command.any((e) => e is! String) ||
+            AuthHelper.executableError(command.first as String) != null)) {
+      throw const FormatException('Invalid authentication helper command');
+    }
     return Credential._internal(
+      helper: command is List ? AuthHelper(command.cast<String>()) : null,
       url: hostedUrl,
       unknownFields: unknownFields,
       token: string('token'),
@@ -111,6 +131,7 @@ class Credential {
       'url': url.toString(),
       if (token != null) 'token': token,
       if (env != null) 'env': env,
+      if (helper != null) 'authHelper': helper!.command,
       ...unknownFields,
     };
   }
@@ -123,7 +144,7 @@ class Credential {
   // [Credential] interface for OAuth2.0 authentication too - which requires
   // token rotation (refresh) that's async job.
   Future<String> getAuthorizationHeaderValue() {
-    if (!isValid()) {
+    if (!isValid() || helper != null) {
       throw DataException(
         'Saved credential for "$url" pub repository is not supported by '
         'current version of Dart SDK.',
@@ -164,8 +185,7 @@ class Credential {
   ///
   /// This method might return `false` when a `pub-tokens.json` file created by
   /// future SDK used by pub tool from old SDK.
-  // Either [token] or [env] should be defined to be valid.
-  bool isValid() => (token == null) ^ (env == null);
+  bool isValid() => [token, env, helper].whereType<Object>().length == 1;
 
   /// Whether [candidate] can be used as a bearer token.
   ///

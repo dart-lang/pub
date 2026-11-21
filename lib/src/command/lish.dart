@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 
 import '../ascii_tree.dart' as tree;
@@ -280,10 +281,11 @@ class LishCommand extends PubCommand {
   }
 
   Future<void> _publish(
-    List<int> packageBytes,
+    _Publication publication,
     Uri host, {
     Uint8List? attestationBytes,
   }) async {
+    final packageBytes = publication.packageBytes;
     try {
       final officialPubServers = {
         'https://pub.dev',
@@ -320,14 +322,28 @@ class LishCommand extends PubCommand {
         });
       } else {
         // For third party servers using bearer authentication client
-        await withAuthenticatedClient(cache, host, (client) {
-          return _publishUsingClient(
-            packageBytes,
-            client,
-            host,
-            attestationBytes: attestationBytes,
-          );
-        });
+        await withAuthenticatedClient(
+          cache,
+          host,
+          (client) {
+            return _publishUsingClient(
+              packageBytes,
+              client,
+              host,
+              attestationBytes: attestationBytes,
+            );
+          },
+          context:
+              () => (
+                package: publication.pubspec.name,
+                version: publication.pubspec.version.toString(),
+                archive: _describeFile(packageBytes),
+                attestations:
+                    attestationBytes == null
+                        ? null
+                        : _describeFile(attestationBytes),
+              ),
+        );
       }
     } on PubHttpResponseException catch (error) {
       final url = error.response.request!.url;
@@ -338,6 +354,11 @@ class LishCommand extends PubCommand {
       }
     }
   }
+
+  static ({int length, String sha256}) _describeFile(List<int> bytes) => (
+    length: bytes.length,
+    sha256: sha256.convert(bytes).toString(),
+  );
 
   Future<void> _validateArgs() async {
     if (argResults.wasParsed('server')) {
@@ -610,7 +631,7 @@ the \$PUB_HOSTED_URL environment variable.''');
       await _confirmUpload(publication, host);
 
       await _publish(
-        publication.packageBytes,
+        publication,
         host,
         attestationBytes: publication.attestationBytes,
       );

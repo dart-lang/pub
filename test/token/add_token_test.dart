@@ -5,6 +5,8 @@
 @TestOn('vm')
 library;
 
+import 'dart:io';
+
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
@@ -12,6 +14,64 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
+  for (final (arguments, message) in [
+    (
+      ['--auth-helper', Platform.resolvedExecutable, '--env-var=TOKEN'],
+      'Choose either --auth-helper or --env-var.',
+    ),
+    (['--auth-helper='], '--auth-helper needs an executable path.'),
+    (['--auth-helper=helper'], '--auth-helper needs an absolute path.'),
+    if (Platform.isWindows)
+      (
+        ['--auth-helper', r'C:\tools\helper.cmd'],
+        'On Windows, --auth-helper needs an .exe file.',
+      ),
+  ]) {
+    test(message, () async {
+      await runPub(
+        args: ['token', 'add', 'https://example.com', ...arguments],
+        error: contains(message),
+        exitCode: exit_codes.USAGE,
+      );
+    });
+  }
+
+  test(
+    'registers executable and fixed arguments for an exact repository',
+    () async {
+      const base = 'https://example.test/org/team/feed/';
+      await runPub(
+        args: [
+          'token',
+          'add',
+          base,
+          '--auth-helper',
+          Platform.resolvedExecutable,
+          '--auth-helper-arg=token',
+          '--auth-helper-arg=a,b',
+        ],
+      );
+      await runPub(
+        args: [
+          'token',
+          'add',
+          'https://example.test/org/team/other/',
+          '--env-var=TOKEN',
+        ],
+        environment: {'TOKEN': 'test'},
+      );
+      await d.tokensFile({
+        'version': 1,
+        'hosted': [
+          {
+            'url': base,
+            'authHelper': [Platform.resolvedExecutable, 'token', 'a,b'],
+          },
+          {'url': 'https://example.test/org/team/other/', 'env': 'TOKEN'},
+        ],
+      }).validate();
+    },
+  );
   test(
     'with correct server url creates pub-tokens.json that contains token',
     () async {
