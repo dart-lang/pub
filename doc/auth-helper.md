@@ -9,9 +9,9 @@ with the argument `token`. Each `--auth-helper-arg` adds one argument.
 Use an absolute executable path (a native .exe on Windows) and keep secrets
 out of arguments.
 
-Pub matches the full repository URL, including its case-sensitive path. It
-sends credentials only within that repository on the same origin. Keep
-protected download endpoints under that path.
+Pub matches the full repository URL, including its case-sensitive path.
+Pub sends the helper’s credentials only to URLs within the registered repository
+path on the same origin, including when following download redirects.
 
 ## Helper protocol, version 1
 
