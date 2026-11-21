@@ -50,9 +50,13 @@ publish file requires a new acquisition.
 
 ### Authenticate a request
 
-For a bearer token (`tokenType: Bearer`, the default), pub sends the token in
-the Authorization header. For a DPoP token, each protected request also needs
-a fresh signature from the key bound to the token. Pub sends the helper
+The repository decides what a client must present to access a package. The
+helper tells pub which token it obtained using `tokenType`. With `Bearer`
+(the default), pub sends the token in the Authorization header. With `DPoP`,
+the repository also checks a fresh signature on each request. Someone who
+copies the token alone cannot produce that signature.
+
+To get the signature, pub sends the helper
 `action: prove`, the token, HTTP method, target URI without query or fragment,
 and the repository's nonce if supplied. The helper returns a signed JWT in
 `proof`, including the token hash and any supplied nonce.
