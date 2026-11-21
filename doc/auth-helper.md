@@ -2,10 +2,10 @@
 
 A developer registers a local program for a repository:
 
-    dart pub token add https://packages.example/org/feed/ --auth-helper=/opt/bin/onepub --auth-helper-arg=_pub-auth
+    dart pub token add https://packages.example/org/feed/ --auth-helper=/opt/bin/repo-helper --auth-helper-arg=token
 
-Pub saves the command in `pub-tokens.json`. Here it runs `/opt/bin/onepub`
-with the argument `_pub-auth`. Each `--auth-helper-arg` adds one argument.
+Pub saves the command in `pub-tokens.json`. Here it runs `/opt/bin/repo-helper`
+with the argument `token`. Each `--auth-helper-arg` adds one argument.
 Use an absolute executable path (a native .exe on Windows) and keep secrets
 out of arguments.
 

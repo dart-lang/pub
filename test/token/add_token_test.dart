@@ -47,7 +47,7 @@ void main() {
           base,
           '--auth-helper',
           Platform.resolvedExecutable,
-          '--auth-helper-arg=_pub-auth',
+          '--auth-helper-arg=token',
           '--auth-helper-arg=a,b',
         ],
       );
@@ -65,7 +65,7 @@ void main() {
         'hosted': [
           {
             'url': base,
-            'authHelper': [Platform.resolvedExecutable, '_pub-auth', 'a,b'],
+            'authHelper': [Platform.resolvedExecutable, 'token', 'a,b'],
           },
           {'url': 'https://example.test/org/team/other/', 'env': 'TOKEN'},
         ],
