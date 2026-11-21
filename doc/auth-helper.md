@@ -53,8 +53,13 @@ it also includes the version and a description of each file being uploaded:
 
 Each length is in bytes. Each digest is the lowercase hex SHA-256 of the
 exact bytes pub sends. Pub omits `attestations` when there is no attestation
-file. The repository can authorise this set of files and check them before
-accepting the release.
+file. Pub uploads the optional provenance file only when the caller supplies
+it with `--with-attestation`.
+
+During token acquisition, a helper can sign the package name, version and
+file details for its repository. The repository can verify and retain that
+signature, then check the uploaded bytes before accepting the release.
+This requires no additional file or publish flag.
 
 The helper returns an access token, its UTC expiry and its type:
 

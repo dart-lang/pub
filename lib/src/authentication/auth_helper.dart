@@ -9,6 +9,7 @@ import 'dart:io';
 import '../exceptions.dart';
 import '../path.dart';
 import '../platform_info.dart';
+import '../utils.dart';
 import 'credential.dart';
 
 typedef PublishFile = ({int length, String sha256});
@@ -121,45 +122,87 @@ class AuthHelper {
     Uri repository,
     Map<String, Object?> input,
   ) async {
-    Process? child;
+    final Process process;
     try {
-      child = await Process.start(command.first, command.sublist(1));
-      final process = child;
-      final bytes = <int>[];
+      process = await Process.start(command.first, command.sublist(1));
+    } on ProcessException {
+      throw DataException('Could not start auth helper for $repository.');
+    }
+
+    final bytes = <int>[];
+    var writeFailed = false;
+    try {
+      process.stdin.add(
+        utf8.encode(
+          jsonEncode({
+            'protocolVersion': 1,
+            'repository': repository.toString(),
+            'interactive': false,
+            ...input,
+          }),
+        ),
+      );
       await Future.wait<void>([
         process.stdout.forEach((chunk) {
           if (bytes.length + chunk.length > 64 * 1024) {
-            throw const FormatException();
+            throw DataException(
+              'Auth helper output exceeded 64 KiB for $repository.',
+            );
           }
           bytes.addAll(chunk);
         }),
         process.stderr.drain<void>(),
-        () async {
-          process.stdin.add(
-            utf8.encode(
-              jsonEncode({
-                'protocolVersion': 1,
-                'repository': repository.toString(),
-                'interactive': false,
-                ...input,
-              }),
-            ),
-          );
-          await process.stdin.close();
-        }(),
-        process.exitCode.then((code) {
-          if (code != 0) throw const FormatException();
-        }),
+        process.stdin.close().then<void>(
+          (_) {},
+          onError: (Object error) {
+            // A helper may report an error before reading its input.
+            writeFailed = true;
+          },
+        ),
+        process.exitCode.then<void>((_) {}),
       ], eagerError: true).timeout(const Duration(seconds: 30));
-      final response = jsonDecode(utf8.decode(bytes));
-      if (response is Map<String, dynamic>) return response;
-      throw const FormatException();
-    } on Exception {
-      child?.kill(ProcessSignal.sigkill);
+    } on TimeoutException {
+      process.kill(ProcessSignal.sigkill);
       throw DataException(
-        'Auth helper failed for $repository. '
-        'Check the helper installation and sign-in.',
+        'Auth helper timed out after 30 seconds for $repository.',
+      );
+    } on IOException {
+      process.kill(ProcessSignal.sigkill);
+      throw DataException(
+        'Could not communicate with auth helper for $repository.',
+      );
+    } on DataException {
+      process.kill(ProcessSignal.sigkill);
+      rethrow;
+    }
+
+    final code = await process.exitCode;
+    Object? response;
+    try {
+      response = jsonDecode(utf8.decode(bytes));
+    } on FormatException {
+      // Never include raw output in diagnostics: it may contain a token.
+    }
+    if (code != 0) {
+      if (response case {
+        'error': final String id,
+        'message': final String message,
+      } when id.trim().isNotEmpty) {
+        final detail =
+            sanitizeForTerminal(message).replaceAll('\x7f', ' ').trim();
+        if (detail.isNotEmpty) {
+          throw DataException(
+            'Auth helper for $repository (exit $code): $detail',
+          );
+        }
+      }
+      throw DataException(
+        'Auth helper for $repository exited with code $code.',
       );
     }
+    if (writeFailed || response is! Map<String, dynamic>) {
+      throw DataException('Invalid auth helper response for $repository.');
+    }
+    return response;
   }
 }

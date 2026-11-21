@@ -33,6 +33,14 @@ Future<void> main(List<String> args) async {
   final action = input['action'];
   File(args.first + '.' + action).writeAsStringSync(jsonEncode(input) + '\n',
       mode: FileMode.append);
+  if (args.last == 'structured' || args.last == 'raw') {
+    stderr.write('sensitive diagnostics');
+    stdout.write(args.last == 'structured' ? jsonEncode({
+      'error': 'sign_in_required', 'message': 'Run\nrepo-helper login.',
+    }) : 'sensitive output');
+    exitCode = 2;
+    return;
+  }
   final now = DateTime.now().toUtc();
   stdout.write(jsonEncode(action == 'prove'
       ? {'proof': 'header.payload.signature'}
@@ -90,6 +98,24 @@ Future<void> main(List<String> args) async {
       expect(proofs.map((entry) => entry['method']), everyElement('GET'));
     },
   );
+
+  for (final mode in ['structured', 'raw']) {
+    test('reports $mode helper failure without exposing raw output', () async {
+      final auth = await helper(mode);
+      await expectLater(
+        auth.headers(repository, context, 'GET', repository),
+        throwsA(
+          isA<DataException>().having(
+            (e) => e.message,
+            'message',
+            mode == 'structured'
+                ? 'Auth helper for $repository (exit 2): Run repo-helper login.'
+                : 'Auth helper for $repository exited with code 2.',
+          ),
+        ),
+      );
+    });
+  }
 
   test('rejects an already expired read grant', () async {
     final auth = await helper('expired');
