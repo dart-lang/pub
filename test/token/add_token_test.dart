@@ -14,6 +14,28 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
+  for (final (arguments, message) in [
+    (
+      ['--auth-helper', Platform.resolvedExecutable, '--env-var=TOKEN'],
+      'Choose either --auth-helper or --env-var.',
+    ),
+    (['--auth-helper='], '--auth-helper needs an executable path.'),
+    (['--auth-helper=helper'], '--auth-helper needs an absolute path.'),
+    if (Platform.isWindows)
+      (
+        ['--auth-helper', r'C:\tools\helper.cmd'],
+        'On Windows, --auth-helper needs an .exe file.',
+      ),
+  ]) {
+    test(message, () async {
+      await runPub(
+        args: ['token', 'add', 'https://example.com', ...arguments],
+        error: contains(message),
+        exitCode: exit_codes.USAGE,
+      );
+    });
+  }
+
   test(
     'registers executable and fixed arguments for an exact repository',
     () async {

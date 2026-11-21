@@ -150,17 +150,29 @@ void main() {
     },
   );
 
-  test(
-    'publish helper receives exact archive identity and stays in scope',
-    () async {
-      final server = await servePackages();
-      const path = '/org/Engineering/feeds/internal';
-      final repository = '${server.url}$path/';
-      await d.validPackage(pubspecExtras: {'publish_to': repository}).create();
-      await runPub(
-        args: ['lish', '--to-archive', p.join('..', 'release.tar.gz')],
-      );
-      await d.file('helper.dart', r"""
+  for (final withAttestations in [false, true]) {
+    test(
+      'publish file details (with attestations: $withAttestations)',
+      () async {
+        final server = await servePackages();
+        const path = '/org/Engineering/feeds/internal';
+        final repository = '${server.url}$path/';
+        await d
+            .validPackage(
+              pubspecExtras: {
+                'publish_to': repository,
+                'repository': 'https://example.test/project',
+              },
+            )
+            .create();
+        const attestations = '{ "attestations": [] }\n';
+        if (withAttestations) {
+          await d.file('attestations.json', attestations).create();
+        }
+        await runPub(
+          args: ['lish', '--to-archive', p.join('..', 'release.tar.gz')],
+        );
+        await d.file('helper.dart', r"""
 import 'dart:convert';
 import 'dart:io';
 
@@ -173,63 +185,88 @@ Future<void> main(List<String> args) async {
   }));
 }
 """).create();
-      final command = [
-        Platform.resolvedExecutable,
-        d.path('helper.dart'),
-        d.path('calls'),
-      ];
-      final registration = d.tokensFile({
-        'version': 1,
-        'hosted': [
-          {'url': repository, 'authHelper': command},
-        ],
-      });
-      await registration.create();
-      final pub = await startPublish(
-        server,
-        overrideDefaultHostedServer: false,
-        args: ['--from-archive', d.path('release.tar.gz')],
-      );
-      await confirmPublish(pub);
-      server.expect('GET', '$path/api/packages/versions/new', (request) {
-        expect(request.headers['authorization'], 'Bearer access-token');
-        return Response.found(
-          Uri.parse(repository).resolve('/org/engineering/feeds/internal/form'),
+        final command = [
+          Platform.resolvedExecutable,
+          d.path('helper.dart'),
+          d.path('calls'),
+        ];
+        final registration = d.tokensFile({
+          'version': 1,
+          'hosted': [
+            {'url': repository, 'authHelper': command},
+          ],
+        });
+        await registration.create();
+        final pub = await startPublish(
+          server,
+          overrideDefaultHostedServer: false,
+          args: [
+            '--from-archive',
+            d.path('release.tar.gz'),
+            if (withAttestations) ...[
+              '--with-attestation',
+              d.path('attestations.json'),
+            ],
+          ],
         );
-      });
-      server.expect('GET', '/org/engineering/feeds/internal/form', (request) {
-        expect(request.headers['authorization'], isNull);
-        return Response.ok(
-          jsonEncode({
-            'url': '${server.url}/upload',
-            'fields': <String, String>{},
-          }),
-        );
-      });
-      server.expect('POST', '/upload', (request) async {
-        expect(request.headers['authorization'], isNull);
-        await request.read().drain<void>();
-        return Response.found(Uri.parse(repository).resolve('complete'));
-      });
-      server.expect('GET', '$path/complete', (request) {
-        expect(request.headers['authorization'], 'Bearer access-token');
-        return Response(401);
-      });
-      await pub.shouldExit(65);
-      await registration.validate();
-      expect(jsonDecode(File(d.path('calls')).readAsStringSync()), {
-        'protocolVersion': 1,
-        'action': 'acquire',
-        'repository': repository,
-        'interactive': false,
-        'operation': 'publish',
-        'package': 'test_pkg',
-        'version': '1.0.0',
-        'archiveSha256':
-            sha256
-                .convert(File(d.path('release.tar.gz')).readAsBytesSync())
-                .toString(),
-      });
-    },
-  );
+        await confirmPublish(pub);
+        server.expect('GET', '$path/api/packages/versions/new', (request) {
+          expect(request.headers['authorization'], 'Bearer access-token');
+          return Response.found(
+            Uri.parse(
+              repository,
+            ).resolve('/org/engineering/feeds/internal/form'),
+          );
+        });
+        server.expect('GET', '/org/engineering/feeds/internal/form', (request) {
+          expect(request.headers['authorization'], isNull);
+          return Response.ok(
+            jsonEncode({
+              'url': '${server.url}/upload',
+              'fields': <String, String>{},
+              if (withAttestations)
+                'attestationUrl': '${server.url}/attestations',
+            }),
+          );
+        });
+        if (withAttestations) {
+          server.expect('POST', '/attestations', (request) async {
+            expect(request.headers['authorization'], isNull);
+            expect(await request.readAsString(), attestations);
+            return Response.ok('');
+          });
+        }
+        server.expect('POST', '/upload', (request) async {
+          expect(request.headers['authorization'], isNull);
+          await request.read().drain<void>();
+          return Response.found(Uri.parse(repository).resolve('complete'));
+        });
+        server.expect('GET', '$path/complete', (request) {
+          expect(request.headers['authorization'], 'Bearer access-token');
+          return Response(401);
+        });
+        await pub.shouldExit(65);
+        await registration.validate();
+        final archive = File(d.path('release.tar.gz')).readAsBytesSync();
+        expect(jsonDecode(File(d.path('calls')).readAsStringSync()), {
+          'protocolVersion': 1,
+          'action': 'acquire',
+          'repository': repository,
+          'interactive': false,
+          'operation': 'publish',
+          'package': 'test_pkg',
+          'version': '1.0.0',
+          'archive': {
+            'length': archive.length,
+            'sha256': sha256.convert(archive).toString(),
+          },
+          if (withAttestations)
+            'attestations': {
+              'length': utf8.encode(attestations).length,
+              'sha256': sha256.convert(utf8.encode(attestations)).toString(),
+            },
+        });
+      },
+    );
+  }
 }

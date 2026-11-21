@@ -19,7 +19,8 @@ import 'credential.dart';
 HelperContext readPackageContext(String package) => (
   package: package,
   version: null,
-  archiveSha256: null,
+  archive: null,
+  attestations: null,
 );
 
 /// This client authenticates requests by injecting `Authentication` header to

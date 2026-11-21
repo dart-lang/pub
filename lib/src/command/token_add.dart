@@ -43,8 +43,8 @@ For interactive authorization against pub.dev, use `$topLevelProgram pub login`.
   TokenAddCommand() {
     argParser.addOption(
       'auth-helper',
-      valueHelp: 'EXECUTABLE',
-      help: 'Obtain tokens from this absolute executable path.',
+      valueHelp: 'executable path',
+      help: 'Run this program to obtain tokens. Use an absolute path.',
     );
     argParser.addMultiOption(
       'auth-helper-arg',
@@ -88,12 +88,11 @@ For interactive authorization against pub.dev, use `$topLevelProgram pub login`.
       final executable = argResults.option('auth-helper');
       final arguments = argResults.multiOption('auth-helper-arg');
       if (executable != null) {
-        if (envVar != null || !AuthHelper.validExecutable(executable)) {
-          usageException(
-            'Use --auth-helper with an absolute executable path '
-            '(a .exe on Windows) and without --env-var.',
-          );
+        if (envVar != null) {
+          usageException('Choose either --auth-helper or --env-var.');
         }
+        final error = AuthHelper.executableError(executable);
+        if (error != null) usageException(error);
         tokenStore.addCredential(
           Credential.helper(hostedUrl, AuthHelper([executable, ...arguments])),
         );

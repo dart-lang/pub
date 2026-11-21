@@ -11,8 +11,15 @@ import '../path.dart';
 import '../platform_info.dart';
 import 'credential.dart';
 
+typedef PublishFile = ({int length, String sha256});
+
 typedef HelperContext =
-    ({String package, String? version, String? archiveSha256});
+    ({
+      String package,
+      String? version,
+      PublishFile? archive,
+      PublishFile? attestations,
+    });
 
 class _Grant {
   final String token;
@@ -33,9 +40,16 @@ class AuthHelper {
 
   AuthHelper(this.command);
 
-  static bool validExecutable(String executable) =>
-      p.isAbsolute(executable) &&
-      (!platform.isWindows || executable.toLowerCase().endsWith('.exe'));
+  static String? executableError(String executable) {
+    if (executable.isEmpty) return '--auth-helper needs an executable path.';
+    if (!p.isAbsolute(executable)) {
+      return '--auth-helper needs an absolute path.';
+    }
+    if (platform.isWindows && !executable.toLowerCase().endsWith('.exe')) {
+      return 'On Windows, --auth-helper needs an .exe file.';
+    }
+    return null;
+  }
 
   Future<Map<String, String>> headers(
     Uri repository,
@@ -73,11 +87,13 @@ class AuthHelper {
     try {
       final json = await _invoke(repository, {
         'action': 'acquire',
-        'operation': context.archiveSha256 == null ? 'read' : 'publish',
+        'operation': context.archive == null ? 'read' : 'publish',
         'package': context.package,
         if (context.version != null) 'version': context.version,
-        if (context.archiveSha256 != null)
-          'archiveSha256': context.archiveSha256,
+        if (context.archive case final file?)
+          'archive': {'length': file.length, 'sha256': file.sha256},
+        if (context.attestations case final file?)
+          'attestations': {'length': file.length, 'sha256': file.sha256},
       });
       final token = json['token'];
       final expiry = json['expiresAt'];

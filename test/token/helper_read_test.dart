@@ -16,7 +16,12 @@ import '../descriptor.dart' as d;
 
 void main() {
   final repository = Uri.parse('https://example.test/org/team/feed/');
-  const context = (package: 'widgets', version: null, archiveSha256: null);
+  const context = (
+    package: 'widgets',
+    version: null,
+    archive: null,
+    attestations: null,
+  );
 
   Future<AuthHelper> helper(String mode) async {
     await d.file('read.dart', r"""

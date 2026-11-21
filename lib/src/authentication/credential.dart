@@ -99,7 +99,7 @@ class Credential {
         (command is! List ||
             command.isEmpty ||
             command.any((e) => e is! String) ||
-            !AuthHelper.validExecutable(command.first as String))) {
+            AuthHelper.executableError(command.first as String) != null)) {
       throw const FormatException('Invalid authentication helper command');
     }
     return Credential._internal(

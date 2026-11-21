@@ -337,7 +337,11 @@ class LishCommand extends PubCommand {
               () => (
                 package: publication.pubspec.name,
                 version: publication.pubspec.version.toString(),
-                archiveSha256: sha256.convert(packageBytes).toString(),
+                archive: _describeFile(packageBytes),
+                attestations:
+                    attestationBytes == null
+                        ? null
+                        : _describeFile(attestationBytes),
               ),
         );
       }
@@ -350,6 +354,11 @@ class LishCommand extends PubCommand {
       }
     }
   }
+
+  static ({int length, String sha256}) _describeFile(List<int> bytes) => (
+    length: bytes.length,
+    sha256: sha256.convert(bytes).toString(),
+  );
 
   Future<void> _validateArgs() async {
     if (argResults.wasParsed('server')) {
