@@ -15,7 +15,7 @@ path on the same origin, including when following download redirects.
 
 ## Helper protocol, version 1
 
-Pub starts the helper in its installation directory. It sends one UTF-8 JSON
+The helper inherits pub's working directory. Pub sends one UTF-8 JSON
 object on stdin, closes stdin, and expects one JSON object on stdout and an
 exit status of zero. The helper must finish within 30 seconds and return at
 most 64 KiB. Pub discards stderr and excludes helper output from error messages.

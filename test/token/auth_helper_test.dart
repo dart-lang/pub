@@ -177,6 +177,7 @@ import 'dart:convert';
 import 'dart:io';
 
 Future<void> main(List<String> args) async {
+  File(args.single + '.cwd').writeAsStringSync(Directory.current.path);
   File(args.single).writeAsStringSync(await utf8.decoder.bind(stdin).join(),
       mode: FileMode.append);
   stdout.write(jsonEncode({
@@ -247,6 +248,8 @@ Future<void> main(List<String> args) async {
         });
         await pub.shouldExit(65);
         await registration.validate();
+        final cwd = File(d.path('calls.cwd')).readAsStringSync();
+        expect(FileSystemEntity.identicalSync(cwd, d.path(appPath)), isTrue);
         final archive = File(d.path('release.tar.gz')).readAsBytesSync();
         expect(jsonDecode(File(d.path('calls')).readAsStringSync()), {
           'protocolVersion': 1,

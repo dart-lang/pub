@@ -123,11 +123,7 @@ class AuthHelper {
   ) async {
     Process? child;
     try {
-      child = await Process.start(
-        command.first,
-        command.sublist(1),
-        workingDirectory: p.dirname(command.first),
-      );
+      child = await Process.start(command.first, command.sublist(1));
       final process = child;
       final bytes = <int>[];
       await Future.wait<void>([
